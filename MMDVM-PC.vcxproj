@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{7b510332-8e9d-4527-8ee3-68ca039dd5bb}</ProjectGuid>
+    <RootNamespace>MMDVMPC</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="AX25Defines.h" />
+    <ClInclude Include="AX25Demodulator.h" />
+    <ClInclude Include="AX25Frame.h" />
+    <ClInclude Include="AX25RX.h" />
+    <ClInclude Include="AX25Twist.h" />
+    <ClInclude Include="AX25TX.h" />
+    <ClInclude Include="CalDMR.h" />
+    <ClInclude Include="CalDStarRX.h" />
+    <ClInclude Include="CalDStarTX.h" />
+    <ClInclude Include="CalFM.h" />
+    <ClInclude Include="CalM17.h" />
+    <ClInclude Include="CalNXDN.h" />
+    <ClInclude Include="CalP25.h" />
+    <ClInclude Include="CalPOCSAG.h" />
+    <ClInclude Include="CalRSSI.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="CWIdTX.h" />
+    <ClInclude Include="Debug.h" />
+    <ClInclude Include="DMRDefines.h" />
+    <ClInclude Include="DMRDMORX.h" />
+    <ClInclude Include="DMRDMOTX.h" />
+    <ClInclude Include="DMRIdleRX.h" />
+    <ClInclude Include="DMRRX.h" />
+    <ClInclude Include="DMRSlotRX.h" />
+    <ClInclude Include="DMRSlotType.h" />
+    <ClInclude Include="DMRTX.h" />
+    <ClInclude Include="DStarDefines.h" />
+    <ClInclude Include="DStarRX.h" />
+    <ClInclude Include="DStarTX.h" />
+    <ClInclude Include="FM.h" />
+    <ClInclude Include="FMBlanking.h" />
+    <ClInclude Include="FMCTCSSRX.h" />
+    <ClInclude Include="FMCTCSSTX.h" />
+    <ClInclude Include="FMDirectForm1.h" />
+    <ClInclude Include="FMDownSampler.h" />
+    <ClInclude Include="FMKeyer.h" />
+    <ClInclude Include="FMNoiseSquelch.h" />
+    <ClInclude Include="FMSamplePairPack.h" />
+    <ClInclude Include="FMTimeout.h" />
+    <ClInclude Include="FMTimer.h" />
+    <ClInclude Include="FMUpSampler.h" />
+    <ClInclude Include="Globals.h" />
+    <ClInclude Include="IO.h" />
+    <ClInclude Include="IOPins.h" />
+    <ClInclude Include="M17Defines.h" />
+    <ClInclude Include="M17RX.h" />
+    <ClInclude Include="M17TX.h" />
+    <ClInclude Include="NXDNDefines.h" />
+    <ClInclude Include="NXDNRX.h" />
+    <ClInclude Include="NXDNTX.h" />
+    <ClInclude Include="P25Defines.h" />
+    <ClInclude Include="P25RX.h" />
+    <ClInclude Include="P25TX.h" />
+    <ClInclude Include="POCSAGTX.h" />
+    <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="RingBuffer.impl.h" />
+    <ClInclude Include="SerialPort.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="Version.h" />
+    <ClInclude Include="YSFDefines.h" />
+    <ClInclude Include="YSFRX.h" />
+    <ClInclude Include="YSFTX.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AX25Demodulator.cpp" />
+    <ClCompile Include="AX25Frame.cpp" />
+    <ClCompile Include="AX25RX.cpp" />
+    <ClCompile Include="AX25Twist.cpp" />
+    <ClCompile Include="AX25TX.cpp" />
+    <ClCompile Include="CalDMR.cpp" />
+    <ClCompile Include="CalDStarRX.cpp" />
+    <ClCompile Include="CalDStarTX.cpp" />
+    <ClCompile Include="CalFM.cpp" />
+    <ClCompile Include="CalM17.cpp" />
+    <ClCompile Include="CalNXDN.cpp" />
+    <ClCompile Include="CalP25.cpp" />
+    <ClCompile Include="CalPOCSAG.cpp" />
+    <ClCompile Include="CalRSSI.cpp" />
+    <ClCompile Include="CWIdTX.cpp" />
+    <ClCompile Include="DMRDMORX.cpp" />
+    <ClCompile Include="DMRDMOTX.cpp" />
+    <ClCompile Include="DMRIdleRX.cpp" />
+    <ClCompile Include="DMRRX.cpp" />
+    <ClCompile Include="DMRSlotRX.cpp" />
+    <ClCompile Include="DMRSlotType.cpp" />
+    <ClCompile Include="DMRTX.cpp" />
+    <ClCompile Include="DStarRX.cpp" />
+    <ClCompile Include="DStarTX.cpp" />
+    <ClCompile Include="FM.cpp" />
+    <ClCompile Include="FMBlanking.cpp" />
+    <ClCompile Include="FMCTCSSRX.cpp" />
+    <ClCompile Include="FMCTCSSTX.cpp" />
+    <ClCompile Include="FMDownSampler.cpp" />
+    <ClCompile Include="FMKeyer.cpp" />
+    <ClCompile Include="FMNoiseSquelch.cpp" />
+    <ClCompile Include="FMTimeout.cpp" />
+    <ClCompile Include="FMTimer.cpp" />
+    <ClCompile Include="FMUpSampler.cpp" />
+    <ClCompile Include="IO.cpp" />
+    <ClCompile Include="M17RX.cpp" />
+    <ClCompile Include="M17TX.cpp" />
+    <ClCompile Include="MMDVM.cpp" />
+    <ClCompile Include="NXDNRX.cpp" />
+    <ClCompile Include="NXDNTX.cpp" />
+    <ClCompile Include="P25RX.cpp" />
+    <ClCompile Include="P25TX.cpp" />
+    <ClCompile Include="POCSAGTX.cpp" />
+    <ClCompile Include="SerialPort.cpp" />
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="YSFRX.cpp" />
+    <ClCompile Include="YSFTX.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
