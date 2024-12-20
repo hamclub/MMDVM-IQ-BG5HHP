@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2021,2022 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2024 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,10 +16,34 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(VERSION_H)
-#define  VERSION_H
+#if !defined(Socket_H)
+#define Socket_H
 
-#define VERSION "20241220"
+#include "RingBuffer.h"
+#include "UDPSocket.h"
+
+
+class CSocket {
+public:
+	CSocket();
+	~CSocket();
+
+	bool open();
+
+	bool    available();
+	uint8_t read();
+	bool    write(const uint8_t* buffer, uint16_t length);
+
+	void close();
+
+	static void startup();
+	static void shutdown();
+
+private:
+	sockaddr_storage m_address;
+	unsigned int     m_addressLength;
+	CUDPSocket*      m_socket;
+	CRingBuffer<uint8_t> m_buffer;
+};
 
 #endif
-

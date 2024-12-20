@@ -20,7 +20,10 @@
 
 #include "Config.h"
 #include "Globals.h"
+#include "Thread.h"
 #include "IO.h"
+
+#include <cstdio>
 
 #if defined(USE_DCBLOCKER)
 // Generated using [b, a] = butter(1, 0.001) in MATLAB
@@ -843,4 +846,87 @@ uint32_t CIO::getWatchdog()
 bool CIO::hasLockout() const
 {
   return m_lockout;
+}
+
+uint8_t CIO::getCPU() const
+{
+    return 99U;
+}
+
+void CIO::getUDID(uint8_t* buffer)
+{
+    ::memcpy(buffer, "0000000000", 10U);
+}
+
+void CIO::initInt()
+{
+}
+
+void CIO::startInt()
+{
+}
+
+bool CIO::getCOSInt()
+{
+    return false;
+}
+
+void CIO::setPTTInt(bool on)
+{
+    printf("PTT: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setLEDInt(bool on)
+{
+    // printf("LED: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setCOSInt(bool on)
+{
+    printf("COS: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setDStarInt(bool on)
+{
+    printf("D-Star: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setDMRInt(bool on)
+{
+    printf("DMR: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setYSFInt(bool on)
+{
+    printf("YSF: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setP25Int(bool on)
+{
+    printf("P25: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setNXDNInt(bool on)
+{
+    printf("NXDN: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setPOCSAGInt(bool on)
+{
+    printf("POCSAG: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setM17Int(bool on)
+{
+    printf("M17: %s\n", on ? "On" : "Off");
+}
+
+void CIO::setFMInt(bool on)
+{
+    printf("FM: %s\n", on ? "On" : "Off");
+}
+
+void CIO::delayInt(unsigned int dlay)
+{
+    CThread::sleep(dlay);
 }

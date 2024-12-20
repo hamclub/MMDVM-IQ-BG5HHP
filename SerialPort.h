@@ -22,6 +22,7 @@
 #include "Config.h"
 #include "Globals.h"
 #include "RingBuffer.h"
+#include "Socket.h"
 
 #if !defined(SERIAL_SPEED)
 #define SERIAL_SPEED 115200
@@ -108,6 +109,7 @@ private:
   int       m_lastSerialAvail;
   uint16_t  m_lastSerialAvailCount;
   CRingBuffer<uint8_t> m_i2CData;
+  CSocket   m_socket;
 
   void    sendACK(uint8_t type);
   void    sendNAK(uint8_t type, uint8_t err);

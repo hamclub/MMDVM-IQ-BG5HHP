@@ -143,7 +143,8 @@ m_debug(false),
 m_serialData(),
 m_lastSerialAvail(0),
 m_lastSerialAvailCount(0U),
-m_i2CData()
+m_i2CData(),
+m_socket()
 {
 }
 
@@ -2126,4 +2127,60 @@ void CSerialPort::writeDebugDump(const uint8_t* data, uint16_t length)
 
     writeInt(1U, reply, length + 3U);
   }
+}
+
+// 1U == UDP link to the host
+// 3U == Serial repeater
+// 10U == I2C
+void CSerialPort::beginInt(uint8_t n, int speed)
+{
+    switch (n) {
+    case 1U:
+        CSocket::startup();
+        m_socket.open();
+        break;
+    default:
+        break;
+    }
+}
+
+int CSerialPort::availableForReadInt(uint8_t n)
+{
+    switch (n) {
+    case 1U:
+        return m_socket.available();
+    default:
+        return false;
+    }
+}
+
+int CSerialPort::availableForWriteInt(uint8_t n)
+{
+    switch (n) {
+    case 1U:
+        return true;
+    default:
+        return false;
+    }
+}
+
+uint8_t CSerialPort::readInt(uint8_t n)
+{
+    switch (n) {
+    case 1U:
+        return m_socket.read();
+    default:
+        return 0U;
+    }
+}
+
+void CSerialPort::writeInt(uint8_t n, const uint8_t* data, uint16_t length, bool flush)
+{
+    switch (n) {
+    case 1U:
+        m_socket.write(data, length);
+        break;
+    default:
+        break;
+    }
 }

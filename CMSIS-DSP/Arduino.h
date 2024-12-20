@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2021,2022 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2024 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,10 +16,11 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(VERSION_H)
-#define  VERSION_H
+#if !defined(ARDUINO_H)
+#define  ARDUINO_H
 
-#define VERSION "20241220"
+#include <cstdint>
+
+#include <cstring>
 
 #endif
-
