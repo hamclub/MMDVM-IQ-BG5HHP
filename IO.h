@@ -44,8 +44,6 @@ public:
   void setADCDetection(bool detect);
   void setMode(MMDVM_STATE state);
   
-  void interrupt();
-
   void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t m17TXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, uint8_t ax25TXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout);
 
   void getOverflow(bool& adcOverflow, bool& dacOverflow);
