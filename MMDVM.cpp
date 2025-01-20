@@ -20,6 +20,7 @@
 
 #include "Config.h"
 #include "Globals.h"
+#include "Thread.h"
 
 // Global variables
 MMDVM_STATE m_modemState = STATE_IDLE;
@@ -116,6 +117,8 @@ void setup()
 
 void loop()
 {
+  CThread::sleep(10U);
+
   serial.process();
   
   io.process();

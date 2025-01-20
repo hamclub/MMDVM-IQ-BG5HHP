@@ -20,14 +20,16 @@
 #define  SERIALMODEM_H
 
 #include "UARTController.h"
+#include "Timer.h"
 
 #include <cstdint>
 
-const uint16_t BUFFER_LENGTH = 8000U;
+const uint16_t BUFFER_LENGTH_SERIAL = 8000U;
 
 enum SERIALMODEM_STATE {
 	SMS_NONE,
 	SMS_WAIT_VERSION,
+	SMS_WAIT_FREQ_POWER,
 	SMS_WAIT_START,
 	SMS_RUNNING
 };
@@ -43,9 +45,24 @@ public:
 private:
 	CUARTController   m_serial;
 	SERIALMODEM_STATE m_state;
-	uint8_t           m_buffer[BUFFER_LENGTH];
+	uint8_t           m_buffer[BUFFER_LENGTH_SERIAL];
 	uint16_t          m_ptr;
 	uint16_t          m_len;
+	CTimer            m_timer;
+
+	uint8_t           m_power;
+	uint32_t          m_rxFreq;
+	uint32_t          m_txFreq;
+
+	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
+
+	void writeGetVersion();
+	void writeSetFreqPower();
+	void writeStart();
+
+	void processVersion(const uint8_t* data, uint16_t length);
+
+	void dump(const char* text, const uint8_t* data, uint16_t length) const;
 };
 
 #endif

@@ -209,6 +209,7 @@
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Socket.h" />
     <ClInclude Include="Thread.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="UARTController.h" />
     <ClInclude Include="UDPSocket.h" />
     <ClInclude Include="Utils.h" />
@@ -266,6 +267,7 @@
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="Thread.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="UARTController.cpp" />
     <ClCompile Include="UDPSocket.cpp" />
     <ClCompile Include="Utils.cpp" />
