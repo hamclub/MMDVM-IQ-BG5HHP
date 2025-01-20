@@ -105,6 +105,11 @@ enum MMDVM_STATE {
 #include "IO.h"
 #include "FM.h"
 
+const uint8_t FORMAT_BASEBAND_AND_RSSI       = 0x00U;
+const uint8_t FORMAT_IQ                      = 0x01U;
+const uint8_t FORMAT_FREQUENCY_AND_AMPLITUDE = 0x02U;
+const uint8_t FORMAT_PHASE_AND_AMPLITUDE     = 0x03U;
+
 const uint8_t  MARK_SLOT1 = 0x08U;
 const uint8_t  MARK_SLOT2 = 0x04U;
 const uint8_t  MARK_NONE  = 0x00U;

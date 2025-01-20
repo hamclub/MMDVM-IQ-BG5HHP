@@ -17,6 +17,7 @@
  */
 
 #include "SerialModem.h"
+#include "Globals.h"
 
 #include <cstdio>
 
@@ -33,6 +34,16 @@ const uint8_t TYPE_TRANSMIT_DATA_WITH_RESET = 0x07U;
 const uint8_t TYPE_RECEIVE_DATA             = 0x08U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
+
+const uint8_t CAP_HAS_DUPLEX                = 0x01U;
+const uint8_t CAP_HAS_TRANSMIT              = 0x02U;
+const uint8_t CAP_HAS_RECEIVE               = 0x04U;
+
+const uint8_t ERR_UNKNOWN_MESSAGE_TYPE       = 0x00U;
+const uint8_t ERR_MALFORMED_MESSAGE          = 0x01U;
+const uint8_t ERR_TRANSMIT_DATA_BEFORE_START = 0x02U;
+const uint8_t ERR_TRANSMIT_BUFFER_OVERFLOW   = 0x03U;
+const uint8_t ERR_INVALID_FREQUENCY          = 0x04U;
 
 const uint8_t  GET_VERSION_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_GET_VERSION};
 const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(uint8_t);
@@ -51,9 +62,47 @@ m_ptr(0U),
 m_len(0U),
 m_timer(1000U, 0U, 100U),
 m_power(0U),
+m_txFreq(0U),
 m_rxFreq(0U),
-m_txFreq(0U)
+m_hasDuplex(false),
+m_hasTX(false),
+m_hasRX(false),
+m_txFormat(0xFFU),
+m_rxFormat(0xFFU),
+m_maxSamples(0U)
 {
+}
+
+void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq)
+{
+    m_power  = power;
+    m_txFreq = txFreq;
+    m_rxFreq = rxFreq;
+}
+
+bool CSerialModem::hasDuplex() const
+{
+    return m_hasDuplex;
+}
+
+bool CSerialModem::hasTX() const
+{
+    return m_hasTX;
+}
+
+bool CSerialModem::hasRX() const
+{
+    return m_hasRX;
+}
+
+uint8_t CSerialModem::getTXFormat() const
+{
+    return m_txFormat;
+}
+
+uint8_t CSerialModem::getRXFormat() const
+{
+    return m_rxFormat;
 }
 
 void CSerialModem::start()
@@ -95,9 +144,6 @@ void CSerialModem::process()
 
             // The full packet has been received, process it
             if (m_ptr == m_len) {
-                if (m_buffer[3U] != TYPE_RECEIVE_DATA)
-                    dump("Received", m_buffer, m_len);
- 
                 processMessage(m_buffer[3U], m_buffer + 4U, m_len - 4U);
                 m_ptr = 0U;
                 m_len = 0U;
@@ -149,18 +195,50 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             m_state = SMS_WAIT_START;
             m_timer.start();
         } else if (m_state == SMS_WAIT_START) {
+            ::printf("Modem has been started\n");
             m_state = SMS_RUNNING;
             m_timer.stop();
         }
         break;
     case TYPE_NAK:
+        switch (data[0U]) {
+        case ERR_UNKNOWN_MESSAGE_TYPE:
+            ::printf("Unknown message type\n");
+            break;
+        case ERR_MALFORMED_MESSAGE:
+            ::printf("Malformed message received\n");
+            break;
+        case ERR_TRANSMIT_DATA_BEFORE_START:
+            ::printf("Modem not started\n");
+            break;
+        case ERR_TRANSMIT_BUFFER_OVERFLOW:
+            ::printf("Transmit buffer overflow\n");
+            break;
+        case ERR_INVALID_FREQUENCY:
+            ::printf("Invalid frequency for the hardware\n");
+            break;
+        default:
+            ::printf("Unknown error type - 0x%02X\n", data[0U]);
+            break;
+        }
+        ::fflush(stdout);
+        throw;
+    case TYPE_STATUS:
         break;
     case TYPE_RECEIVE_DATA:
         if (m_state == SMS_RUNNING) {
-
+            switch (m_rxFormat) {
+            case FORMAT_BASEBAND_AND_RSSI:
+                break;
+            case FORMAT_IQ:
+                break;
+            default:
+                break;
+            }
         }
         break;
     default:
+        ::fprintf(stderr, "Unknown message type - 0x%02X\n", type);
         break;
     }
 }
@@ -168,7 +246,6 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
 void CSerialModem::writeGetVersion()
 {
     m_serial.write(GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
-    dump("Sent GET_VERSION", GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
 }
 
 void CSerialModem::writeSetFreqPower()
@@ -193,18 +270,47 @@ void CSerialModem::writeSetFreqPower()
     buffer[12U] = (m_txFreq >> 24) & 0xFFU;
 
     m_serial.write(buffer, 13U);
-    dump("Sent SET_FREQUENCY_AND_POWER", buffer, 13U);
 }
 
 void CSerialModem::writeStart()
 {
     m_serial.write(START_MESSAGE, START_MESSAGE_LEN);
-    dump("Sent START", START_MESSAGE, START_MESSAGE_LEN);
 }
 
 void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
 {
+    m_hasDuplex = (data[1U] & CAP_HAS_DUPLEX) == CAP_HAS_DUPLEX;
+    m_hasTX     = (data[1U] & CAP_HAS_TRANSMIT) == CAP_HAS_TRANSMIT;
+    m_hasRX     = (data[1U] & CAP_HAS_RECEIVE) == CAP_HAS_RECEIVE;
 
+    m_txFormat = data[2U];
+    m_rxFormat = data[3U];
+
+    m_maxSamples = data[4U] + data[5U] * 256U;
+
+    ::printf("Modem version:\n");
+    ::printf("\tProtocol version: %u\n", data[0U]);
+    ::printf("\tCapabilities:\n");
+    ::printf("\t\tDuplex: %s\n", m_hasDuplex ? "yes" : "no");
+    ::printf("\t\tTransmit: %s\n", m_hasTX ? "yes" : "no");
+    ::printf("\t\tReceive: %s\n", m_hasRX ? "yes" : "no");
+    ::printf("\tFormats:\n");
+    ::printf("\t\tTransmit: %u\n", m_txFormat);
+    ::printf("\t\tReceive: %u\n", m_rxFormat);
+    ::printf("\tMax samples: %u\n", m_maxSamples);
+    ::printf("\tVersion: \"%.*s\"\n", length - 6U, data + 6U);
+
+    if ((m_txFormat != FORMAT_BASEBAND_AND_RSSI) && (m_txFormat != FORMAT_FREQUENCY_AND_AMPLITUDE)) {
+        ::printf("Invalid transmit format - %u\n", data[2U]);
+        ::fflush(stdout);
+        throw;
+    }
+
+    if ((m_rxFormat != FORMAT_BASEBAND_AND_RSSI) && (m_rxFormat != FORMAT_IQ)) {
+        ::printf("Invalid receive format - %u\n", data[3U]);
+        ::fflush(stdout);
+        throw;
+    }
 }
 
 void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) const

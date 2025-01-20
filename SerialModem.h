@@ -38,6 +38,15 @@ class CSerialModem {
 public:
 	CSerialModem();
 
+	void setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq);
+
+	bool hasDuplex() const;
+	bool hasTX() const;
+	bool hasRX() const;
+
+	uint8_t getTXFormat() const;
+	uint8_t getRXFormat() const;
+
 	void start();
 
 	void process();
@@ -51,8 +60,15 @@ private:
 	CTimer            m_timer;
 
 	uint8_t           m_power;
-	uint32_t          m_rxFreq;
 	uint32_t          m_txFreq;
+	uint32_t          m_rxFreq;
+
+	bool              m_hasDuplex;
+	bool              m_hasTX;
+	bool              m_hasRX;
+	uint8_t           m_txFormat;
+	uint8_t           m_rxFormat;
+	uint16_t          m_maxSamples;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
