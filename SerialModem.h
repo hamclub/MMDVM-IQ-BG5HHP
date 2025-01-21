@@ -44,8 +44,7 @@ public:
 	bool hasTX() const;
 	bool hasRX() const;
 
-	uint8_t getTXFormat() const;
-	uint8_t getRXFormat() const;
+	bool canPSK() const;
 
 	void start();
 
@@ -68,7 +67,9 @@ private:
 	bool              m_hasRX;
 	uint8_t           m_txFormat;
 	uint8_t           m_rxFormat;
-	uint16_t          m_maxSamples;
+	uint16_t          m_maxSize;
+
+	uint16_t          m_spaceLeft;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 

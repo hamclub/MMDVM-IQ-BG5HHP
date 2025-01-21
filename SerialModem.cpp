@@ -30,8 +30,7 @@ const uint8_t TYPE_START                    = 0x03U;
 const uint8_t TYPE_STOP                     = 0x04U;
 const uint8_t TYPE_STATUS                   = 0x05U;
 const uint8_t TYPE_TRANSMIT_DATA            = 0x06U;
-const uint8_t TYPE_TRANSMIT_DATA_WITH_RESET = 0x07U;
-const uint8_t TYPE_RECEIVE_DATA             = 0x08U;
+const uint8_t TYPE_RECEIVE_DATA             = 0x07U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
 
@@ -69,7 +68,8 @@ m_hasTX(false),
 m_hasRX(false),
 m_txFormat(0xFFU),
 m_rxFormat(0xFFU),
-m_maxSamples(0U)
+m_maxSize(0U),
+m_spaceLeft(0U)
 {
 }
 
@@ -95,19 +95,19 @@ bool CSerialModem::hasRX() const
     return m_hasRX;
 }
 
-uint8_t CSerialModem::getTXFormat() const
+bool CSerialModem::canPSK() const
 {
-    return m_txFormat;
-}
-
-uint8_t CSerialModem::getRXFormat() const
-{
-    return m_rxFormat;
+    // This may need updating when new hardware becomes available
+    return ((m_txFormat == FORMAT_FREQUENCY_AND_AMPLITUDE) || (m_txFormat == FORMAT_IQ)) && (m_rxFormat == FORMAT_IQ);
 }
 
 void CSerialModem::start()
 {
 	m_serial.open("\\\\.\\COM8", 921600U);
+
+    m_spaceLeft = 0U;
+
+    m_state = SMS_WAIT_VERSION;
 
     m_timer.start();
 }
@@ -155,9 +155,7 @@ void CSerialModem::process()
     if (m_timer.isRunning() && m_timer.hasExpired()) {
         switch (m_state) {
         case SMS_NONE:
-            writeGetVersion();
-            m_state = SMS_WAIT_VERSION;
-            m_timer.start();
+            m_timer.stop();
             break;
         case SMS_WAIT_VERSION:
             writeGetVersion();
@@ -224,6 +222,7 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         ::fflush(stdout);
         throw;
     case TYPE_STATUS:
+        m_spaceLeft = data[0U] + (data[1U] * 256U);
         break;
     case TYPE_RECEIVE_DATA:
         if (m_state == SMS_RUNNING) {
@@ -286,7 +285,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     m_txFormat = data[2U];
     m_rxFormat = data[3U];
 
-    m_maxSamples = data[4U] + data[5U] * 256U;
+    m_maxSize = data[4U] + data[5U] * 256U;
 
     ::printf("Modem version:\n");
     ::printf("\tProtocol version: %u\n", data[0U]);
@@ -297,15 +296,17 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     ::printf("\tFormats:\n");
     ::printf("\t\tTransmit: %u\n", m_txFormat);
     ::printf("\t\tReceive: %u\n", m_rxFormat);
-    ::printf("\tMax samples: %u\n", m_maxSamples);
+    ::printf("\tMax size: %u\n", m_maxSize);
     ::printf("\tVersion: \"%.*s\"\n", length - 6U, data + 6U);
 
+    // This may need updating when new hardware becomes available
     if ((m_txFormat != FORMAT_BASEBAND_AND_RSSI) && (m_txFormat != FORMAT_FREQUENCY_AND_AMPLITUDE)) {
         ::printf("Invalid transmit format - %u\n", data[2U]);
         ::fflush(stdout);
         throw;
     }
 
+    // This may need updating when new hardware becomes available
     if ((m_rxFormat != FORMAT_BASEBAND_AND_RSSI) && (m_rxFormat != FORMAT_IQ)) {
         ::printf("Invalid receive format - %u\n", data[3U]);
         ::fflush(stdout);
