@@ -84,7 +84,6 @@ const uint16_t DC_OFFSET = 2048U;
 CIO::CIO() :
 m_started(false),
 m_rxBuffer(RX_RINGBUFFER_SIZE),
-m_txBuffer(TX_RINGBUFFER_SIZE),
 m_rssiBuffer(RX_RINGBUFFER_SIZE),
 #if defined(USE_DCBLOCKER)
 m_dcFilter(),
@@ -373,12 +372,16 @@ void CIO::process()
   if (m_useCOSAsLockout)
     m_lockout = getCOSInt();
 
-  // Switch off the transmitter if needed
-  if (m_txBuffer.getData() == 0U && m_tx) {
+  if (!modem.isTX() && m_tx) {
     m_tx = false;
     setPTTInt(m_pttInvert ? true : false);
     DEBUG1("TX OFF");
+  } else if (modem.isTX() && !m_tx) {
+      m_tx = true;
+      setPTTInt(m_pttInvert ? false : true);
+      DEBUG1("TX ON");
   }
+
 
   if (m_rxBuffer.getData() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
@@ -670,12 +673,8 @@ void CIO::write(MMDVM_STATE mode, q15_t* samples, uint16_t length, const uint8_t
   if (m_lockout)
     return;
 
-  // Switch the transmitter on if needed
-  if (!m_tx) {
-    m_tx = true;
-    setPTTInt(m_pttInvert ? false : true);
-    DEBUG1("TX ON");
-  }
+  // if (m_mode == MODE_TETRA) {
+  // }
 
   q15_t txLevel = 0;
   switch (mode) {
@@ -721,15 +720,15 @@ void CIO::write(MMDVM_STATE mode, q15_t* samples, uint16_t length, const uint8_t
       m_dacOverflow++;
 
     if (control == NULL)
-      m_txBuffer.put({res3, MARK_NONE});
+        modem.writeFrequencyAndAmplitudeSample(MARK_NONE, res3);
     else
-      m_txBuffer.put({res3, control[i]});
+        modem.writeFrequencyAndAmplitudeSample(control[i], res3);
   }
 }
 
 uint16_t CIO::getSpace() const
 {
-  return m_txBuffer.getSpace();
+  return modem.getTXSpace();
 }
 
 void CIO::setDecode(bool dcd)
@@ -825,7 +824,7 @@ void CIO::getOverflow(bool& adcOverflow, bool& dacOverflow)
 
 bool CIO::hasTXOverflow()
 {
-  return m_txBuffer.hasOverflowed();
+  return false;
 }
 
 bool CIO::hasRXOverflow()

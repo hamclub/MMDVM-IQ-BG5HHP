@@ -937,7 +937,7 @@ void CSerialPort::process()
 
       // The full packet has been received, process it
       if (m_ptr == m_len)
-        processMessage(m_buffer[2U], m_buffer + 3U, m_len - 3U);
+          processMessage(m_buffer[2U], m_buffer + 3U, m_len - 3U);
     } else {
       // Any other bytes are added to the buffer
       m_buffer[m_ptr] = c;
@@ -1990,6 +1990,8 @@ void CSerialPort::writeDebug(const char* text)
 
   reply[1U] = count;
 
+  dump("Written Debug", reply, count);
+
   writeInt(1U, reply, count, true);
 }
 
@@ -2012,6 +2014,8 @@ void CSerialPort::writeDebug(const char* text, int16_t n1)
   reply[count++] = (n1 >> 0) & 0xFF;
 
   reply[1U] = count;
+
+  dump("Written Debug", reply, count);
 
   writeInt(1U, reply, count, true);
 }
@@ -2038,6 +2042,8 @@ void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2)
   reply[count++] = (n2 >> 0) & 0xFF;
 
   reply[1U] = count;
+
+  dump("Written Debug", reply, count);
 
   writeInt(1U, reply, count, true);
 }
@@ -2067,6 +2073,8 @@ void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n
   reply[count++] = (n3 >> 0) & 0xFF;
 
   reply[1U] = count;
+
+  dump("Written Debug", reply, count);
 
   writeInt(1U, reply, count, true);
 }
@@ -2099,6 +2107,8 @@ void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n
   reply[count++] = (n4 >> 0) & 0xFF;
 
   reply[1U] = count;
+
+  dump("Written Debug", reply, count);
 
   writeInt(1U, reply, count, true);
 }
@@ -2182,5 +2192,44 @@ void CSerialPort::writeInt(uint8_t n, const uint8_t* data, uint16_t length, bool
         break;
     default:
         break;
+    }
+}
+
+void CSerialPort::dump(const char* text, const uint8_t* data, uint16_t length) const
+{
+    ::printf("%s:\n", text);
+
+    unsigned int offset = 0U;
+
+    while (length > 0U) {
+        ::printf("%04X:  ", offset);
+
+        unsigned int bytes = (length > 16U) ? 16U : length;
+
+        for (unsigned i = 0U; i < bytes; i++)
+            ::printf("%02X ", data[offset + i]);
+
+        for (unsigned int i = bytes; i < 16U; i++)
+            ::printf("   ");
+
+        ::printf("   *");
+
+        for (unsigned i = 0U; i < bytes; i++) {
+            uint8_t c = data[offset + i];
+
+            if (::isprint(c))
+                ::printf("%c", c);
+            else
+                ::printf(".");
+        }
+
+        ::printf("*\n");
+
+        offset += 16U;
+
+        if (length >= 16U)
+            length -= 16U;
+        else
+            length = 0U;
     }
 }

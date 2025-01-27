@@ -24,8 +24,6 @@
 
 #include <cstdint>
 
-const uint16_t BUFFER_LENGTH_SERIAL = 8000U;
-
 enum SERIALMODEM_STATE {
 	SMS_NONE,
 	SMS_WAIT_VERSION,
@@ -50,12 +48,21 @@ public:
 
 	void process();
 
+	bool writeFrequencyAndAmplitudeSample(uint8_t marker, int16_t frequency, uint8_t amplitude = 255U);
+	bool writePhaseAndAmplitudeSample(uint8_t marker, int16_t phase, uint8_t amplitude = 255U);
+
+	uint16_t getTXSpace() const;
+	bool     isTX() const;
+
 private:
 	CUARTController   m_serial;
 	SERIALMODEM_STATE m_state;
-	uint8_t           m_buffer[BUFFER_LENGTH_SERIAL];
-	uint16_t          m_ptr;
-	uint16_t          m_len;
+	uint8_t*          m_rxBuffer;
+	uint8_t*          m_txBuffer;
+	uint16_t          m_rxPtr;
+	uint16_t          m_rxLen;
+	uint16_t          m_txLen;
+	uint8_t           m_txMarker;
 	CTimer            m_timer;
 
 	uint8_t           m_power;
@@ -69,13 +76,17 @@ private:
 	uint8_t           m_rxFormat;
 	uint16_t          m_maxSize;
 
+	uint8_t           m_sizeMultiplier;
+
 	uint16_t          m_spaceLeft;
+	bool              m_tx;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
 	void writeGetVersion();
 	void writeSetFreqPower();
 	void writeStart();
+	bool writeTransmitData(uint8_t marker, const uint8_t* buffer, uint16_t len);
 
 	void processVersion(const uint8_t* data, uint16_t length);
 

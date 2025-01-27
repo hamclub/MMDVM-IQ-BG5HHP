@@ -133,6 +133,8 @@ private:
   int     availableForWriteInt(uint8_t n);
   uint8_t readInt(uint8_t n);
   void    writeInt(uint8_t n, const uint8_t* data, uint16_t length, bool flush = false);
+
+  void dump(const char* text, const uint8_t* data, uint16_t length) const;
 };
 
 #endif

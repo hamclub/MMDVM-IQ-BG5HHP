@@ -66,7 +66,6 @@ private:
   bool                  m_started;
 
   CRingBuffer<TSample>  m_rxBuffer;
-  CRingBuffer<TSample>  m_txBuffer;
   CRingBuffer<uint16_t> m_rssiBuffer;
 
 #if defined(USE_DCBLOCKER)

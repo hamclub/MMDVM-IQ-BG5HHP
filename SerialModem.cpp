@@ -31,12 +31,15 @@ const uint8_t TYPE_STOP                     = 0x04U;
 const uint8_t TYPE_STATUS                   = 0x05U;
 const uint8_t TYPE_TRANSMIT_DATA            = 0x06U;
 const uint8_t TYPE_RECEIVE_DATA             = 0x07U;
+const uint8_t TYPE_DEBUG_MESSAGE            = 0xF0U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
 
 const uint8_t CAP_HAS_DUPLEX                = 0x01U;
 const uint8_t CAP_HAS_TRANSMIT              = 0x02U;
 const uint8_t CAP_HAS_RECEIVE               = 0x04U;
+
+const uint8_t STATUS_TX_ON                  = 0x01U;
 
 const uint8_t ERR_UNKNOWN_MESSAGE_TYPE       = 0x00U;
 const uint8_t ERR_MALFORMED_MESSAGE          = 0x01U;
@@ -56,9 +59,12 @@ const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
 CSerialModem::CSerialModem() :
 m_serial(),
 m_state(SMS_NONE),
-m_buffer(),
-m_ptr(0U),
-m_len(0U),
+m_rxBuffer(NULL),
+m_txBuffer(NULL),
+m_rxPtr(0U),
+m_rxLen(0U),
+m_txLen(0U),
+m_txMarker(0x00U),
 m_timer(1000U, 0U, 100U),
 m_power(0U),
 m_txFreq(0U),
@@ -69,8 +75,11 @@ m_hasRX(false),
 m_txFormat(0xFFU),
 m_rxFormat(0xFFU),
 m_maxSize(0U),
-m_spaceLeft(0U)
+m_sizeMultiplier(0U),
+m_spaceLeft(0U),
+m_tx(false)
 {
+    m_rxBuffer = new uint8_t[100U];
 }
 
 void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq)
@@ -103,7 +112,7 @@ bool CSerialModem::canPSK() const
 
 void CSerialModem::start()
 {
-	m_serial.open("\\\\.\\COM8", 921600U);
+    m_serial.open("\\\\.\\COM8", 921600U);
 
     m_spaceLeft = 0U;
 
@@ -117,36 +126,36 @@ void CSerialModem::process()
 {
     uint8_t c;
 	while (m_serial.read(&c, 1U) > 0U) {
-        if (m_ptr == 0U) {
+        if (m_rxPtr == 0U) {
             if (c == FRAME_START) {
                 // Handle the frame start correctly
-                m_buffer[0U] = c;
-                m_ptr = 1U;
-                m_len = 0U;
+                m_rxBuffer[0U] = c;
+                m_rxPtr = 1U;
+                m_rxLen = 0U;
             } else {
-                m_ptr = 0U;
-                m_len = 0U;
+                m_rxPtr = 0U;
+                m_rxLen = 0U;
             }
-        } else if (m_ptr == 1U) {
+        } else if (m_rxPtr == 1U) {
             // Handle the frame length, 1/2
-            m_len = c;
-            m_buffer[m_ptr] = c;
-            m_ptr = 2U;
-        } else if (m_ptr == 2U) {
+            m_rxLen = c;
+            m_rxBuffer[m_rxPtr] = c;
+            m_rxPtr = 2U;
+        } else if (m_rxPtr == 2U) {
             // Handle the frame length, 2/2
-            m_len += uint16_t(c) * 256U;
-            m_buffer[m_ptr] = c;
-            m_ptr = 3U;
+            m_rxLen += uint16_t(c) * 256U;
+            m_rxBuffer[m_rxPtr] = c;
+            m_rxPtr = 3U;
         } else {
             // Any other bytes are added to the buffer
-            m_buffer[m_ptr] = c;
-            m_ptr++;
+            m_rxBuffer[m_rxPtr] = c;
+            m_rxPtr++;
 
             // The full packet has been received, process it
-            if (m_ptr == m_len) {
-                processMessage(m_buffer[3U], m_buffer + 4U, m_len - 4U);
-                m_ptr = 0U;
-                m_len = 0U;
+            if (m_rxPtr == m_rxLen) {
+                processMessage(m_rxBuffer[3U], m_rxBuffer + 4U, m_rxLen - 4U);
+                m_rxPtr = 0U;
+                m_rxLen = 0U;
             }
         }
     }
@@ -176,6 +185,101 @@ void CSerialModem::process()
     }
 }
 
+// For all modes bar TETRA
+bool CSerialModem::writeFrequencyAndAmplitudeSample(uint8_t marker, int16_t frequency, uint8_t amplitude)
+{
+    if (m_state != SMS_RUNNING)
+        return false;
+
+    if (marker != 0x00U) {
+        if (m_txLen > 0U) {
+            writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
+            m_txLen = 0U;
+        }
+
+        m_txMarker = marker;
+    }
+
+    // Frequency is currently a 12-bit value, scale up to 16
+    frequency <<= 4;
+
+    switch (m_txFormat) {
+    case FORMAT_BASEBAND_AND_RSSI:
+        m_txBuffer[m_txLen++] = uint8_t(frequency % 256);
+        m_txBuffer[m_txLen++] = uint8_t(frequency / 256);
+        break;
+    case FORMAT_FREQUENCY_AND_AMPLITUDE:
+        m_txBuffer[m_txLen++] = amplitude;
+        m_txBuffer[m_txLen++] = uint8_t(frequency % 256);
+        m_txBuffer[m_txLen++] = uint8_t(frequency / 256);
+        break;
+    case FORMAT_IQ:
+        // Not implemented yet
+        return false;
+    default:    // FORMAT_PHASE_AND_AMPLITUDE
+        // Not implemented yet
+        return false;
+    }
+
+    if ((m_txLen >= m_spaceLeft) || (m_txLen >= m_maxSize)) {
+        writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
+        m_txMarker = 0x00U;
+        m_txLen = 0U;
+    }
+
+    return true;
+}
+
+// For TETRA
+bool CSerialModem::writePhaseAndAmplitudeSample(uint8_t marker, int16_t phase, uint8_t amplitude)
+{
+    if (m_state != SMS_RUNNING)
+        return false;
+
+    if (marker != 0x00U) {
+        if (m_txLen > 0U) {
+            writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
+            m_txLen = 0U;
+        }
+
+        m_txMarker = marker;
+    }
+
+    switch (m_txFormat) {
+    case FORMAT_FREQUENCY_AND_AMPLITUDE:
+        break;
+    case FORMAT_PHASE_AND_AMPLITUDE:
+        m_txBuffer[m_txLen++] = amplitude;
+        m_txBuffer[m_txLen++] = uint8_t(phase % 256);
+        m_txBuffer[m_txLen++] = uint8_t(phase / 256);
+        break;
+    case FORMAT_IQ:
+        // Not implemented yet
+        return false;
+    default:    // FORMAT_BASEBAND_AND_RSSI
+        // Can never be implemented
+        return false;
+    }
+
+    if ((m_txLen >= m_spaceLeft) || (m_txLen >= m_maxSize)) {
+        writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
+        m_txMarker = 0x00U;
+        m_txLen = 0U;
+    }
+
+    return true;
+}
+
+uint16_t CSerialModem::getTXSpace() const
+{
+    return m_spaceLeft;
+}
+
+bool CSerialModem::isTX() const
+{
+    return m_tx;
+}
+
 void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t length)
 {
     switch (type) {
@@ -186,6 +290,9 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             m_state = SMS_WAIT_FREQ_POWER;
             m_timer.start();
         }
+        break;
+    case TYPE_DEBUG_MESSAGE:
+        ::printf("DEBUG: %.*s\n", length, data);
         break;
     case TYPE_ACK:
         if (m_state == SMS_WAIT_FREQ_POWER) {
@@ -222,7 +329,8 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         ::fflush(stdout);
         throw;
     case TYPE_STATUS:
-        m_spaceLeft = data[0U] + (data[1U] * 256U);
+        m_spaceLeft = (data[0U] + (data[1U] * 256U)) * m_sizeMultiplier;
+        m_tx = (data[2U] & STATUS_TX_ON) == STATUS_TX_ON;
         break;
     case TYPE_RECEIVE_DATA:
         if (m_state == SMS_RUNNING) {
@@ -285,7 +393,25 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     m_txFormat = data[2U];
     m_rxFormat = data[3U];
 
-    m_maxSize = data[4U] + data[5U] * 256U;
+    switch (m_txFormat) {
+    case FORMAT_BASEBAND_AND_RSSI:
+        m_sizeMultiplier = sizeof(int16_t);
+        break;
+    case FORMAT_IQ:
+        m_sizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
+        break;
+    case FORMAT_FREQUENCY_AND_AMPLITUDE:
+        m_sizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
+        break;
+    case FORMAT_PHASE_AND_AMPLITUDE:
+        m_sizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
+        break;
+    default:
+        ::fprintf(stderr, "Unknown TX format - %u\n", m_txFormat);
+        throw;
+    }
+
+    m_maxSize = (data[4U] + data[5U] * 256U) * m_sizeMultiplier;
 
     ::printf("Modem version:\n");
     ::printf("\tProtocol version: %u\n", data[0U]);
@@ -298,6 +424,11 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     ::printf("\t\tReceive: %u\n", m_rxFormat);
     ::printf("\tMax size: %u\n", m_maxSize);
     ::printf("\tVersion: \"%.*s\"\n", length - 6U, data + 6U);
+    ::printf("\tSize multiplier: %u\n", m_sizeMultiplier);
+
+    delete[] m_rxBuffer;
+    m_rxBuffer = new uint8_t[m_maxSize + 20U];
+    m_txBuffer = new uint8_t[m_maxSize + 20U];
 
     // This may need updating when new hardware becomes available
     if ((m_txFormat != FORMAT_BASEBAND_AND_RSSI) && (m_txFormat != FORMAT_FREQUENCY_AND_AMPLITUDE)) {
@@ -312,6 +443,34 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         ::fflush(stdout);
         throw;
     }
+}
+
+bool CSerialModem::writeTransmitData(uint8_t marker, const uint8_t* data, uint16_t len)
+{
+    uint8_t buffer[7U];
+
+    if (m_spaceLeft < len)
+        return false;
+
+    m_spaceLeft -= len;
+
+    len += 7U;
+
+    buffer[0U] = FRAME_START;
+    buffer[1U] = len % 256U;
+    buffer[2U] = len / 256U;
+    buffer[3U] = TYPE_TRANSMIT_DATA;
+
+    buffer[4U] = marker;
+
+    buffer[5U] = 0x00U;         // RSSI and COS, unused on transmit
+    buffer[6U] = 0x00U;
+
+    m_serial.write(buffer, 7U);
+
+    m_serial.write(data, len);
+
+    return true;
 }
 
 void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) const
