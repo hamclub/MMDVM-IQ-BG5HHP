@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
@@ -221,105 +221,9 @@ void CIO::selfTest()
     // We exclude PTT to avoid trigger the transmitter
     setLEDInt(ledValue);
     setCOSInt(ledValue);
-#if defined(MODE_LEDS)
-    setDStarInt(ledValue);
-    setDMRInt(ledValue);
-    setYSFInt(ledValue);
-    setP25Int(ledValue);
-#if !defined(USE_ALTERNATE_NXDN_LEDS)
-    setNXDNInt(ledValue);
-#endif
-#if !defined(USE_ALTERNATE_M17_LEDS)
-    setM17Int(ledValue);
-#endif
-#if !defined(USE_ALTERNATE_POCSAG_LEDS)
-    setPOCSAGInt(ledValue);
-#endif
-#if !defined(USE_ALTERNATE_FM_LEDS)
-    setFMInt(ledValue);
-#endif
-#endif
-    delayInt(250);
+
+    delayInt(100U);
   }
-
-#if defined(MODE_LEDS)
-  setDStarInt(false);
-  setDMRInt(false);
-  setYSFInt(false);
-  setP25Int(false);
-#if !defined(USE_ALTERNATE_NXDN_LEDS)
-  setNXDNInt(false);
-#endif
-#if !defined(USE_ALTERNATE_M17_LEDS)
-  setM17Int(false);
-#endif
-#if !defined(USE_ALTERNATE_POCSAG_LEDS)
-  setPOCSAGInt(false);
-#endif
-#if !defined(USE_ALTERNATE_FM_LEDS)
-  setFMInt(false);
-#endif
-  setDStarInt(true);
-
-  delayInt(250);
-  setDMRInt(true);
-
-  delayInt(250);
-  setYSFInt(true);
-
-  delayInt(250);
-  setP25Int(true);
-
-#if !defined(USE_ALTERNATE_NXDN_LEDS)
-  delayInt(250);
-  setNXDNInt(true);
-#endif
-
-#if !defined(USE_ALTERNATE_M17_LEDS)
-  delayInt(250);
-  setM17Int(true);
-#endif
-
-#if !defined(USE_ALTERNATE_POCSAG_LEDS)
-  delayInt(250);
-  setPOCSAGInt(true);
-#endif
-
-#if !defined(USE_ALTERNATE_FM_LEDS)
-  delayInt(250);
-  setFMInt(true);
-
-  delayInt(250);
-  setFMInt(false);
-#endif
-
-#if !defined(USE_ALTERNATE_POCSAG_LEDS)
-  delayInt(250);
-  setPOCSAGInt(false);
-#endif
-
-#if !defined(USE_ALTERNATE_M17_LEDS)
-  delayInt(250);
-  setM17Int(false);
-#endif
-
-#if !defined(USE_ALTERNATE_NXDN_LEDS)
-  delayInt(250);
-  setNXDNInt(false);
-#endif
-
-  delayInt(250);
-  setP25Int(false);
-
-  delayInt(250);
-  setYSFInt(false);
-
-  delayInt(250);
-  setDMRInt(false);
-
-  delayInt(250);
-  setDStarInt(false);
-#endif
 }
 
 void CIO::start()
@@ -351,15 +255,11 @@ void CIO::process()
       m_watchdog = 0U;
     }
 
-#if defined(CONSTANT_SRV_LED)
-    setLEDInt(true);
-#else
     if (m_ledCount >= 24000U) {
       m_ledCount = 0U;
       m_ledValue = !m_ledValue;
       setLEDInt(m_ledValue);
     }
-#endif
   } else {
     if (m_ledCount >= 240000U) {
       m_ledCount = 0U;
@@ -746,35 +646,6 @@ void CIO::setADCDetection(bool detect)
 
 void CIO::setMode(MMDVM_STATE state)
 {
-  if (state == m_modemState)
-    return;
-
-#if defined(MODE_LEDS)
-  switch (m_modemState) {
-    case STATE_DSTAR:  setDStarInt(false);  break;
-    case STATE_DMR:    setDMRInt(false);    break;
-    case STATE_YSF:    setYSFInt(false);    break;
-    case STATE_P25:    setP25Int(false);    break;
-    case STATE_NXDN:   setNXDNInt(false);   break;
-    case STATE_M17:    setM17Int(false);    break;
-    case STATE_POCSAG: setPOCSAGInt(false); break;
-    case STATE_FM:     setFMInt(false);     break;
-    default: break;
-  }
-
-  switch (state) {
-    case STATE_DSTAR:  setDStarInt(true);  break;
-    case STATE_DMR:    setDMRInt(true);    break;
-    case STATE_YSF:    setYSFInt(true);    break;
-    case STATE_P25:    setP25Int(true);    break;
-    case STATE_NXDN:   setNXDNInt(true);   break;
-    case STATE_M17:    setM17Int(true);    break;
-    case STATE_POCSAG: setPOCSAGInt(true); break;
-    case STATE_FM:     setFMInt(true);     break;
-    default: break;
-  }
-#endif
-
   m_modemState = state;
 }
 
@@ -811,6 +682,11 @@ void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rx
     m_m17TXLevel    = -m_m17TXLevel;
     m_pocsagTXLevel = -m_pocsagTXLevel;
   }
+}
+
+void CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
+{
+  modem.setParams(power, txFreq, rxFreq, pocsagFreq);
 }
 
 void CIO::getOverflow(bool& adcOverflow, bool& dacOverflow)
@@ -883,46 +759,6 @@ void CIO::setLEDInt(bool on)
 void CIO::setCOSInt(bool on)
 {
     printf("COS: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setDStarInt(bool on)
-{
-    printf("D-Star: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setDMRInt(bool on)
-{
-    printf("DMR: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setYSFInt(bool on)
-{
-    printf("YSF: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setP25Int(bool on)
-{
-    printf("P25: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setNXDNInt(bool on)
-{
-    printf("NXDN: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setPOCSAGInt(bool on)
-{
-    printf("POCSAG: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setM17Int(bool on)
-{
-    printf("M17: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setFMInt(bool on)
-{
-    printf("FM: %s\n", on ? "On" : "Off");
 }
 
 void CIO::delayInt(unsigned int dlay)

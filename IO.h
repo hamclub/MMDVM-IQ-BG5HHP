@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ public:
   void setMode(MMDVM_STATE state);
   
   void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t m17TXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, uint8_t ax25TXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout);
+  void setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
   void getOverflow(bool& adcOverflow, bool& dacOverflow);
 
@@ -150,15 +151,6 @@ private:
   void setPTTInt(bool on);
   void setCOSInt(bool on);
 
-  void setDStarInt(bool on);
-  void setDMRInt(bool on);
-  void setYSFInt(bool on);
-  void setP25Int(bool on);
-  void setNXDNInt(bool on);
-  void setPOCSAGInt(bool on);
-  void setM17Int(bool on);
-  void setFMInt(bool on);
-  
   void delayInt(unsigned int dly);
 };
 

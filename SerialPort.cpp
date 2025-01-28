@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2013,2015-2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2013,2015-2021,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -186,7 +186,7 @@ void CSerialPort::getStatus()
 
   reply[3U]  = uint8_t(m_modemState);
 
-  reply[4U]  = m_tx  ? 0x01U : 0x00U;
+  reply[4U]  = m_tx ? 0x01U : 0x00U;
 
   bool adcOverflow;
   bool dacOverflow;
@@ -365,6 +365,42 @@ void CSerialPort::getVersion()
   reply[1U] = count;
 
   writeInt(1U, reply, count);
+}
+
+uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
+{
+  if (length < 9U)
+    return 4U;
+
+  uint32_t rxFreq = 0U;
+  rxFreq |= (data[1U] << 0)  & 0x990000FFU;
+  rxFreq |= (data[2U] << 8)  & 0x0000FF00U;
+  rxFreq |= (data[3U] << 16) & 0x00FF0000U;
+  rxFreq |= (data[4U] << 24) & 0xFF000000U;
+
+  uint32_t txFreq = 0U;
+  txFreq |= (data[5U] << 0)  & 0x000000FFU;
+  txFreq |= (data[6U] << 8)  & 0x0000FF00U;
+  txFreq |= (data[7U] << 16) & 0x00FF0000U;
+  txFreq |= (data[8U] << 24) & 0xFF000000U;
+
+  uint8_t power = 255U;
+
+  uint32_t pocsagFreq = txFreq;
+
+  if (length == 17U) {
+    power = data[9U];
+
+    pocsagFreq = 0U;
+    pocsagFreq |= (data[10U] << 0)  & 0x000000FFU;
+    pocsagFreq |= (data[11U] << 8)  & 0x0000FF00U;
+    pocsagFreq |= (data[12U] << 16) & 0x00FF0000U;
+    pocsagFreq |= (data[13U] << 24) & 0xFF000000U;
+  }
+
+  io.setFrequency(power, txFreq, rxFreq, pocsagFreq);
+
+  return 0U;
 }
 
 uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
@@ -1038,7 +1074,11 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_SET_FREQ:
-      sendACK(type);
+      err = setFrequency(buffer, length);
+      if (err == 0U)
+          sendACK(type);
+      else
+          sendNAK(type, err);
       break;
 
 #if defined(MODE_FM)

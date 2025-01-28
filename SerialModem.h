@@ -36,7 +36,7 @@ class CSerialModem {
 public:
 	CSerialModem();
 
-	void setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq);
+	void setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
 	bool hasDuplex() const;
 	bool hasTX() const;
@@ -68,6 +68,7 @@ private:
 	uint8_t           m_power;
 	uint32_t          m_txFreq;
 	uint32_t          m_rxFreq;
+	uint32_t          m_pocsagFreq;
 
 	bool              m_hasDuplex;
 	bool              m_hasTX;

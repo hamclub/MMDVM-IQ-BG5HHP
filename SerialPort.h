@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -115,6 +115,7 @@ private:
   void    sendNAK(uint8_t type, uint8_t err);
   void    getStatus();
   void    getVersion();
+  uint8_t setFrequency(const uint8_t* data, uint16_t length);
   uint8_t setConfig(const uint8_t* data, uint16_t length);
   uint8_t setMode(const uint8_t* data, uint16_t length);
   void    setMode(MMDVM_STATE modemState);

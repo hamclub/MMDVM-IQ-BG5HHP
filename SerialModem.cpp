@@ -69,6 +69,7 @@ m_timer(1000U, 0U, 100U),
 m_power(0U),
 m_txFreq(0U),
 m_rxFreq(0U),
+m_pocsagFreq(0U),
 m_hasDuplex(false),
 m_hasTX(false),
 m_hasRX(false),
@@ -82,11 +83,15 @@ m_tx(false)
     m_rxBuffer = new uint8_t[100U];
 }
 
-void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq)
+void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-    m_power  = power;
-    m_txFreq = txFreq;
-    m_rxFreq = rxFreq;
+    m_power      = power;
+    m_txFreq     = txFreq;
+    m_rxFreq     = rxFreq;
+    m_pocsagFreq = pocsagFreq;
+
+    writeSetFreqPower();
+    m_state = SMS_WAIT_FREQ_POWER;
 }
 
 bool CSerialModem::hasDuplex() const
@@ -230,7 +235,7 @@ bool CSerialModem::writeFrequencyAndAmplitudeSample(uint8_t marker, int16_t freq
     return true;
 }
 
-// For TETRA
+// For TETRA and P25 phase 2
 bool CSerialModem::writePhaseAndAmplitudeSample(uint8_t marker, int16_t phase, uint8_t amplitude)
 {
     if (m_state != SMS_RUNNING)
@@ -286,8 +291,7 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
     case TYPE_VERSION_RESPONSE:
         if (m_state == SMS_WAIT_VERSION) {
             processVersion(data, length);
-            writeSetFreqPower();
-            m_state = SMS_WAIT_FREQ_POWER;
+            m_state = SMS_NONE;
             m_timer.start();
         }
         break;
