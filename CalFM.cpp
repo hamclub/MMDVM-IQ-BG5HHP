@@ -112,7 +112,7 @@ void CCalFM::process()
     uint16_t space = io.getSpace();
     while (space > m_length)
     {
-      io.write(m_modemState,m_tone,m_length);
+      io.write24FSK(m_modemState,m_tone,m_length);
       space -= m_length;
     }
   }

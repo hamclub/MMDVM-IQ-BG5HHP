@@ -22,6 +22,8 @@
 #include "UARTController.h"
 #include "Timer.h"
 
+#include "arm_math.h"
+
 #include <cstdint>
 
 enum SERIALMODEM_STATE {
@@ -35,6 +37,7 @@ enum SERIALMODEM_STATE {
 class CSerialModem {
 public:
 	CSerialModem();
+	~CSerialModem();
 
 	void setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
@@ -48,8 +51,8 @@ public:
 
 	void process();
 
-	bool writeFrequencyAndAmplitudeSample(uint8_t marker, int16_t frequency, uint8_t amplitude = 255U);
-	bool writePhaseAndAmplitudeSample(uint8_t marker, int16_t phase, uint8_t amplitude = 255U);
+	bool writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t frequency, uint8_t amplitude = 255U);
+	bool writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase, uint8_t amplitude = 255U);
 
 	uint16_t getTXSpace() const;
 	bool     isTX() const;
@@ -75,12 +78,18 @@ private:
 	bool              m_hasRX;
 	uint8_t           m_txFormat;
 	uint8_t           m_rxFormat;
-	uint16_t          m_maxSize;
-
-	uint8_t           m_sizeMultiplier;
+	uint16_t          m_maxTXSamples;
 
 	uint16_t          m_spaceLeft;
 	bool              m_tx;
+
+	uint32_t          m_phase;
+	int16_t           m_lastPhase;
+	q15_t             m_lastI;
+	q15_t             m_lastQ;
+
+	arm_fir_instance_q15 m_upsample;
+	arm_fir_instance_q15 m_downsample;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
@@ -88,6 +97,22 @@ private:
 	void writeSetFreqPower();
 	void writeStart();
 	bool writeTransmitData(uint8_t marker, const uint8_t* buffer, uint16_t len);
+
+	uint8_t fsk24ToType0(int16_t frequency, uint8_t amplitude);
+	uint8_t fsk24ToType1(int16_t frequency, uint8_t amplitude);
+	uint8_t fsk24ToType2(int16_t frequency, uint8_t amplitude);
+
+	uint8_t psk72ToType1(int16_t phase, uint8_t amplitude);
+	uint8_t psk72ToType2(int16_t phase, uint8_t amplitude);
+
+	void processType0(uint8_t marker, const uint8_t* data, uint16_t length);
+	void processType1(uint8_t marker, const uint8_t* data, uint16_t length);
+
+	q15_t normaliseQ15(q15_t val1, q15_t val2) const;
+	q31_t normaliseQ31(q31_t val1, q31_t val2) const;
+
+	void upsample24Kto72K(q15_t in, q15_t* out);
+	bool downsample72Kto24K(q15_t in, q15_t& out);
 
 	void processVersion(const uint8_t* data, uint16_t length);
 

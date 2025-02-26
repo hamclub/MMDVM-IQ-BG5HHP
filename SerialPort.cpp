@@ -188,25 +188,9 @@ void CSerialPort::getStatus()
 
   reply[4U]  = m_tx ? 0x01U : 0x00U;
 
-  bool adcOverflow;
-  bool dacOverflow;
-  io.getOverflow(adcOverflow, dacOverflow);
-
-  if (adcOverflow)
-    reply[4U] |= 0x02U;
-
-  if (io.hasRXOverflow())
-    reply[4U] |= 0x04U;
-
-  if (io.hasTXOverflow())
-    reply[4U] |= 0x08U;
-
   if (io.hasLockout())
     reply[4U] |= 0x10U;
 
-  if (dacOverflow)
-    reply[4U] |= 0x20U;
-    
   reply[4U] |= m_dcd ? 0x40U : 0x00U;
 
   reply[5U] = 0x00U;

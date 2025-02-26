@@ -168,7 +168,7 @@ void CP25TX::writeByte(uint8_t c)
 
   ::arm_fir_fast_q15(&m_lpFilter, intBuffer, outBuffer, P25_RADIO_SYMBOL_LENGTH * 4U);
 
-  io.write(STATE_P25, outBuffer, P25_RADIO_SYMBOL_LENGTH * 4U);
+  io.write24FSK(STATE_P25, outBuffer, P25_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CP25TX::writeSilence()
@@ -181,7 +181,7 @@ void CP25TX::writeSilence()
 
   ::arm_fir_fast_q15(&m_lpFilter, intBuffer, outBuffer, P25_RADIO_SYMBOL_LENGTH * 4U);
 
-  io.write(STATE_P25, outBuffer, P25_RADIO_SYMBOL_LENGTH * 4U);
+  io.write24FSK(STATE_P25, outBuffer, P25_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CP25TX::setTXDelay(uint8_t delay)

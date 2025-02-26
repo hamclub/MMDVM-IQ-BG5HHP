@@ -116,7 +116,7 @@ const uint8_t  MARK_NONE  = 0x00U;
 
 const uint16_t RX_BLOCK_SIZE = 2U;
 
-const uint16_t RX_RINGBUFFER_SIZE = 600U;
+const uint16_t MAX_RX_SAMPLES = 4000U;
 
 #if defined(__MK20DX256__)
 const uint16_t TX_BUFFER_LEN = 2000U;

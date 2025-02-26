@@ -28,8 +28,6 @@ typedef int64_t q63_t;
 
 typedef float float32_t;
 
-#define	__SSAT(x,n)	(x)
-
 struct arm_fir_instance_q15 {
 	uint16_t     numTaps;
 	q15_t*       pState;
@@ -58,7 +56,21 @@ struct arm_biquad_casd_df1_inst_q31 {
 
 void arm_q15_to_q31(const q15_t* pSrc, q31_t* pDst, uint32_t blockSize);
 
+q15_t arm_sin_q15(q15_t x);
+
+q15_t arm_cos_q15(q15_t x);
+
 q31_t arm_sin_q31(q31_t x);
+
+q31_t arm_cos_q31(q31_t x);
+
+q31_t arm_atan_q31(q31_t y, q31_t x);
+
+void arm_sqrt_q31(q31_t in, q31_t* out);
+
+int32_t __SSAT(int32_t val, uint32_t sat);
+
+void arm_abs_q31(const q31_t* pSrc, q31_t* pDst, uint32_t blockSize);
 
 void arm_fir_fast_q15(const arm_fir_instance_q15* S, const q15_t* pSrc, q15_t* pDst, uint32_t blockSize);
 

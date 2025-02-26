@@ -155,7 +155,7 @@ void CM17TX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write(STATE_M17, outBuffer, M17_RADIO_SYMBOL_LENGTH * 4U);
+  io.write24FSK(STATE_M17, outBuffer, M17_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CM17TX::writeSilence()
@@ -165,7 +165,7 @@ void CM17TX::writeSilence()
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write(STATE_M17, outBuffer, M17_RADIO_SYMBOL_LENGTH * 4U);
+  io.write24FSK(STATE_M17, outBuffer, M17_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CM17TX::setTXDelay(uint8_t delay)

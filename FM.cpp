@@ -347,7 +347,7 @@ void CFM::process()
       samples[i] = sample;
     }
 
-    io.write(STATE_FM, samples, length);
+    io.write24FSK(STATE_FM, samples, length);
   }
 
   if (m_extEnabled) {

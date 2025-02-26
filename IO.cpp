@@ -83,8 +83,7 @@ const uint16_t DC_OFFSET = 2048U;
 
 CIO::CIO() :
 m_started(false),
-m_rxBuffer(RX_RINGBUFFER_SIZE),
-m_rssiBuffer(RX_RINGBUFFER_SIZE),
+m_rxFSKBuffer(MAX_RX_SAMPLES),
 #if defined(USE_DCBLOCKER)
 m_dcFilter(),
 m_dcState(),
@@ -138,8 +137,6 @@ m_useCOSAsLockout(false),
 m_ledCount(0U),
 m_ledValue(true),
 m_detect(false),
-m_adcOverflow(0U),
-m_dacOverflow(0U),
 m_watchdog(0U),
 m_lockout(false)
 {
@@ -238,67 +235,71 @@ void CIO::start()
   setMode(STATE_IDLE);
 }
 
+void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
+{
+    m_rxFSKBuffer.put(TSample(frequency, marker, cos, rssi));
+}
+
+void CIO::read72PSK(uint8_t marker, q15_t phase, uint16_t rssi)
+{
+}
+
 void CIO::process()
 {
-  m_ledCount++;
-  if (m_started) {
-    // Two seconds timeout
-    if (m_watchdog >= 48000U) {
-      if (m_modemState == STATE_DSTAR || m_modemState == STATE_DMR || m_modemState == STATE_YSF || m_modemState == STATE_P25 || m_modemState == STATE_NXDN || m_modemState == STATE_M17 || m_modemState == STATE_POCSAG) {
+    m_ledCount++;
+    if (m_started) {
+        // Two seconds timeout
+        if (m_watchdog >= 48000U) {
+            if (m_modemState == STATE_DSTAR || m_modemState == STATE_DMR || m_modemState == STATE_YSF || m_modemState == STATE_P25 || m_modemState == STATE_NXDN || m_modemState == STATE_M17 || m_modemState == STATE_POCSAG) {
 #if defined(MODE_DMR)
-        if (m_modemState == STATE_DMR && m_tx)
-          dmrTX.setStart(false);
+                if (m_modemState == STATE_DMR && m_tx)
+                    dmrTX.setStart(false);
 #endif
-        setMode(STATE_IDLE);
-      }
+                setMode(STATE_IDLE);
+            }
 
-      m_watchdog = 0U;
+            m_watchdog = 0U;
+        }
+
+        if (m_ledCount >= 24000U) {
+            m_ledCount = 0U;
+            m_ledValue = !m_ledValue;
+            setLEDInt(m_ledValue);
+        }
+    } else {
+        if (m_ledCount >= 240000U) {
+            m_ledCount = 0U;
+            m_ledValue = !m_ledValue;
+            setLEDInt(m_ledValue);
+        }
+        return;
     }
 
-    if (m_ledCount >= 24000U) {
-      m_ledCount = 0U;
-      m_ledValue = !m_ledValue;
-      setLEDInt(m_ledValue);
+    if (m_useCOSAsLockout)
+        m_lockout = getCOSInt();
+
+    if (!modem.isTX() && m_tx) {
+        m_tx = false;
+        setPTTInt(m_pttInvert ? true : false);
+        DEBUG1("TX OFF");
+    } else if (modem.isTX() && !m_tx) {
+        m_tx = true;
+        setPTTInt(m_pttInvert ? false : true);
+        DEBUG1("TX ON");
     }
-  } else {
-    if (m_ledCount >= 240000U) {
-      m_ledCount = 0U;
-      m_ledValue = !m_ledValue;
-      setLEDInt(m_ledValue);
-    }
-    return;
-  }
 
-  if (m_useCOSAsLockout)
-    m_lockout = getCOSInt();
-
-  if (!modem.isTX() && m_tx) {
-    m_tx = false;
-    setPTTInt(m_pttInvert ? true : false);
-    DEBUG1("TX OFF");
-  } else if (modem.isTX() && !m_tx) {
-      m_tx = true;
-      setPTTInt(m_pttInvert ? false : true);
-      DEBUG1("TX ON");
-  }
-
-
-  if (m_rxBuffer.getData() >= RX_BLOCK_SIZE) {
+  if (m_rxFSKBuffer.getData() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
     uint8_t  control[RX_BLOCK_SIZE];
     uint16_t rssi[RX_BLOCK_SIZE];
 
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       TSample sample;
-      m_rxBuffer.get(sample);
-      control[i] = sample.control;
-      m_rssiBuffer.get(rssi[i]);
+      m_rxFSKBuffer.get(sample);
+      control[i] = sample.m_control;
+      rssi[i] = sample.m_rssi;
 
-      // Detect ADC overflow
-      if (m_detect && (sample.sample == 0U || sample.sample == 4095U))
-        m_adcOverflow++;
-
-      q15_t res1 = q15_t(sample.sample) - m_rxDCOffset;
+      q15_t res1 = q15_t(sample.m_sample) - m_rxDCOffset;
       q31_t res2 = res1 * m_rxLevel;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
     }
@@ -565,16 +566,13 @@ void CIO::process()
   }
 }
 
-void CIO::write(MMDVM_STATE mode, q15_t* samples, uint16_t length, const uint8_t* control)
+void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
   if (!m_started)
     return;
 
   if (m_lockout)
     return;
-
-  // if (m_mode == MODE_TETRA) {
-  // }
 
   q15_t txLevel = 0;
   switch (mode) {
@@ -615,14 +613,10 @@ void CIO::write(MMDVM_STATE mode, q15_t* samples, uint16_t length, const uint8_t
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
     uint16_t res3 = uint16_t(res2 + m_txDCOffset);
 
-    // Detect DAC overflow
-    if (res3 > 4095U)
-      m_dacOverflow++;
-
     if (control == NULL)
-        modem.writeFrequencyAndAmplitudeSample(MARK_NONE, res3);
+        modem.writeFrequencyAndAmplitudeSample24(MARK_NONE, res3);
     else
-        modem.writeFrequencyAndAmplitudeSample(control[i], res3);
+        modem.writeFrequencyAndAmplitudeSample24(control[i], res3);
   }
 }
 
@@ -687,25 +681,6 @@ void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rx
 void CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
   modem.setParams(power, txFreq, rxFreq, pocsagFreq);
-}
-
-void CIO::getOverflow(bool& adcOverflow, bool& dacOverflow)
-{
-  adcOverflow = m_adcOverflow > 0U;
-  dacOverflow = m_dacOverflow > 0U;
-
-  m_adcOverflow = 0U;
-  m_dacOverflow = 0U;
-}
-
-bool CIO::hasTXOverflow()
-{
-  return false;
-}
-
-bool CIO::hasRXOverflow()
-{
-  return m_rxBuffer.hasOverflowed();
 }
 
 void CIO::resetWatchdog()

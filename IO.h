@@ -23,9 +23,28 @@
 
 #include "RingBuffer.h"
 
-struct TSample {
-  volatile uint16_t sample;
-  volatile uint8_t control;
+class TSample {
+public:
+	TSample(q15_t sample, uint8_t control, bool cos, uint16_t rssi) :
+	m_sample(sample),
+	m_control(control),
+	m_cos(cos),
+	m_rssi(rssi)
+	{
+	}
+
+	TSample() :
+	m_sample(0),
+	m_control(0U),
+	m_cos(false),
+	m_rssi(0U)
+	{
+	}
+
+	q15_t    m_sample;
+	uint8_t  m_control;
+	bool     m_cos;
+	uint16_t m_rssi;
 };
 
 class CIO {
@@ -36,7 +55,11 @@ public:
 
   void process();
 
-  void write(MMDVM_STATE mode, q15_t* samples, uint16_t length, const uint8_t* control = NULL);
+  void read24FSK(uint8_t marker, const q15_t frequency, bool cos, uint16_t rssi);
+  void read72PSK(uint8_t marker, const q15_t phase, uint16_t rssi);
+
+  void write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
+  void write72PSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
 
   uint16_t getSpace() const;
 
@@ -46,11 +69,6 @@ public:
   
   void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t m17TXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, uint8_t ax25TXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout);
   void setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
-
-  void getOverflow(bool& adcOverflow, bool& dacOverflow);
-
-  bool hasTXOverflow();
-  bool hasRXOverflow();
 
   bool hasLockout() const;
 
@@ -65,9 +83,7 @@ public:
 
 private:
   bool                  m_started;
-
-  CRingBuffer<TSample>  m_rxBuffer;
-  CRingBuffer<uint16_t> m_rssiBuffer;
+  CRingBuffer<TSample>  m_rxFSKBuffer;
 
 #if defined(USE_DCBLOCKER)
   arm_biquad_casd_df1_inst_q31 m_dcFilter;
@@ -133,9 +149,6 @@ private:
   bool                 m_ledValue;
 
   bool                 m_detect;
-
-  uint16_t             m_adcOverflow;
-  uint16_t             m_dacOverflow;
 
   volatile uint32_t    m_watchdog;
 

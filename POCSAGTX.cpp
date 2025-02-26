@@ -135,7 +135,7 @@ void CPOCSAGTX::writeByte(uint8_t c)
 
   ::arm_fir_fast_q15(&m_modFilter, inBuffer, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
 
-  io.write(STATE_POCSAG, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
+  io.write24FSK(STATE_POCSAG, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
 }
 
 void CPOCSAGTX::setTXDelay(uint8_t delay)

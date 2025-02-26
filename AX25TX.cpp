@@ -166,7 +166,7 @@ void CAX25TX::writeBit(bool b)
       m_tablePtr -= AUDIO_TABLE_LEN;
   }
 
-  io.write(STATE_AX25, buffer, AX25_RADIO_SYMBOL_LENGTH);
+  io.write24FSK(STATE_AX25, buffer, AX25_RADIO_SYMBOL_LENGTH);
 }
 
 void CAX25TX::setTXDelay(uint8_t delay)
