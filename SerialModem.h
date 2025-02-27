@@ -88,8 +88,10 @@ private:
 	q15_t             m_lastI;
 	q15_t             m_lastQ;
 
-	arm_fir_instance_q15 m_upsample;
-	arm_fir_instance_q15 m_downsample;
+	arm_fir_instance_q15 m_upsampleFilter;
+	q15_t                m_upsampleState[48U];      // NoTaps + BlockSize - 1, 39 + 10 - 1 plus some spare
+	arm_fir_instance_q15 m_downsampleFilter;
+	q15_t                m_downsampleState[48U];    // NoTaps + BlockSize - 1, 39 + 10 - 1 plus some spare
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 

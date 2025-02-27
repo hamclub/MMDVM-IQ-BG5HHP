@@ -70,6 +70,28 @@ const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(ui
 const uint8_t  STOP_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_STOP};
 const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
 
+/*
+FIR filter designed with
+http://t-filter.appspot.com
+
+sampling frequency: 72000 Hz
+
+* 0 Hz - 9000 Hz
+  gain = 1
+  desired ripple = 5 dB
+  actual ripple = 3.8553535932915217 dB
+
+* 11050 Hz - 36000 Hz
+  gain = 0
+  desired attenuation = -40 dB
+  actual attenuation = -40.6697367094349 dB
+*/
+static q15_t SAMPLE_FILTER[] = {
+    314,   339, 231, -157, -740, -1265, -1420, -1029, -209,  630,  977,   530,  -550,
+  -1626, -1858, -65, 1933, 5148,  7801,  8827,  7801, 5148, 1933, -657, -1858, -1626,
+   -550,   530, 977,  630, -209, -1029, -1420, -1265, -740, -157,  231,   339,   314};
+const uint16_t SAMPLE_FILTER_LEN = 39U;
+
 CSerialModem::CSerialModem() :
 m_serial(),
 m_state(SMS_NONE),
@@ -96,9 +118,20 @@ m_phase(0U),
 m_lastPhase(0),
 m_lastI(0),
 m_lastQ(0),
-m_upsample(),       // XXX
-m_downsample()      // XXX
+m_upsampleFilter(),
+m_upsampleState(),
+m_downsampleFilter(),
+m_downsampleState()
 {
+    ::memset(m_upsampleState, 0x00U, 48U * sizeof(q15_t));
+    m_upsampleFilter.numTaps = SAMPLE_FILTER_LEN;
+    m_upsampleFilter.pState  = m_upsampleState;
+    m_upsampleFilter.pCoeffs = SAMPLE_FILTER;
+
+    ::memset(m_downsampleState, 0x00U, 48U * sizeof(q15_t));
+    m_downsampleFilter.numTaps = SAMPLE_FILTER_LEN;
+    m_downsampleFilter.pState  = m_downsampleState;
+    m_downsampleFilter.pCoeffs = SAMPLE_FILTER;
 }
 
 CSerialModem::~CSerialModem()
@@ -752,7 +785,7 @@ void CSerialModem::upsample24Kto72K(q15_t in, q15_t* out)
     temp[1U] = 0;
     temp[2U] = 0;
 
-    ::arm_fir_fast_q15(&m_upsample, temp, out, SR_24K_TO_72K);
+    ::arm_fir_fast_q15(&m_upsampleFilter, temp, out, SR_24K_TO_72K);
 }
 
 bool CSerialModem::downsample72Kto24K(q15_t in, q15_t& out)
@@ -765,7 +798,7 @@ bool CSerialModem::downsample72Kto24K(q15_t in, q15_t& out)
         return false;
 
     q15_t tOut[SR_24K_TO_72K];
-    ::arm_fir_fast_q15(&m_downsample, tIn, tOut, SR_24K_TO_72K);
+    ::arm_fir_fast_q15(&m_downsampleFilter, tIn, tOut, SR_24K_TO_72K);
 
     out = tOut[0U];
     n = 0U;
