@@ -279,13 +279,10 @@ void CIO::process()
         m_lockout = getCOSInt();
 
     if (!modem.isTX() && m_tx) {
+        modem.writeTransmitStop();
         m_tx = false;
         setPTTInt(m_pttInvert ? true : false);
         DEBUG1("TX OFF");
-    } else if (modem.isTX() && !m_tx) {
-        m_tx = true;
-        setPTTInt(m_pttInvert ? false : true);
-        DEBUG1("TX ON");
     }
 
   if (m_rxFSKBuffer.getData() >= RX_BLOCK_SIZE) {
@@ -606,6 +603,13 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
     default:
       txLevel = m_cwIdTXLevel;
       break;
+  }
+
+  if (!m_tx) {
+      modem.writeTransmitStart();
+      m_tx = true;
+      setPTTInt(m_pttInvert ? false : true);
+      DEBUG1("TX ON");
   }
 
   for (uint16_t i = 0U; i < length; i++) {

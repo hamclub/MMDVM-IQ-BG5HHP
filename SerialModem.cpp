@@ -33,9 +33,11 @@ const uint8_t TYPE_VERSION_RESPONSE         = 0x01U;
 const uint8_t TYPE_SET_FREQUENCY_AND_POWER  = 0x02U;
 const uint8_t TYPE_START                    = 0x03U;
 const uint8_t TYPE_STOP                     = 0x04U;
-const uint8_t TYPE_STATUS                   = 0x05U;
-const uint8_t TYPE_TRANSMIT_DATA            = 0x06U;
-const uint8_t TYPE_RECEIVE_DATA             = 0x07U;
+const uint8_t TYPE_TRANSMIT_START           = 0x05U;
+const uint8_t TYPE_TRANSMIT_STOP            = 0x06U;
+const uint8_t TYPE_STATUS                   = 0x07U;
+const uint8_t TYPE_TRANSMIT_DATA            = 0x08U;
+const uint8_t TYPE_RECEIVE_DATA             = 0x09U;
 const uint8_t TYPE_DEBUG_MESSAGE            = 0xF0U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
@@ -51,6 +53,8 @@ const uint8_t ERR_MALFORMED_MESSAGE          = 0x01U;
 const uint8_t ERR_TRANSMIT_DATA_BEFORE_START = 0x02U;
 const uint8_t ERR_TRANSMIT_BUFFER_OVERFLOW   = 0x03U;
 const uint8_t ERR_INVALID_FREQUENCY          = 0x04U;
+const uint8_t ERR_TRANSMIT_DATA_ERROR        = 0x05U;
+const uint8_t ERR_OUT_OF_MEMORY              = 0x07U;
 
 const uint32_t SAMPLE_RATE_72K = 72000U;
 const uint32_t SAMPLE_RATE_24K = 24000U;
@@ -61,7 +65,7 @@ const int32_t DEVIATION = 500000;               // TODO
 
 const uint8_t TYPE0_ELEMENT_LEN = 2U;
 const uint8_t TYPE1_ELEMENT_LEN = 4U;
-const uint8_t TYPE2_ELEMENT_LEN = 3U;
+const uint8_t TYPE2_ELEMENT_LEN = 2U;
 const uint8_t TYPE3_ELEMENT_LEN = 3U;
 
 const uint8_t  GET_VERSION_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_GET_VERSION};
@@ -69,6 +73,12 @@ const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(ui
 
 const uint8_t  STOP_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_STOP};
 const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
+
+const uint8_t  START_TRANSMIT_MESSAGE[] = { FRAME_START, 0x04U, 0x00U, TYPE_TRANSMIT_START };
+const uint16_t START_TRANSMIT_MESSAGE_LEN = sizeof(START_TRANSMIT_MESSAGE) / sizeof(uint8_t);
+
+const uint8_t  STOP_TRANSMIT_MESSAGE[] = { FRAME_START, 0x04U, 0x00U, TYPE_TRANSMIT_STOP };
+const uint16_t STOP_TRANSMIT_MESSAGE_LEN = sizeof(STOP_TRANSMIT_MESSAGE) / sizeof(uint8_t);
 
 /*
 FIR filter designed with
@@ -94,13 +104,14 @@ const uint16_t SAMPLE_FILTER_LEN = 39U;
 
 CSerialModem::CSerialModem() :
 m_serial(),
-m_state(SMS_NONE),
+m_state(SERIALMODEM_STATE::NONE),
 m_rxBuffer(NULL),
 m_txBuffer(NULL),
 m_rxPtr(0U),
 m_rxLen(0U),
 m_txLen(0U),
 m_txMarker(0x00U),
+m_txOffset(0U),
 m_timer(1000U, 0U, 100U),
 m_power(0U),
 m_txFreq(0U),
@@ -148,7 +159,6 @@ void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, ui
     m_pocsagFreq = pocsagFreq;
 
     writeSetFreqPower();
-    m_state = SMS_WAIT_FREQ_POWER;
 }
 
 bool CSerialModem::hasDuplex() const
@@ -178,7 +188,7 @@ void CSerialModem::start()
 
     m_spaceLeft = 0U;
 
-    m_state = SMS_WAIT_VERSION;
+    m_state = SERIALMODEM_STATE::WAIT_VERSION;
 
     m_timer.start();
 }
@@ -225,19 +235,31 @@ void CSerialModem::process()
     m_timer.clock(10U);
     if (m_timer.isRunning() && m_timer.hasExpired()) {
         switch (m_state) {
-        case SMS_NONE:
+        case SERIALMODEM_STATE::NONE:
             m_timer.stop();
             break;
-        case SMS_WAIT_VERSION:
+        case SERIALMODEM_STATE::WAIT_VERSION:
             writeGetVersion();
             m_timer.start();
             break;
-        case SMS_WAIT_FREQ_POWER:
+        case SERIALMODEM_STATE::WAIT_FREQ_POWER:
             writeSetFreqPower();
             m_timer.start();
             break;
-        case SMS_WAIT_START:
+        case SERIALMODEM_STATE::WAIT_START:
             writeStart();
+            m_timer.start();
+            break;
+        case SERIALMODEM_STATE::WAIT_STOP:
+            writeStop();
+            m_timer.start();
+            break;
+        case SERIALMODEM_STATE::WAIT_TRANSMIT_START:
+            writeTransmitStart();
+            m_timer.start();
+            break;
+        case SERIALMODEM_STATE::WAIT_TRANSMIT_STOP:
+            writeTransmitStop();
             m_timer.start();
             break;
         default:	// SMS_RUNNING
@@ -250,25 +272,23 @@ void CSerialModem::process()
 // For all modes bar TETRA and P25 phase 2
 bool CSerialModem::writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t frequency, uint8_t amplitude)
 {
-    if (m_state != SMS_RUNNING)
+    if (m_state != SERIALMODEM_STATE::RUNNING)
         return false;
 
-    if (marker != 0x00U) {
-        if (m_txLen > 0U) {
-            writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
-            m_txLen = 0U;
-        }
-
+    if (marker != MARK_NONE) {
+        m_txOffset = m_txLen;
         m_txMarker = marker;
     }
-
-    // Frequency is currently a 12-bit value, scale up to 16
-    frequency <<= 4;
 
     uint16_t txLen = 0U;
 
     switch (m_txFormat) {
     case FORMAT_BASEBAND_AND_RSSI:
+        if (m_txLen == 0U) {
+            // The unused COS and RSSI bytes
+            m_txBuffer[m_txLen++] = 0x00U;
+            m_txBuffer[m_txLen++] = 0x00U;
+        }
         txLen = 1U;
         break;
     case FORMAT_FREQUENCY_AND_AMPLITUDE:
@@ -291,8 +311,9 @@ bool CSerialModem::writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t fr
     txLen += m_txLen;
 
     if ((txLen >= m_spaceLeft) || (txLen >= m_maxTXSamples)) {
-        writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
-        m_txMarker = 0x00U;
+        writeTransmitData(m_txMarker, m_txOffset, m_txBuffer, m_txLen);
+        m_txMarker = MARK_NONE;
+        m_txOffset = 0U;
         m_txLen = 0U;
     }
 
@@ -318,15 +339,11 @@ bool CSerialModem::writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t fr
 // For TETRA and P25 phase 2
 bool CSerialModem::writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase, uint8_t amplitude)
 {
-    if (m_state != SMS_RUNNING)
+    if (m_state != SERIALMODEM_STATE::RUNNING)
         return false;
 
-    if (marker != 0x00U) {
-        if (m_txLen > 0U) {
-            writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
-            m_txLen = 0U;
-        }
-
+    if (marker != MARK_NONE) {
+        m_txOffset = m_txLen;
         m_txMarker = marker;
     }
 
@@ -355,8 +372,9 @@ bool CSerialModem::writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase,
     }
 
     if ((txLen >= m_spaceLeft) || (txLen >= m_maxTXSamples)) {
-        writeTransmitData(m_txMarker, m_txBuffer, m_txLen);
-        m_txMarker = 0x00U;
+        writeTransmitData(m_txMarker, m_txOffset, m_txBuffer, m_txLen);
+        m_txMarker = MARK_NONE;
+        m_txOffset = 0U;
         m_txLen = 0U;
     }
 
@@ -392,9 +410,9 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
 {
     switch (type) {
     case TYPE_VERSION_RESPONSE:
-        if (m_state == SMS_WAIT_VERSION) {
+        if (m_state == SERIALMODEM_STATE::WAIT_VERSION) {
             processVersion(data, length);
-            m_state = SMS_NONE;
+            m_state = SERIALMODEM_STATE::NONE;
             m_timer.start();
         }
         break;
@@ -402,13 +420,18 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         ::printf("DEBUG: %.*s\n", length, data);
         break;
     case TYPE_ACK:
-        if (m_state == SMS_WAIT_FREQ_POWER) {
+        if (m_state == SERIALMODEM_STATE::WAIT_FREQ_POWER) {
             writeStart();
-            m_state = SMS_WAIT_START;
             m_timer.start();
-        } else if (m_state == SMS_WAIT_START) {
+        } else if (m_state == SERIALMODEM_STATE::WAIT_START) {
             ::printf("Modem has been started\n");
-            m_state = SMS_RUNNING;
+            m_state = SERIALMODEM_STATE::RUNNING;
+            m_timer.stop();
+        } else if (m_state == SERIALMODEM_STATE::WAIT_TRANSMIT_START) {
+            m_state = SERIALMODEM_STATE::RUNNING;
+            m_timer.stop();
+        } else if (m_state == SERIALMODEM_STATE::WAIT_TRANSMIT_STOP) {
+            m_state = SERIALMODEM_STATE::RUNNING;
             m_timer.stop();
         }
         break;
@@ -429,6 +452,12 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         case ERR_INVALID_FREQUENCY:
             ::printf("Invalid frequency for the hardware\n");
             break;
+        case ERR_TRANSMIT_DATA_ERROR:
+            ::printf("Transmit data error\n");
+            break;
+        case ERR_OUT_OF_MEMORY:
+            ::printf("Out of memory in the modem\n");
+            break;
         default:
             ::printf("Unknown error type - 0x%02X\n", data[0U]);
             break;
@@ -440,15 +469,16 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         m_tx = (data[2U] & STATUS_TX_ON) == STATUS_TX_ON;
         break;
     case TYPE_RECEIVE_DATA:
-        if (m_state == SMS_RUNNING) {
-            uint8_t marker = data[0U];
+        if (m_state == SERIALMODEM_STATE::RUNNING) {
+            uint8_t  marker = data[0U];
+            uint16_t offset = data[1U] + (data[2U] * 256U);
 
             switch (m_rxFormat) {
             case FORMAT_BASEBAND_AND_RSSI:
-                processType0(marker, data + 1U, length - 1U);
+                processType0(marker, offset, data + 3U, length - 3U);
                 break;
             case FORMAT_IQ:
-                processType1(marker, data + 1U, length - 1U);
+                processType1(marker, offset, data + 3U, length - 3U);
                 break;
             case FORMAT_FREQUENCY_AND_AMPLITUDE:
                 break;
@@ -468,6 +498,8 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
 void CSerialModem::writeGetVersion()
 {
     m_serial.write(GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
+
+    m_state = SERIALMODEM_STATE::WAIT_VERSION;
 }
 
 void CSerialModem::writeSetFreqPower()
@@ -492,6 +524,8 @@ void CSerialModem::writeSetFreqPower()
     buffer[12U] = (m_txFreq >> 24) & 0xFFU;     // MSB
 
     m_serial.write(buffer, 13U);
+
+    m_state = SERIALMODEM_STATE::WAIT_FREQ_POWER;
 }
 
 void CSerialModem::writeStart()
@@ -507,6 +541,29 @@ void CSerialModem::writeStart()
     buffer[5U] = MAX_RX_SAMPLES / 256U;     // MSB
 
     m_serial.write(buffer, 6U);
+
+    m_state = SERIALMODEM_STATE::WAIT_START;
+}
+
+void CSerialModem::writeStop()
+{
+    m_serial.write(STOP_MESSAGE, STOP_MESSAGE_LEN);
+
+    m_state = SERIALMODEM_STATE::WAIT_STOP;
+}
+
+void CSerialModem::writeTransmitStart()
+{
+    m_serial.write(START_TRANSMIT_MESSAGE, START_TRANSMIT_MESSAGE_LEN);
+
+    m_state = SERIALMODEM_STATE::WAIT_TRANSMIT_START;
+}
+
+void CSerialModem::writeTransmitStop()
+{
+    m_serial.write(STOP_TRANSMIT_MESSAGE, STOP_TRANSMIT_MESSAGE_LEN);
+
+    m_state = SERIALMODEM_STATE::WAIT_TRANSMIT_STOP;
 }
 
 void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
@@ -529,7 +586,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         txSizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
         break;
     case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        txSizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
+        txSizeMultiplier = sizeof(uint8_t) + sizeof(int8_t);
         break;
     case FORMAT_PHASE_AND_AMPLITUDE:
         txSizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
@@ -547,7 +604,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         rxSizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
         break;
     case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        rxSizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
+        rxSizeMultiplier = sizeof(uint8_t) + sizeof(int8_t);
         break;
     case FORMAT_PHASE_AND_AMPLITUDE:
         rxSizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
@@ -597,9 +654,9 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     }
 }
 
-bool CSerialModem::writeTransmitData(uint8_t marker, const uint8_t* data, uint16_t len)
+bool CSerialModem::writeTransmitData(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t len)
 {
-    uint8_t buffer[7U];
+    uint8_t buffer[10U];
 
     if (m_spaceLeft < len)
         return false;
@@ -615,8 +672,8 @@ bool CSerialModem::writeTransmitData(uint8_t marker, const uint8_t* data, uint16
 
     buffer[4U] = marker;
 
-    buffer[5U] = 0x00U;         // RSSI and COS, unused on transmit
-    buffer[6U] = 0x00U;
+    buffer[5U] = offset % 256U;
+    buffer[6U] = offset / 256U;
 
     m_serial.write(buffer, 7U);
 
@@ -671,9 +728,7 @@ uint8_t CSerialModem::fsk24ToType2(int16_t frequency, uint8_t amplitude)
     upsample24Kto72K(frequency, out);
 
     for (uint8_t j = 0U; j < SR_24K_TO_72K; j++) {
-        m_txBuffer[m_txLen++] = uint8_t(out[j] % 256);      // LSB
-        m_txBuffer[m_txLen++] = uint8_t(out[j] / 256);      // MSB
-
+        m_txBuffer[m_txLen++] = uint8_t(out[j] / 24);
         m_txBuffer[m_txLen++] = amplitude;
     }
 
@@ -703,21 +758,19 @@ uint8_t CSerialModem::psk72ToType2(int16_t phase, uint8_t amplitude)
     if (m_lastPhase != phase) {
         int16_t freq = (phase / 360) * SAMPLE_RATE_72K;
 
-        m_txBuffer[m_txLen++] = uint8_t(freq % 256U);       // LSB
-        m_txBuffer[m_txLen++] = uint8_t(freq / 256U);       // MSB
+        m_txBuffer[m_txLen++] = uint8_t(freq / 24);
         m_txBuffer[m_txLen++] = amplitude;
 
         m_lastPhase = phase;
     } else {
-        m_txBuffer[m_txLen++] = 0U;                         // LSB
-        m_txBuffer[m_txLen++] = 0U;                         // MSB
+        m_txBuffer[m_txLen++] = 0U;
         m_txBuffer[m_txLen++] = amplitude;
     }
 
     return 1U;
 }
 
-void CSerialModem::processType0(uint8_t marker, const uint8_t* data, uint16_t length)
+void CSerialModem::processType0(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
 {
     uint16_t rssi = data[0U];           // LSB
     rssi |= (data[1U] & 0x7FU) << 8;    // MSB minus COS
@@ -732,14 +785,14 @@ void CSerialModem::processType0(uint8_t marker, const uint8_t* data, uint16_t le
         q15_t sample  = int16_t(data[n++]);     // LSB
         sample |= int16_t(data[n++]) << 8;      // MSB
 
-        if (i == 0U)
+        if (i == offset)
             io.read24FSK(marker, sample, cos, rssi);
         else
             io.read24FSK(MARK_NONE, sample, cos, rssi);
     }
 }
 
-void CSerialModem::processType1(uint8_t marker, const uint8_t* data, uint16_t length)
+void CSerialModem::processType1(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
 {
     uint16_t count = length / (2 * sizeof(int16_t));
 
@@ -767,11 +820,17 @@ void CSerialModem::processType1(uint8_t marker, const uint8_t* data, uint16_t le
         q15_t freq = 0;
         bool ret = downsample72Kto24K(phase, freq);
         if (ret) {
-            io.read24FSK(marker, freq, cos, (rssi / 3U) >> 16);
+            if (j == count)
+                io.read24FSK(marker, freq, cos, (rssi / 3U) >> 16);
+            else
+                io.read24FSK(MARK_NONE, freq, cos, (rssi / 3U) >> 16);
             rssi = 0U;
         }
 
-        io.read72PSK(marker, phase, rssi);
+        if (j == count)
+            io.read72PSK(marker, phase, rssi);
+        else
+            io.read72PSK(MARK_NONE, phase, rssi);
 
         m_lastI = i15;
         m_lastQ = q15;

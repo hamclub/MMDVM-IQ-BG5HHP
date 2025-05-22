@@ -26,12 +26,15 @@
 
 #include <cstdint>
 
-enum SERIALMODEM_STATE {
-	SMS_NONE,
-	SMS_WAIT_VERSION,
-	SMS_WAIT_FREQ_POWER,
-	SMS_WAIT_START,
-	SMS_RUNNING
+enum class SERIALMODEM_STATE {
+	NONE,
+	WAIT_VERSION,
+	WAIT_FREQ_POWER,
+	WAIT_START,
+	WAIT_STOP,
+	WAIT_TRANSMIT_START,
+	WAIT_TRANSMIT_STOP,
+	RUNNING
 };
 
 class CSerialModem {
@@ -54,6 +57,9 @@ public:
 	bool writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t frequency, uint8_t amplitude = 255U);
 	bool writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase, uint8_t amplitude = 255U);
 
+	void writeTransmitStart();
+	void writeTransmitStop();
+
 	uint16_t getTXSpace() const;
 	bool     isTX() const;
 
@@ -66,6 +72,7 @@ private:
 	uint16_t          m_rxLen;
 	uint16_t          m_txLen;
 	uint8_t           m_txMarker;
+	uint16_t          m_txOffset;
 	CTimer            m_timer;
 
 	uint8_t           m_power;
@@ -98,7 +105,8 @@ private:
 	void writeGetVersion();
 	void writeSetFreqPower();
 	void writeStart();
-	bool writeTransmitData(uint8_t marker, const uint8_t* buffer, uint16_t len);
+	void writeStop();
+	bool writeTransmitData(uint8_t marker, uint16_t offset, const uint8_t* buffer, uint16_t len);
 
 	uint8_t fsk24ToType0(int16_t frequency, uint8_t amplitude);
 	uint8_t fsk24ToType1(int16_t frequency, uint8_t amplitude);
@@ -107,8 +115,8 @@ private:
 	uint8_t psk72ToType1(int16_t phase, uint8_t amplitude);
 	uint8_t psk72ToType2(int16_t phase, uint8_t amplitude);
 
-	void processType0(uint8_t marker, const uint8_t* data, uint16_t length);
-	void processType1(uint8_t marker, const uint8_t* data, uint16_t length);
+	void processType0(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processType1(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 
 	q15_t normaliseQ15(q15_t val1, q15_t val2) const;
 	q31_t normaliseQ31(q31_t val1, q31_t val2) const;
