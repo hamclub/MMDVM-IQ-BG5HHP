@@ -65,33 +65,11 @@ public:
   void writeNXDNLost();
 #endif
 
-#if defined(MODE_M17)
-  void writeM17LinkSetup(const uint8_t* data, uint8_t length);
-  void writeM17Stream(const uint8_t* data, uint8_t length);
-  void writeM17Lost();
-  void writeM17EOT();
-#endif
-
-#if defined(MODE_AX25)
-  void writeAX25Data(const uint8_t* data, uint16_t length);
-#endif
-
 #if defined(MODE_FM)
   void writeFMData(const uint8_t* data, uint16_t length);
   void writeFMStatus(uint8_t status);
   void writeFMEOT();
 #endif
-
-#if defined(SERIAL_REPEATER)
-  void writeSerialData(const uint8_t* data, uint8_t length);
-#endif
-
-#if defined(I2C_REPEATER)
-  void writeI2CData(const uint8_t* data, uint8_t length);
-#endif
-
-  void writeCalData(const uint8_t* data, uint8_t length);
-  void writeRSSIData(const uint8_t* data, uint8_t length);
 
   void writeDebug(const char* text);
   void writeDebug(const char* text, int16_t n1);
@@ -105,10 +83,6 @@ private:
   uint16_t  m_ptr;
   uint16_t  m_len;
   bool      m_debug;
-  CRingBuffer<uint8_t> m_serialData;
-  int       m_lastSerialAvail;
-  uint16_t  m_lastSerialAvailCount;
-  CRingBuffer<uint8_t> m_i2CData;
   CSocket   m_socket;
 
   void    sendACK(uint8_t type);

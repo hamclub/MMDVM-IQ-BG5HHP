@@ -67,7 +67,7 @@ public:
   void setADCDetection(bool detect);
   void setMode(MMDVM_STATE state);
   
-  void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t m17TXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, uint8_t ax25TXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout);
+  void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout);
   void setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
   bool hasLockout() const;
@@ -122,11 +122,6 @@ private:
 #endif
 #endif
 
-#if defined(MODE_M17)
-  arm_fir_instance_q15 m_rrc05Filter;
-  q15_t                m_rrc05State[70U];         // NoTaps + BlockSize - 1, 42 + 20 - 1 plus some spare
-#endif
-
   bool                 m_pttInvert;
   q15_t                m_rxLevel;
   q15_t                m_cwIdTXLevel;
@@ -135,10 +130,8 @@ private:
   q15_t                m_ysfTXLevel;
   q15_t                m_p25TXLevel;
   q15_t                m_nxdnTXLevel;
-  q15_t                m_m17TXLevel;
   q15_t                m_pocsagTXLevel;
   q15_t                m_fmTXLevel;
-  q15_t                m_ax25TXLevel;
 
   uint16_t             m_rxDCOffset;
   uint16_t             m_txDCOffset;

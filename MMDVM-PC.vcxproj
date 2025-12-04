@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -147,21 +147,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AX25Defines.h" />
-    <ClInclude Include="AX25Demodulator.h" />
-    <ClInclude Include="AX25Frame.h" />
-    <ClInclude Include="AX25RX.h" />
-    <ClInclude Include="AX25Twist.h" />
-    <ClInclude Include="AX25TX.h" />
-    <ClInclude Include="CalDMR.h" />
-    <ClInclude Include="CalDStarRX.h" />
-    <ClInclude Include="CalDStarTX.h" />
-    <ClInclude Include="CalFM.h" />
-    <ClInclude Include="CalM17.h" />
-    <ClInclude Include="CalNXDN.h" />
-    <ClInclude Include="CalP25.h" />
-    <ClInclude Include="CalPOCSAG.h" />
-    <ClInclude Include="CalRSSI.h" />
     <ClInclude Include="CMSIS-DSP\Arduino.h" />
     <ClInclude Include="CMSIS-DSP\arm_math.h" />
     <ClInclude Include="Config.h" />
@@ -193,9 +178,6 @@
     <ClInclude Include="Globals.h" />
     <ClInclude Include="IO.h" />
     <ClInclude Include="IOPins.h" />
-    <ClInclude Include="M17Defines.h" />
-    <ClInclude Include="M17RX.h" />
-    <ClInclude Include="M17TX.h" />
     <ClInclude Include="NXDNDefines.h" />
     <ClInclude Include="NXDNRX.h" />
     <ClInclude Include="NXDNTX.h" />
@@ -219,20 +201,6 @@
     <ClInclude Include="YSFTX.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AX25Demodulator.cpp" />
-    <ClCompile Include="AX25Frame.cpp" />
-    <ClCompile Include="AX25RX.cpp" />
-    <ClCompile Include="AX25Twist.cpp" />
-    <ClCompile Include="AX25TX.cpp" />
-    <ClCompile Include="CalDMR.cpp" />
-    <ClCompile Include="CalDStarRX.cpp" />
-    <ClCompile Include="CalDStarTX.cpp" />
-    <ClCompile Include="CalFM.cpp" />
-    <ClCompile Include="CalM17.cpp" />
-    <ClCompile Include="CalNXDN.cpp" />
-    <ClCompile Include="CalP25.cpp" />
-    <ClCompile Include="CalPOCSAG.cpp" />
-    <ClCompile Include="CalRSSI.cpp" />
     <ClCompile Include="CMSIS-DSP\arm_math.cpp" />
     <ClCompile Include="CWIdTX.cpp" />
     <ClCompile Include="DMRDMORX.cpp" />
@@ -255,8 +223,6 @@
     <ClCompile Include="FMTimer.cpp" />
     <ClCompile Include="FMUpSampler.cpp" />
     <ClCompile Include="IO.cpp" />
-    <ClCompile Include="M17RX.cpp" />
-    <ClCompile Include="M17TX.cpp" />
     <ClCompile Include="MMDVM.cpp" />
     <ClCompile Include="NXDNRX.cpp" />
     <ClCompile Include="NXDNTX.cpp" />

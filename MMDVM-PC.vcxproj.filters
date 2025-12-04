@@ -11,51 +11,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AX25Defines.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25Demodulator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25Frame.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25RX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25Twist.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25TX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalDMR.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalDStarRX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalDStarTX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalFM.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalM17.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalNXDN.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalP25.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalPOCSAG.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CalRSSI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -143,15 +98,6 @@
     <ClInclude Include="IOPins.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="M17Defines.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17RX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17TX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NXDNDefines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -223,48 +169,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AX25Demodulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AX25Frame.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AX25RX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AX25Twist.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AX25TX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalDMR.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalDStarRX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalDStarTX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalFM.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalM17.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalNXDN.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalP25.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalPOCSAG.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CalRSSI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CWIdTX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -326,12 +230,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17RX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17TX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MMDVM.cpp">

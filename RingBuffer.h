@@ -49,7 +49,7 @@ public:
   
   uint16_t getData() const;
 
-  bool put(TDATATYPE item) volatile;
+  bool put(const TDATATYPE& item) volatile;
 
   bool get(TDATATYPE& item) volatile;
 

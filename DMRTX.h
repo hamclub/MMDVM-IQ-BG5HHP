@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -33,8 +33,7 @@ enum DMRTXSTATE {
   DMRTXSTATE_SLOT1,
   DMRTXSTATE_CACH1,
   DMRTXSTATE_SLOT2,
-  DMRTXSTATE_CACH2,
-  DMRTXSTATE_CAL
+  DMRTXSTATE_CACH2
 };
 
 class CDMRTX {
@@ -48,7 +47,6 @@ public:
   uint8_t writeAbort(const uint8_t* data, uint16_t length);
 
   void setStart(bool start);
-  void setCal(bool start);
 
   void process();
   
@@ -80,7 +78,6 @@ private:
 
   void createData(uint8_t slotIndex);
   void createCACH(uint8_t txSlotIndex, uint8_t rxSlotIndex);
-  void createCal();
   void writeByte(uint8_t c, uint8_t control);
 };
 

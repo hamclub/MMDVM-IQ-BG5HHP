@@ -46,29 +46,10 @@ enum MMDVM_STATE {
   STATE_P25       = 4,
   STATE_NXDN      = 5,
   STATE_POCSAG    = 6,
-  STATE_M17       = 7,
   STATE_FM        = 10,
-  STATE_AX25      = 11,
 
   // Dummy states start at 90
-  STATE_NXDNCAL1K = 91,
-  STATE_DMRDMO1K  = 92,
-  STATE_P25CAL1K  = 93,
-  STATE_DMRCAL1K  = 94,
-  STATE_LFCAL     = 95,
-  STATE_RSSICAL   = 96,
-  STATE_CWID      = 97,
-  STATE_DMRCAL    = 98,
-  STATE_DSTARCAL  = 99,
-  STATE_INTCAL    = 100,
-  STATE_POCSAGCAL = 101,
-  STATE_FMCAL10K  = 102,
-  STATE_FMCAL12K  = 103,
-  STATE_FMCAL15K  = 104,
-  STATE_FMCAL20K  = 105,
-  STATE_FMCAL25K  = 106,
-  STATE_FMCAL30K  = 107,
-  STATE_M17CAL    = 108
+  STATE_CWID      = 97
 };
 
 #include "SerialModem.h"
@@ -84,31 +65,16 @@ enum MMDVM_STATE {
 #include "YSFTX.h"
 #include "P25RX.h"
 #include "P25TX.h"
-#include "M17RX.h"
-#include "M17TX.h"
 #include "NXDNRX.h"
 #include "NXDNTX.h"
 #include "POCSAGTX.h"
-#include "CalDStarRX.h"
-#include "CalDStarTX.h"
-#include "CalFM.h"
-#include "CalDMR.h"
-#include "CalP25.h"
-#include "CalNXDN.h"
-#include "CalPOCSAG.h"
-#include "CalRSSI.h"
 #include "CWIdTX.h"
-#include "AX25RX.h"
-#include "AX25TX.h"
-#include "CalM17.h"
 #include "Debug.h"
 #include "IO.h"
 #include "FM.h"
 
-const uint8_t FORMAT_BASEBAND_AND_RSSI       = 0x00U;
-const uint8_t FORMAT_IQ                      = 0x01U;
-const uint8_t FORMAT_FREQUENCY_AND_AMPLITUDE = 0x02U;
-const uint8_t FORMAT_PHASE_AND_AMPLITUDE     = 0x03U;
+const uint8_t FORMAT_BASEBAND_AND_RSSI = 0x00U;
+const uint8_t FORMAT_IQ                = 0x01U;
 
 const uint8_t  MARK_SLOT1 = 0x08U;
 const uint8_t  MARK_SLOT2 = 0x04U;
@@ -132,9 +98,7 @@ extern bool m_ysfEnable;
 extern bool m_p25Enable;
 extern bool m_nxdnEnable;
 extern bool m_pocsagEnable;
-extern bool m_m17Enable;
 extern bool m_fmEnable;
-extern bool m_ax25Enable;
 
 extern bool m_duplex;
 
@@ -148,9 +112,6 @@ extern CIO io;
 #if defined(MODE_DSTAR)
 extern CDStarRX dstarRX;
 extern CDStarTX dstarTX;
-
-extern CCalDStarRX calDStarRX;
-extern CCalDStarTX calDStarTX;
 #endif
 
 #if defined(MODE_DMR)
@@ -160,8 +121,6 @@ extern CDMRTX dmrTX;
 
 extern CDMRDMORX dmrDMORX;
 extern CDMRDMOTX dmrDMOTX;
-
-extern CCalDMR calDMR;
 #endif
 
 #if defined(MODE_YSF)
@@ -172,40 +131,20 @@ extern CYSFTX ysfTX;
 #if defined(MODE_P25)
 extern CP25RX p25RX;
 extern CP25TX p25TX;
-
-extern CCalP25 calP25;
 #endif
 
 #if defined(MODE_NXDN)
 extern CNXDNRX nxdnRX;
 extern CNXDNTX nxdnTX;
-
-extern CCalNXDN calNXDN;
 #endif
 
 #if defined(MODE_POCSAG)
 extern CPOCSAGTX  pocsagTX;
-extern CCalPOCSAG calPOCSAG;
-#endif
-
-#if defined(MODE_M17)
-extern CM17RX m17RX;
-extern CM17TX m17TX;
-
-extern CCalM17 calM17;
 #endif
 
 #if defined(MODE_FM)
 extern CFM    fm;
-extern CCalFM calFM;
 #endif
-
-#if defined(MODE_AX25)
-extern CAX25RX ax25RX;
-extern CAX25TX ax25TX;
-#endif
-
-extern CCalRSSI calRSSI;
 
 extern CCWIdTX cwIdTX;
 

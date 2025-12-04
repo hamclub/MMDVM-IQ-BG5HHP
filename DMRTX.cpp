@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
@@ -113,10 +113,6 @@ void CDMRTX::process()
       case DMRTXSTATE_SLOT2:
         createData(1U);
         m_state = DMRTXSTATE_CACH1;
-        break;
-
-      case DMRTXSTATE_CAL:
-        createCal();
         break;
 
       default:
@@ -244,11 +240,6 @@ void CDMRTX::setStart(bool start)
   m_abort[1U] = false;
 }
 
-void CDMRTX::setCal(bool start)
-{
-  m_state = start ? DMRTXSTATE_CAL : DMRTXSTATE_IDLE;
-}
-
 void CDMRTX::writeByte(uint8_t c, uint8_t control)
 {
   q15_t inBuffer[4U];
@@ -309,38 +300,6 @@ void CDMRTX::createData(uint8_t slotIndex)
   }
 
   m_poLen = DMR_FRAME_LENGTH_BYTES;
-  m_poPtr = 0U;
-}
-
-void CDMRTX::createCal()
-{
-  // 1.2 kHz sine wave generation
-  if (m_modemState == STATE_DMRCAL) {
-    for (unsigned int i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++) {
-      m_poBuffer[i]   = 0x5FU;              // +3, +3, -3, -3 pattern for deviation cal.
-      m_markBuffer[i] = MARK_NONE;
-    }
-
-    m_poLen = DMR_FRAME_LENGTH_BYTES;
-  }
-
-  // 80 Hz square wave generation
-  if (m_modemState == STATE_LFCAL) {
-    for (unsigned int i = 0U; i < 7U; i++) {
-      m_poBuffer[i]   = 0x55U;              // +3, +3, ... pattern
-      m_markBuffer[i] = MARK_NONE;
-    }
-
-    m_poBuffer[7U]   = 0x5FU;               // +3, +3, -3, -3 pattern
-
-    for (unsigned int i = 8U; i < 15U; i++) {
-      m_poBuffer[i]   = 0xFFU;              // -3, -3, ... pattern
-      m_markBuffer[i] = MARK_NONE;
-    }
-
-    m_poLen = 15U;
-  }
-
   m_poPtr = 0U;
 }
 

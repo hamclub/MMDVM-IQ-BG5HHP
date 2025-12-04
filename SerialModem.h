@@ -32,8 +32,6 @@ enum class SERIALMODEM_STATE {
 	WAIT_FREQ_POWER,
 	WAIT_START,
 	WAIT_STOP,
-	WAIT_TRANSMIT_START,
-	WAIT_TRANSMIT_STOP,
 	RUNNING
 };
 
@@ -56,9 +54,6 @@ public:
 
 	bool writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t frequency, uint8_t amplitude = 255U);
 	bool writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase, uint8_t amplitude = 255U);
-
-	void writeTransmitStart();
-	void writeTransmitStop();
 
 	uint16_t getTXSpace() const;
 	bool     isTX() const;
@@ -110,10 +105,8 @@ private:
 
 	uint8_t fsk24ToType0(int16_t frequency, uint8_t amplitude);
 	uint8_t fsk24ToType1(int16_t frequency, uint8_t amplitude);
-	uint8_t fsk24ToType2(int16_t frequency, uint8_t amplitude);
 
 	uint8_t psk72ToType1(int16_t phase, uint8_t amplitude);
-	uint8_t psk72ToType2(int16_t phase, uint8_t amplitude);
 
 	void processType0(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 	void processType1(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);

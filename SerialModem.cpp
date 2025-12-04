@@ -29,15 +29,12 @@ const float M_PI = 3.141592654F;
 const uint8_t FRAME_START = 0xC0U;
 
 const uint8_t TYPE_GET_VERSION              = 0x00U;
-const uint8_t TYPE_VERSION_RESPONSE         = 0x01U;
-const uint8_t TYPE_SET_FREQUENCY_AND_POWER  = 0x02U;
-const uint8_t TYPE_START                    = 0x03U;
-const uint8_t TYPE_STOP                     = 0x04U;
-const uint8_t TYPE_TRANSMIT_START           = 0x05U;
-const uint8_t TYPE_TRANSMIT_STOP            = 0x06U;
-const uint8_t TYPE_STATUS                   = 0x07U;
-const uint8_t TYPE_TRANSMIT_DATA            = 0x08U;
-const uint8_t TYPE_RECEIVE_DATA             = 0x09U;
+const uint8_t TYPE_SET_FREQUENCY_AND_POWER  = 0x01U;
+const uint8_t TYPE_START                    = 0x02U;
+const uint8_t TYPE_STOP                     = 0x03U;
+const uint8_t TYPE_STATUS                   = 0x04U;
+const uint8_t TYPE_TRANSMIT_DATA            = 0x05U;
+const uint8_t TYPE_RECEIVE_DATA             = 0x06U;
 const uint8_t TYPE_DEBUG_MESSAGE            = 0xF0U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
@@ -65,20 +62,12 @@ const int32_t DEVIATION = 500000;               // TODO
 
 const uint8_t TYPE0_ELEMENT_LEN = 2U;
 const uint8_t TYPE1_ELEMENT_LEN = 4U;
-const uint8_t TYPE2_ELEMENT_LEN = 2U;
-const uint8_t TYPE3_ELEMENT_LEN = 3U;
 
 const uint8_t  GET_VERSION_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_GET_VERSION};
 const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(uint8_t);
 
 const uint8_t  STOP_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_STOP};
 const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
-
-const uint8_t  START_TRANSMIT_MESSAGE[] = { FRAME_START, 0x04U, 0x00U, TYPE_TRANSMIT_START };
-const uint16_t START_TRANSMIT_MESSAGE_LEN = sizeof(START_TRANSMIT_MESSAGE) / sizeof(uint8_t);
-
-const uint8_t  STOP_TRANSMIT_MESSAGE[] = { FRAME_START, 0x04U, 0x00U, TYPE_TRANSMIT_STOP };
-const uint16_t STOP_TRANSMIT_MESSAGE_LEN = sizeof(STOP_TRANSMIT_MESSAGE) / sizeof(uint8_t);
 
 /*
 FIR filter designed with
@@ -179,7 +168,7 @@ bool CSerialModem::hasRX() const
 bool CSerialModem::canPSK() const
 {
     // This may need updating when new hardware becomes available
-    return ((m_txFormat == FORMAT_FREQUENCY_AND_AMPLITUDE) || (m_txFormat == FORMAT_IQ)) && (m_rxFormat == FORMAT_IQ);
+    return (m_txFormat == FORMAT_IQ) && (m_rxFormat == FORMAT_IQ);
 }
 
 void CSerialModem::start()
@@ -254,14 +243,6 @@ void CSerialModem::process()
             writeStop();
             m_timer.start();
             break;
-        case SERIALMODEM_STATE::WAIT_TRANSMIT_START:
-            writeTransmitStart();
-            m_timer.start();
-            break;
-        case SERIALMODEM_STATE::WAIT_TRANSMIT_STOP:
-            writeTransmitStop();
-            m_timer.start();
-            break;
         default:	// SMS_RUNNING
             m_timer.stop();
             break;
@@ -291,13 +272,8 @@ bool CSerialModem::writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t fr
         }
         txLen = 1U;
         break;
-    case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        txLen = SR_24K_TO_72K;
-        break;
     case FORMAT_IQ:
         txLen = SR_24K_TO_72K;
-        break;
-    case FORMAT_PHASE_AND_AMPLITUDE:
         break;
     default:
         break;
@@ -321,14 +297,9 @@ bool CSerialModem::writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t fr
     case FORMAT_BASEBAND_AND_RSSI:
         m_txLen += fsk24ToType0(frequency, amplitude);
         break;
-    case FORMAT_FREQUENCY_AND_AMPLITUDE:
+    case FORMAT_IQ:
         m_txLen += fsk24ToType1(frequency, amplitude);
         break;
-    case FORMAT_IQ:
-        m_txLen += fsk24ToType2(frequency, amplitude);
-        break;
-    case FORMAT_PHASE_AND_AMPLITUDE:
-        return false;
     default:
         return false;
     }
@@ -352,13 +323,8 @@ bool CSerialModem::writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase,
     switch (m_txFormat) {
     case FORMAT_BASEBAND_AND_RSSI:
         break;
-    case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        txLen = 1U;
-        break;
     case FORMAT_IQ:
         txLen = 1U;
-        break;
-    case FORMAT_PHASE_AND_AMPLITUDE:
         break;
     default:
         break;
@@ -384,11 +350,6 @@ bool CSerialModem::writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase,
     case FORMAT_IQ:
         m_txLen += psk72ToType1(phase, amplitude);
         break;
-    case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        m_txLen += psk72ToType2(phase, amplitude);
-        break;
-    case FORMAT_PHASE_AND_AMPLITUDE:
-        return false;
     default:
         return false;
     }
@@ -409,7 +370,7 @@ bool CSerialModem::isTX() const
 void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t length)
 {
     switch (type) {
-    case TYPE_VERSION_RESPONSE:
+    case TYPE_GET_VERSION:
         if (m_state == SERIALMODEM_STATE::WAIT_VERSION) {
             processVersion(data, length);
             m_state = SERIALMODEM_STATE::NONE;
@@ -425,12 +386,6 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             m_timer.start();
         } else if (m_state == SERIALMODEM_STATE::WAIT_START) {
             ::printf("Modem has been started\n");
-            m_state = SERIALMODEM_STATE::RUNNING;
-            m_timer.stop();
-        } else if (m_state == SERIALMODEM_STATE::WAIT_TRANSMIT_START) {
-            m_state = SERIALMODEM_STATE::RUNNING;
-            m_timer.stop();
-        } else if (m_state == SERIALMODEM_STATE::WAIT_TRANSMIT_STOP) {
             m_state = SERIALMODEM_STATE::RUNNING;
             m_timer.stop();
         }
@@ -479,10 +434,6 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
                 break;
             case FORMAT_IQ:
                 processType1(marker, offset, data + 3U, length - 3U);
-                break;
-            case FORMAT_FREQUENCY_AND_AMPLITUDE:
-                break;
-            case FORMAT_PHASE_AND_AMPLITUDE:
                 break;
             default:
                 break;
@@ -552,20 +503,6 @@ void CSerialModem::writeStop()
     m_state = SERIALMODEM_STATE::WAIT_STOP;
 }
 
-void CSerialModem::writeTransmitStart()
-{
-    m_serial.write(START_TRANSMIT_MESSAGE, START_TRANSMIT_MESSAGE_LEN);
-
-    m_state = SERIALMODEM_STATE::WAIT_TRANSMIT_START;
-}
-
-void CSerialModem::writeTransmitStop()
-{
-    m_serial.write(STOP_TRANSMIT_MESSAGE, STOP_TRANSMIT_MESSAGE_LEN);
-
-    m_state = SERIALMODEM_STATE::WAIT_TRANSMIT_STOP;
-}
-
 void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
 {
     m_hasDuplex = (data[1U] & CAP_HAS_DUPLEX) == CAP_HAS_DUPLEX;
@@ -585,12 +522,6 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     case FORMAT_IQ:
         txSizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
         break;
-    case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        txSizeMultiplier = sizeof(uint8_t) + sizeof(int8_t);
-        break;
-    case FORMAT_PHASE_AND_AMPLITUDE:
-        txSizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
-        break;
     default:
         ::fprintf(stderr, "Unknown TX format - %u\n", m_txFormat);
         throw;
@@ -602,12 +533,6 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         break;
     case FORMAT_IQ:
         rxSizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
-        break;
-    case FORMAT_FREQUENCY_AND_AMPLITUDE:
-        rxSizeMultiplier = sizeof(uint8_t) + sizeof(int8_t);
-        break;
-    case FORMAT_PHASE_AND_AMPLITUDE:
-        rxSizeMultiplier = sizeof(uint8_t) + sizeof(int16_t);
         break;
     default:
         ::fprintf(stderr, "Unknown RX format - %u\n", m_rxFormat);
@@ -640,7 +565,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     m_txBuffer = new uint8_t[txBytes + 20U];
 
     // This may need updating when new hardware becomes available
-    if ((m_txFormat != FORMAT_BASEBAND_AND_RSSI) && (m_txFormat != FORMAT_IQ) && (m_txFormat != FORMAT_FREQUENCY_AND_AMPLITUDE)) {
+    if ((m_txFormat != FORMAT_BASEBAND_AND_RSSI) && (m_txFormat != FORMAT_IQ)) {
         ::printf("Invalid transmit format - %u\n", data[2U]);
         ::fflush(stdout);
         throw;
@@ -720,21 +645,6 @@ uint8_t CSerialModem::fsk24ToType1(int16_t frequency, uint8_t amplitude)
     return SR_24K_TO_72K;
 }
 
-uint8_t CSerialModem::fsk24ToType2(int16_t frequency, uint8_t amplitude)
-{
-    // Upsample to 72 kHz and then create Frequency + Amplitude
-
-    q15_t out[SR_24K_TO_72K];
-    upsample24Kto72K(frequency, out);
-
-    for (uint8_t j = 0U; j < SR_24K_TO_72K; j++) {
-        m_txBuffer[m_txLen++] = uint8_t(out[j] / 24);
-        m_txBuffer[m_txLen++] = amplitude;
-    }
-
-    return SR_24K_TO_72K;
-}
-
 uint8_t CSerialModem::psk72ToType1(int16_t phase, uint8_t amplitude)
 {
     // Create I + Q
@@ -747,25 +657,6 @@ uint8_t CSerialModem::psk72ToType1(int16_t phase, uint8_t amplitude)
 
     m_txBuffer[m_txLen++] = uint8_t(q % 256);       // LSB
     m_txBuffer[m_txLen++] = uint8_t(q / 256);       // MSB
-
-    return 1U;
-}
-
-uint8_t CSerialModem::psk72ToType2(int16_t phase, uint8_t amplitude)
-{
-    // Create Frequency + Amplitude
-
-    if (m_lastPhase != phase) {
-        int16_t freq = (phase / 360) * SAMPLE_RATE_72K;
-
-        m_txBuffer[m_txLen++] = uint8_t(freq / 24);
-        m_txBuffer[m_txLen++] = amplitude;
-
-        m_lastPhase = phase;
-    } else {
-        m_txBuffer[m_txLen++] = 0U;
-        m_txBuffer[m_txLen++] = amplitude;
-    }
 
     return 1U;
 }
