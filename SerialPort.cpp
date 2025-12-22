@@ -27,6 +27,8 @@
 #include "SerialPort.h"
 #include "Version.h"
 
+#include <cassert>
+
 const uint8_t MMDVM_FRAME_START  = 0xE0U;
 
 const uint8_t MMDVM_GET_VERSION  = 0x00U;
@@ -321,7 +323,9 @@ void CSerialPort::getVersion()
 
 uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
 {
-  if (length < 9U)
+    assert(data != nullptr);
+
+    if (length < 9U)
     return 4U;
 
   uint32_t rxFreq = 0U;
@@ -357,7 +361,9 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 {
-  if (length < 37U)
+    assert(data != nullptr);
+
+    if (length < 37U)
     return 4U;
 
   bool rxInvert        = (data[0U] & 0x01U) == 0x01U;
@@ -537,7 +543,9 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 #if defined(MODE_FM)
 uint8_t CSerialPort::setFMParams1(const uint8_t* data, uint16_t length)
 {
-  if (length < 8U)
+    assert(data != nullptr);
+
+    if (length < 8U)
     return 4U;
 
   uint8_t  speed     = data[0U];;
@@ -562,7 +570,9 @@ uint8_t CSerialPort::setFMParams1(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setFMParams2(const uint8_t* data, uint16_t length)
 {
-  if (length < 6U)
+    assert(data != nullptr);
+
+    if (length < 6U)
     return 4U;
 
   uint8_t  speed     = data[0U];
@@ -582,7 +592,9 @@ uint8_t CSerialPort::setFMParams2(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
 {
-  if (length < 14U)
+    assert(data != nullptr);
+
+    if (length < 14U)
     return 4U;
 
   uint16_t timeout        = data[0U] * 5U;
@@ -613,7 +625,9 @@ uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setFMParams4(const uint8_t* data, uint16_t length)
 {
-  if (length < 4U)
+    assert(data != nullptr);
+
+    if (length < 4U)
     return 4U;
 
   uint8_t  audioBoost = data[0U];
@@ -633,7 +647,9 @@ uint8_t CSerialPort::setFMParams4(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 {
-  if (length < 1U)
+    assert(data != nullptr);
+
+    if (length < 1U)
     return 4U;
 
   MMDVM_STATE modemState = MMDVM_STATE(data[0U]);
@@ -841,7 +857,10 @@ void CSerialPort::process()
 
 void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t length)
 {
-  uint8_t err = 2U;
+    assert(buffer != nullptr);
+    assert(length > 0U);
+
+    uint8_t err = 2U;
 
   switch (type) {
     case MMDVM_GET_STATUS:
@@ -1166,7 +1185,10 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_DSTAR)
 void CSerialPort::writeDStarHeader(const uint8_t* header, uint8_t length)
 {
-  if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
+    assert(header != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
     return;
 
   if (!m_dstarEnable)
@@ -1188,7 +1210,10 @@ void CSerialPort::writeDStarHeader(const uint8_t* header, uint8_t length)
 
 void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
 {
-  if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
     return;
 
   if (!m_dstarEnable)
@@ -1247,7 +1272,10 @@ void CSerialPort::writeDStarEOT()
 #if defined(MODE_DMR)
 void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
 {
-  if (m_modemState != STATE_DMR && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_DMR && m_modemState != STATE_IDLE)
     return;
 
   if (!m_dmrEnable)
@@ -1289,7 +1317,10 @@ void CSerialPort::writeDMRLost(bool slot)
 #if defined(MODE_YSF)
 void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
 {
-  if (m_modemState != STATE_YSF && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_YSF && m_modemState != STATE_IDLE)
     return;
 
   if (!m_ysfEnable)
@@ -1331,7 +1362,10 @@ void CSerialPort::writeYSFLost()
 #if defined(MODE_P25)
 void CSerialPort::writeP25Hdr(const uint8_t* data, uint8_t length)
 {
-  if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
     return;
 
   if (!m_p25Enable)
@@ -1354,7 +1388,10 @@ void CSerialPort::writeP25Hdr(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
 {
-  if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
     return;
 
   if (!m_p25Enable)
@@ -1396,7 +1433,10 @@ void CSerialPort::writeP25Lost()
 #if defined(MODE_NXDN)
 void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
 {
-  if (m_modemState != STATE_NXDN && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_NXDN && m_modemState != STATE_IDLE)
     return;
 
   if (!m_nxdnEnable)
@@ -1438,7 +1478,10 @@ void CSerialPort::writeNXDNLost()
 #if defined(MODE_FM)
 void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
 {
-  if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
     return;
 
   if (!m_fmEnable)
@@ -1506,7 +1549,9 @@ void CSerialPort::writeFMEOT()
 
 void CSerialPort::writeDebug(const char* text)
 {
-  if (!m_debug)
+    assert(text != nullptr);
+
+    if (!m_debug)
     return;
 
   uint8_t reply[130U];
@@ -1528,7 +1573,9 @@ void CSerialPort::writeDebug(const char* text)
 
 void CSerialPort::writeDebug(const char* text, int16_t n1)
 {
-  if (!m_debug)
+    assert(text != nullptr);
+
+    if (!m_debug)
     return;
 
   uint8_t reply[130U];
@@ -1553,7 +1600,9 @@ void CSerialPort::writeDebug(const char* text, int16_t n1)
 
 void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2)
 {
-  if (!m_debug)
+    assert(text != nullptr);
+
+    if (!m_debug)
     return;
 
   uint8_t reply[130U];
@@ -1581,7 +1630,9 @@ void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2)
 
 void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n3)
 {
-  if (!m_debug)
+    assert(text != nullptr);
+
+    if (!m_debug)
     return;
 
   uint8_t reply[130U];
@@ -1612,8 +1663,10 @@ void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n
 
 void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n3, int16_t n4)
 {
-  if (!m_debug)
-    return;
+    assert(text != nullptr);
+    
+    if (!m_debug)
+        return;
 
   uint8_t reply[130U];
 
@@ -1646,7 +1699,10 @@ void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n
 
 void CSerialPort::writeDebugDump(const uint8_t* data, uint16_t length)
 {
-  uint8_t reply[512U];
+    assert(data != nullptr);
+    assert(length > 0U);
+
+    uint8_t reply[512U];
 
   reply[0U] = MMDVM_FRAME_START;
 
@@ -1717,6 +1773,8 @@ uint8_t CSerialPort::readInt(uint8_t n)
 
 void CSerialPort::writeInt(uint8_t n, const uint8_t* data, uint16_t length, bool flush)
 {
+    assert(data != nullptr);
+
     switch (n) {
     case 1U:
         m_socket.write(data, length);

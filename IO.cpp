@@ -24,6 +24,7 @@
 #include "IO.h"
 
 #include <cstdio>
+#include <cassert>
 
 #if defined(USE_DCBLOCKER)
 // Generated using [b, a] = butter(1, 0.001) in MATLAB
@@ -472,8 +473,11 @@ void CIO::process()
 
 void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
-  if (!m_started)
-    return;
+    assert(samples != nullptr);
+    assert(length > 0U);
+
+    if (!m_started)
+        return;
 
   if (m_lockout)
     return;

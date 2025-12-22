@@ -67,17 +67,21 @@ public:
 	bool     isTX() const;
 
 private:
-	CUARTController   m_serial;
-	SERIALMODEM_STATE m_state;
-	uint8_t*          m_rxBuffer;
-	uint16_t          m_rxPtr;
-	uint16_t          m_rxLen;
-	CTimer            m_timer;
+	CUARTController    m_serial;
+	SERIALMODEM_STATE  m_state;
+	uint16_t*          m_txBuffer;
+	uint8_t*           m_rxBuffer;
+	uint16_t           m_rxPtr;
+	uint16_t           m_txLen;
+	uint16_t           m_rxLen;
+	uint16_t           m_offset;
+	uint8_t            m_marker;
+	CTimer             m_timer;
 
-	uint8_t           m_power;
-	uint32_t          m_txFreq;
-	uint32_t          m_rxFreq;
-	uint32_t          m_pocsagFreq;
+	uint8_t            m_power;
+	uint32_t           m_txFreq;
+	uint32_t           m_rxFreq;
+	uint32_t           m_pocsagFreq;
 
 	bool               m_duplex;
 	bool               m_hasTX;
@@ -87,11 +91,12 @@ private:
 	SERIALMODEM_FORMAT m_rxFormat;
 	uint16_t           m_maxTXSamples;
 
-	IFDUDC*           m_fdudc24;
-	IFDUDC*           m_fdudc72;
+	IFDUDC*            m_fdudc24RX;
+	IFDUDC*            m_fdudc24TX;
+	IFDUDC*            m_fdudc72RX;
+	IFDUDC*            m_fdudc72TX;
 
 	CRingBuffer<IQSampleU16> m_toModem;
-	CRingBuffer<IQSampleU16> m_fromModem;
 
 	CRingBuffer<IQSampleF32> m_toModem24;
 	CRingBuffer<IQSampleF32> m_fromModem24;
@@ -99,15 +104,15 @@ private:
 	CRingBuffer<IQSampleF32> m_toModem72;
 	CRingBuffer<IQSampleF32> m_fromModem72;
 
-	uint16_t          m_spaceLeft;
-	bool              m_tx;
+	uint16_t           m_spaceLeft;
+	bool               m_tx;
 
-	uint32_t          m_phase;
-	int16_t           m_lastPhase;
-	float32_t         m_lastI24;
-	float32_t         m_lastQ24;
-	float32_t         m_lastI72;
-	float32_t         m_lastQ72;
+	uint32_t           m_phase;
+	int16_t            m_lastPhase;
+	float32_t          m_lastI24;
+	float32_t          m_lastQ24;
+	float32_t          m_lastI72;
+	float32_t          m_lastQ72;
 
 	static CSerialModem* m_ptr;
 
@@ -117,7 +122,9 @@ private:
 	void writeSetFreqPower();
 	void writeStart();
 	void writeStop();
-	bool writeTransmitData(uint8_t marker, uint16_t offset, const uint8_t* buffer, uint16_t len);
+
+	bool writeTransmitDataBB();
+	bool writeTransmitDataIQ();
 
 	bool processBB24TX(uint8_t marker, int16_t frequency, float32_t amplitude);
 
@@ -134,8 +141,10 @@ private:
 
 	void dump(const char* text, const uint8_t* data, uint16_t length) const;
 
-	static void callback72(float32_t& iValue, float32_t& qValue);
-	static void callback24(float32_t& iValue, float32_t& qValue);
+	static void callback72RX(float32_t& iValue, float32_t& qValue);
+	static void callback72TX(float32_t& iValue, float32_t& qValue);
+	static void callback24RX(float32_t& iValue, float32_t& qValue);
+	static void callback24TX(float32_t& iValue, float32_t& qValue);
 };
 
 #endif
