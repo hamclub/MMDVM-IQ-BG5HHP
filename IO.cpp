@@ -71,7 +71,6 @@ static q15_t   BOXCAR5_FILTER[] = {12000, 12000, 12000, 12000, 12000, 0};
 const uint16_t BOXCAR5_FILTER_LEN = 6U;
 #endif
 
-const uint16_t DC_OFFSET = 2048U;
 
 CIO::CIO() :
 m_started(false),
@@ -117,9 +116,6 @@ m_p25TXLevel(128 * 128),
 m_nxdnTXLevel(128 * 128),
 m_pocsagTXLevel(128 * 128),
 m_fmTXLevel(128 * 128),
-m_rxDCOffset(DC_OFFSET),
-m_txDCOffset(DC_OFFSET),
-m_useCOSAsLockout(false),
 m_ledCount(0U),
 m_ledValue(true),
 m_detect(false),
@@ -219,10 +215,6 @@ void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
     m_rxFSKBuffer.put(TSample(frequency, marker, cos, rssi));
 }
 
-void CIO::read72PSK(uint8_t marker, q15_t phase, uint16_t rssi)
-{
-}
-
 void CIO::process()
 {
     m_ledCount++;
@@ -254,9 +246,6 @@ void CIO::process()
         return;
     }
 
-    if (m_useCOSAsLockout)
-        m_lockout = getCOSInt();
-
     if (!modem.isTX() && m_tx) {
         m_tx = false;
         setPTTInt(m_pttInvert ? true : false);
@@ -274,8 +263,7 @@ void CIO::process()
       control[i] = sample.m_control;
       rssi[i] = sample.m_rssi;
 
-      q15_t res1 = q15_t(sample.m_sample) - m_rxDCOffset;
-      q31_t res2 = res1 * m_rxLevel;
+      q31_t res2 = sample.m_sample * m_rxLevel;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
     }
 
@@ -527,12 +515,11 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
   for (uint16_t i = 0U; i < length; i++) {
     q31_t res1 = samples[i] * txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
-    uint16_t res3 = uint16_t(res2 + m_txDCOffset);
 
     if (control == NULL)
-        modem.writeFrequencyAndAmplitudeSample24(MARK_NONE, res3);
+        modem.writeSample24(MARK_NONE, res2);
     else
-        modem.writeFrequencyAndAmplitudeSample24(control[i], res3);
+        modem.writeSample24(control[i], res2);
   }
 }
 
@@ -559,7 +546,7 @@ void CIO::setMode(MMDVM_STATE state)
   m_modemState = state;
 }
 
-void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout)
+void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel)
 {
   m_pttInvert = pttInvert;
 
@@ -573,11 +560,6 @@ void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rx
   m_pocsagTXLevel = q15_t(pocsagTXLevel * 128);
   m_fmTXLevel     = q15_t(fmTXLevel * 128);
 
-  m_rxDCOffset   = DC_OFFSET + rxDCOffset;
-  m_txDCOffset   = DC_OFFSET + txDCOffset;
-
-  m_useCOSAsLockout = useCOSAsLockout;
-  
   if (rxInvert)
     m_rxLevel = -m_rxLevel;
   

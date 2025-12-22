@@ -64,10 +64,6 @@ q31_t arm_sin_q31(q31_t x);
 
 q31_t arm_cos_q31(q31_t x);
 
-q31_t arm_atan_q31(q31_t y, q31_t x);
-
-void arm_sqrt_q31(q31_t in, q31_t* out);
-
 int32_t __SSAT(int32_t val, uint32_t sat);
 
 void arm_abs_q31(const q31_t* pSrc, q31_t* pDst, uint32_t blockSize);

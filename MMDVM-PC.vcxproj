@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="CMSIS-DSP\Arduino.h" />
     <ClInclude Include="CMSIS-DSP\arm_math.h" />
+    <ClInclude Include="Complex.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CWIdTX.h" />
     <ClInclude Include="Debug.h" />
@@ -163,6 +164,7 @@
     <ClInclude Include="DStarDefines.h" />
     <ClInclude Include="DStarRX.h" />
     <ClInclude Include="DStarTX.h" />
+    <ClInclude Include="FDUDC.h" />
     <ClInclude Include="FM.h" />
     <ClInclude Include="FMBlanking.h" />
     <ClInclude Include="FMCTCSSRX.h" />
@@ -178,6 +180,7 @@
     <ClInclude Include="Globals.h" />
     <ClInclude Include="IO.h" />
     <ClInclude Include="IOPins.h" />
+    <ClInclude Include="IQSample.h" />
     <ClInclude Include="NXDNDefines.h" />
     <ClInclude Include="NXDNRX.h" />
     <ClInclude Include="NXDNTX.h" />
@@ -212,6 +215,7 @@
     <ClCompile Include="DMRTX.cpp" />
     <ClCompile Include="DStarRX.cpp" />
     <ClCompile Include="DStarTX.cpp" />
+    <ClCompile Include="FDUDC.cpp" />
     <ClCompile Include="FM.cpp" />
     <ClCompile Include="FMBlanking.cpp" />
     <ClCompile Include="FMCTCSSRX.cpp" />

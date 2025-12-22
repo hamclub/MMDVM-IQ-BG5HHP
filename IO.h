@@ -55,11 +55,9 @@ public:
 
   void process();
 
-  void read24FSK(uint8_t marker, const q15_t frequency, bool cos, uint16_t rssi);
-  void read72PSK(uint8_t marker, const q15_t phase, uint16_t rssi);
+  void read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi);
 
   void write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
-  void write72PSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
 
   uint16_t getSpace() const;
 
@@ -67,7 +65,7 @@ public:
   void setADCDetection(bool detect);
   void setMode(MMDVM_STATE state);
   
-  void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel, int16_t txDCOffset, int16_t rxDCOffset, bool useCOSAsLockout);
+  void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel);
   void setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
   bool hasLockout() const;
@@ -132,11 +130,6 @@ private:
   q15_t                m_nxdnTXLevel;
   q15_t                m_pocsagTXLevel;
   q15_t                m_fmTXLevel;
-
-  uint16_t             m_rxDCOffset;
-  uint16_t             m_txDCOffset;
-
-  bool                 m_useCOSAsLockout;
 
   uint32_t             m_ledCount;
   bool                 m_ledValue;

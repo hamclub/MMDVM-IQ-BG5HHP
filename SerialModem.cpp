@@ -19,6 +19,7 @@
 #include "SerialModem.h"
 #include "Globals.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cmath>
 
@@ -39,7 +40,7 @@ const uint8_t TYPE_DEBUG_MESSAGE            = 0xF0U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
 
-const uint8_t CAP_HAS_DUPLEX                = 0x01U;
+const uint8_t CAP_DUPLEX                    = 0x01U;
 const uint8_t CAP_HAS_TRANSMIT              = 0x02U;
 const uint8_t CAP_HAS_RECEIVE               = 0x04U;
 
@@ -53,15 +54,7 @@ const uint8_t ERR_INVALID_FREQUENCY          = 0x04U;
 const uint8_t ERR_TRANSMIT_DATA_ERROR        = 0x05U;
 const uint8_t ERR_OUT_OF_MEMORY              = 0x07U;
 
-const uint32_t SAMPLE_RATE_72K = 72000U;
-const uint32_t SAMPLE_RATE_24K = 24000U;
-
-const uint8_t SR_24K_TO_72K = SAMPLE_RATE_72K / SAMPLE_RATE_24K;
-
-const int32_t DEVIATION = 500000;               // TODO
-
-const uint8_t TYPE0_ELEMENT_LEN = 2U;
-const uint8_t TYPE1_ELEMENT_LEN = 4U;
+const int32_t DEVIATION = 550000;               // TODO
 
 const uint8_t  GET_VERSION_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_GET_VERSION};
 const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(uint8_t);
@@ -69,75 +62,102 @@ const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(ui
 const uint8_t  STOP_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_STOP};
 const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
 
-/*
-FIR filter designed with
-http://t-filter.appspot.com
+const uint16_t BB_ELEMENT_LEN = sizeof(uint16_t);
+const uint16_t IQ_ELEMENT_LEN = sizeof(uint16_t) + sizeof(uint16_t);
 
-sampling frequency: 72000 Hz
+CSerialModem* CSerialModem::m_ptr = nullptr;
 
-* 0 Hz - 9000 Hz
-  gain = 1
-  desired ripple = 5 dB
-  actual ripple = 3.8553535932915217 dB
 
-* 11050 Hz - 36000 Hz
-  gain = 0
-  desired attenuation = -40 dB
-  actual attenuation = -40.6697367094349 dB
-*/
-static q15_t SAMPLE_FILTER[] = {
-    314,   339, 231, -157, -740, -1265, -1420, -1029, -209,  630,  977,   530,  -550,
-  -1626, -1858, -65, 1933, 5148,  7801,  8827,  7801, 5148, 1933, -657, -1858, -1626,
-   -550,   530, 977,  630, -209, -1029, -1420, -1265, -740, -157,  231,   339,   314};
-const uint16_t SAMPLE_FILTER_LEN = 39U;
+static inline q15_t FLOAT32_TO_Q15(float32_t in)
+{
+    if (in > 1.0F)
+        return INT16_MAX;
+    else if (in < -1.0f)
+        return INT16_MIN;
+    else
+        return q15_t((float32_t(INT16_MAX) * in) + 0.5F);
+}
+
+static inline int16_t FLOAT32_TO_INT16(float32_t in)
+{
+    if (in > 1.0F)
+        return INT16_MAX;
+    else if (in < -1.0f)
+        return INT16_MIN;
+    else
+        return q15_t((float32_t(INT16_MAX) * in) + 0.5F);
+}
+
+static inline uint16_t FLOAT32_TO_UINT16(float32_t in)
+{
+    if (in > 1.0F)
+        return UINT16_MAX;
+    else if (in < -1.0f)
+        return 0U;
+    else
+        return uint16_t(float32_t(UINT16_MAX) * ((in + 1.0F) / 2.0F));
+}
+
+static inline float32_t Q15_TO_FLOAT32(q15_t in)
+{
+    return float32_t(in) / float32_t(INT16_MAX);
+}
+
+static inline float32_t INT16_TO_FLOAT32(int16_t in)
+{
+    return float32_t(in) / float32_t(INT16_MAX);
+}
+
+static inline float32_t UINT16_TO_FLOAT32(uint16_t in)
+{
+    return ((float32_t(in) / float32_t(UINT16_MAX)) * 2.0F) - 1.0F;
+}
+
 
 CSerialModem::CSerialModem() :
 m_serial(),
 m_state(SERIALMODEM_STATE::NONE),
-m_rxBuffer(NULL),
-m_txBuffer(NULL),
+m_rxBuffer(nullptr),
 m_rxPtr(0U),
 m_rxLen(0U),
-m_txLen(0U),
-m_txMarker(0x00U),
-m_txOffset(0U),
 m_timer(1000U, 0U, 100U),
 m_power(0U),
 m_txFreq(0U),
 m_rxFreq(0U),
 m_pocsagFreq(0U),
-m_hasDuplex(false),
+m_duplex(false),
 m_hasTX(false),
 m_hasRX(false),
-m_txFormat(0xFFU),
-m_rxFormat(0xFFU),
+m_sampleRate(0U),
+m_txFormat(SERIALMODEM_FORMAT::NONE),
+m_rxFormat(SERIALMODEM_FORMAT::NONE),
 m_maxTXSamples(0U),
+m_fdudc24(nullptr),
+m_fdudc72(nullptr),
+m_toModem(5000U),
+m_fromModem(5000U),
+m_toModem24(5000U),
+m_fromModem24(5000U),
+m_toModem72(5000U),
+m_fromModem72(5000U),
 m_spaceLeft(0U),
 m_tx(false),
 m_phase(0U),
 m_lastPhase(0),
-m_lastI(0),
-m_lastQ(0),
-m_upsampleFilter(),
-m_upsampleState(),
-m_downsampleFilter(),
-m_downsampleState()
+m_lastI24(0.0F),
+m_lastQ24(0.0F),
+m_lastI72(0.0F),
+m_lastQ72(0.0F)
 {
-    ::memset(m_upsampleState, 0x00U, 48U * sizeof(q15_t));
-    m_upsampleFilter.numTaps = SAMPLE_FILTER_LEN;
-    m_upsampleFilter.pState  = m_upsampleState;
-    m_upsampleFilter.pCoeffs = SAMPLE_FILTER;
-
-    ::memset(m_downsampleState, 0x00U, 48U * sizeof(q15_t));
-    m_downsampleFilter.numTaps = SAMPLE_FILTER_LEN;
-    m_downsampleFilter.pState  = m_downsampleState;
-    m_downsampleFilter.pCoeffs = SAMPLE_FILTER;
+    m_ptr = this;
 }
 
 CSerialModem::~CSerialModem()
 {
     delete[] m_rxBuffer;
-    delete[] m_txBuffer;
+
+    delete m_fdudc24;
+    delete m_fdudc72;
 }
 
 void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
@@ -152,7 +172,7 @@ void CSerialModem::setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, ui
 
 bool CSerialModem::hasDuplex() const
 {
-    return m_hasDuplex;
+    return m_duplex;
 }
 
 bool CSerialModem::hasTX() const
@@ -165,10 +185,9 @@ bool CSerialModem::hasRX() const
     return m_hasRX;
 }
 
-bool CSerialModem::canPSK() const
+bool CSerialModem::canTETRA() const
 {
-    // This may need updating when new hardware becomes available
-    return (m_txFormat == FORMAT_IQ) && (m_rxFormat == FORMAT_IQ);
+    return (m_sampleRate >= 72U) && (m_txFormat == SERIALMODEM_FORMAT::IQ) && (m_rxFormat == SERIALMODEM_FORMAT::IQ);
 }
 
 void CSerialModem::start()
@@ -182,7 +201,7 @@ void CSerialModem::start()
     m_timer.start();
 }
 
-// Called every 10ms from the main loop
+// Called from the main loop
 void CSerialModem::process()
 {
     uint8_t c;
@@ -251,110 +270,25 @@ void CSerialModem::process()
 }
 
 // For all modes bar TETRA and P25 phase 2
-bool CSerialModem::writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t frequency, uint8_t amplitude)
+bool CSerialModem::writeSample24(uint8_t marker, q15_t frequency, uint8_t amplitude)
 {
     if (m_state != SERIALMODEM_STATE::RUNNING)
         return false;
 
-    if (marker != MARK_NONE) {
-        m_txOffset = m_txLen;
-        m_txMarker = marker;
-    }
-
-    uint16_t txLen = 0U;
+    if (m_sampleRate < 24U)
+        return false;
 
     switch (m_txFormat) {
-    case FORMAT_BASEBAND_AND_RSSI:
-        if (m_txLen == 0U) {
-            // The unused COS and RSSI bytes
-            m_txBuffer[m_txLen++] = 0x00U;
-            m_txBuffer[m_txLen++] = 0x00U;
-        }
-        txLen = 1U;
-        break;
-    case FORMAT_IQ:
-        txLen = SR_24K_TO_72K;
-        break;
-    default:
-        break;
-    }
+    case SERIALMODEM_FORMAT::BASEBAND:
+        return processBB24TX(marker, frequency, amplitude);
 
-    if (txLen == 0U) {
+    case SERIALMODEM_FORMAT::IQ:
+        return processIQ24TX(marker, frequency, amplitude);
+
+    default:
         ::fprintf(stderr, "Unknown TX format for FSK24\n");
         return false;
     }
-
-    txLen += m_txLen;
-
-    if ((txLen >= m_spaceLeft) || (txLen >= m_maxTXSamples)) {
-        writeTransmitData(m_txMarker, m_txOffset, m_txBuffer, m_txLen);
-        m_txMarker = MARK_NONE;
-        m_txOffset = 0U;
-        m_txLen = 0U;
-    }
-
-    switch (m_txFormat) {
-    case FORMAT_BASEBAND_AND_RSSI:
-        m_txLen += fsk24ToType0(frequency, amplitude);
-        break;
-    case FORMAT_IQ:
-        m_txLen += fsk24ToType1(frequency, amplitude);
-        break;
-    default:
-        return false;
-    }
-
-    return true;
-}
-
-// For TETRA and P25 phase 2
-bool CSerialModem::writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase, uint8_t amplitude)
-{
-    if (m_state != SERIALMODEM_STATE::RUNNING)
-        return false;
-
-    if (marker != MARK_NONE) {
-        m_txOffset = m_txLen;
-        m_txMarker = marker;
-    }
-
-    uint16_t txLen = 0U;
-
-    switch (m_txFormat) {
-    case FORMAT_BASEBAND_AND_RSSI:
-        break;
-    case FORMAT_IQ:
-        txLen = 1U;
-        break;
-    default:
-        break;
-    }
-
-    txLen += m_txLen;
-
-    if (txLen == 0U) {
-        ::fprintf(stderr, "Unknown TX format for PSK72\n");
-        return false;
-    }
-
-    if ((txLen >= m_spaceLeft) || (txLen >= m_maxTXSamples)) {
-        writeTransmitData(m_txMarker, m_txOffset, m_txBuffer, m_txLen);
-        m_txMarker = MARK_NONE;
-        m_txOffset = 0U;
-        m_txLen = 0U;
-    }
-
-    switch (m_txFormat) {
-    case FORMAT_BASEBAND_AND_RSSI:
-        return false;
-    case FORMAT_IQ:
-        m_txLen += psk72ToType1(phase, amplitude);
-        break;
-    default:
-        return false;
-    }
-
-    return true;
 }
 
 uint16_t CSerialModem::getTXSpace() const
@@ -391,30 +325,30 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         }
         break;
     case TYPE_NAK:
-        switch (data[0U]) {
+        switch (data[1U]) {
         case ERR_UNKNOWN_MESSAGE_TYPE:
-            ::printf("Unknown message type\n");
+            ::printf("Unknown message type for message type 0x%02X\n", data[0U]);
             break;
         case ERR_MALFORMED_MESSAGE:
-            ::printf("Malformed message received\n");
+            ::printf("Malformed message received for message type 0x%02X\n", data[0U]);
             break;
         case ERR_TRANSMIT_DATA_BEFORE_START:
-            ::printf("Modem not started\n");
+            ::printf("Modem not started for message type 0x%02X\n", data[0U]);
             break;
         case ERR_TRANSMIT_BUFFER_OVERFLOW:
-            ::printf("Transmit buffer overflow\n");
+            ::printf("Transmit buffer overflow for message type 0x%02X\n", data[0U]);
             break;
         case ERR_INVALID_FREQUENCY:
-            ::printf("Invalid frequency for the hardware\n");
+            ::printf("Invalid frequency for the hardware for message type 0x%02X\n", data[0U]);
             break;
         case ERR_TRANSMIT_DATA_ERROR:
-            ::printf("Transmit data error\n");
+            ::printf("Transmit data error for message type 0x%02X\n", data[0U]);
             break;
         case ERR_OUT_OF_MEMORY:
-            ::printf("Out of memory in the modem\n");
+            ::printf("Out of memory in the modem for message type 0x%02X\n", data[0U]);
             break;
         default:
-            ::printf("Unknown error type - 0x%02X\n", data[0U]);
+            ::printf("Unknown error type - 0x%02X for message type 0x%02X\n", data[1U], data[0U]);
             break;
         }
         ::fflush(stdout);
@@ -429,11 +363,11 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             uint16_t offset = data[1U] + (data[2U] * 256U);
 
             switch (m_rxFormat) {
-            case FORMAT_BASEBAND_AND_RSSI:
-                processType0(marker, offset, data + 3U, length - 3U);
+            case SERIALMODEM_FORMAT::BASEBAND:
+                processBBRX(marker, offset, data + 4U, length - 4U);
                 break;
-            case FORMAT_IQ:
-                processType1(marker, offset, data + 3U, length - 3U);
+            case SERIALMODEM_FORMAT::IQ:
+                processIQRX(marker, offset, data + 4U, length - 4U);
                 break;
             default:
                 break;
@@ -505,21 +439,43 @@ void CSerialModem::writeStop()
 
 void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
 {
-    m_hasDuplex = (data[1U] & CAP_HAS_DUPLEX) == CAP_HAS_DUPLEX;
-    m_hasTX     = (data[1U] & CAP_HAS_TRANSMIT) == CAP_HAS_TRANSMIT;
-    m_hasRX     = (data[1U] & CAP_HAS_RECEIVE) == CAP_HAS_RECEIVE;
+    m_duplex = (data[1U] & CAP_DUPLEX) == CAP_DUPLEX;
+    m_hasTX = (data[1U] & CAP_HAS_TRANSMIT) == CAP_HAS_TRANSMIT;
+    m_hasRX = (data[1U] & CAP_HAS_RECEIVE) == CAP_HAS_RECEIVE;
 
-    m_txFormat = data[2U];
-    m_rxFormat = data[3U];
+    m_sampleRate = data[2U];
+
+    if (m_sampleRate > 24U) {
+        ::printf("Instantiating the 24 kHz FDUDC\n");
+        m_fdudc24 = new CFDUDC(24U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F, callback24);
+    } else if (m_sampleRate == 24U) {
+        ::printf("Instantiating the dummy 24 kHz FDUDC\n");
+        m_fdudc24 = new CFDUDCDummy(callback24);
+    } else {
+        ::printf("Instantiating no 24 kHz FDUDC\n");
+    }
+
+    if (m_sampleRate > 72U) {
+        ::printf("Instantiating the 72 kHz FDUDC\n");
+        m_fdudc72 = new CFDUDC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F, callback72);
+    } else if (m_sampleRate == 72U) {
+        ::printf("Instantiating the dummy 72 kHz FDUDC\n");
+        m_fdudc72 = new CFDUDCDummy(callback72);
+    } else {
+        ::printf("Instantiating no 72 kHz FDUDC\n");
+    }
+
+    m_txFormat = SERIALMODEM_FORMAT(data[3U]);
+    m_rxFormat = SERIALMODEM_FORMAT(data[4U]);
 
     uint8_t txSizeMultiplier = 0U;
     uint8_t rxSizeMultiplier = 0U;
 
     switch (m_txFormat) {
-    case FORMAT_BASEBAND_AND_RSSI:
+    case SERIALMODEM_FORMAT::BASEBAND:
         txSizeMultiplier = sizeof(int16_t);
         break;
-    case FORMAT_IQ:
+    case SERIALMODEM_FORMAT::IQ:
         txSizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
         break;
     default:
@@ -528,10 +484,10 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     }
 
     switch (m_rxFormat) {
-    case FORMAT_BASEBAND_AND_RSSI:
+    case SERIALMODEM_FORMAT::BASEBAND:
         rxSizeMultiplier = sizeof(int16_t);
         break;
-    case FORMAT_IQ:
+    case SERIALMODEM_FORMAT::IQ:
         rxSizeMultiplier = sizeof(int16_t) + sizeof(int16_t);
         break;
     default:
@@ -539,7 +495,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         throw;
     }
 
-    m_maxTXSamples = data[4U] + data[5U] * 256U;
+    m_maxTXSamples = data[5U] + data[6U] * 256U;
 
     uint16_t txBytes   = m_maxTXSamples * txSizeMultiplier;
     uint16_t rxBytes   = MAX_RX_SAMPLES * rxSizeMultiplier;
@@ -547,32 +503,37 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     ::printf("Modem version:\n");
     ::printf("\tProtocol version: %u\n", data[0U]);
     ::printf("\tCapabilities:\n");
-    ::printf("\t\tDuplex: %s\n", m_hasDuplex ? "yes" : "no");
+    ::printf("\t\tDuplex: %s\n", m_duplex ? "yes" : "no");
     ::printf("\t\tTransmit: %s\n", m_hasTX ? "yes" : "no");
     ::printf("\t\tReceive: %s\n", m_hasRX ? "yes" : "no");
+    ::printf("\t\tSample rate: %ukHz\n", m_sampleRate);
     ::printf("\tFormats:\n");
     ::printf("\t\tTransmit: %u\n", m_txFormat);
     ::printf("\t\tReceive: %u\n", m_rxFormat);
     ::printf("\tMax TX samples: %u\n", m_maxTXSamples);
-    ::printf("\tVersion: \"%.*s\"\n", length - 6U, data + 6U);
+    ::printf("\tVersion: \"%.*s\"\n", length - 7U, data + 7U);
     ::printf("\tTX size multiplier: %u\n", txSizeMultiplier);
     ::printf("\tRX size multiplier: %u\n", rxSizeMultiplier);
 
-    delete[] m_txBuffer;
     delete[] m_rxBuffer;
 
     m_rxBuffer = new uint8_t[rxBytes + 20U];
-    m_txBuffer = new uint8_t[txBytes + 20U];
+
+    if (m_sampleRate < 24U) {
+        ::printf("Invalid sample rate - %ukHz\n", m_sampleRate);
+        ::fflush(stdout);
+        throw;
+    }
 
     // This may need updating when new hardware becomes available
-    if ((m_txFormat != FORMAT_BASEBAND_AND_RSSI) && (m_txFormat != FORMAT_IQ)) {
+    if ((m_txFormat != SERIALMODEM_FORMAT::BASEBAND) && (m_txFormat != SERIALMODEM_FORMAT::IQ)) {
         ::printf("Invalid transmit format - %u\n", data[2U]);
         ::fflush(stdout);
         throw;
     }
 
     // This may need updating when new hardware becomes available
-    if ((m_rxFormat != FORMAT_BASEBAND_AND_RSSI) && (m_rxFormat != FORMAT_IQ)) {
+    if ((m_rxFormat != SERIALMODEM_FORMAT::BASEBAND) && (m_rxFormat != SERIALMODEM_FORMAT::IQ)) {
         ::printf("Invalid receive format - %u\n", data[3U]);
         ::fflush(stdout);
         throw;
@@ -588,7 +549,10 @@ bool CSerialModem::writeTransmitData(uint8_t marker, uint16_t offset, const uint
 
     m_spaceLeft -= len;
 
-    len += 7U;
+    if (m_txFormat == SERIALMODEM_FORMAT::BASEBAND)
+        len += 10U;
+    else
+        len += 8U;
 
     buffer[0U] = FRAME_START;
     buffer[1U] = len % 256U;
@@ -600,81 +564,84 @@ bool CSerialModem::writeTransmitData(uint8_t marker, uint16_t offset, const uint
     buffer[5U] = offset % 256U;
     buffer[6U] = offset / 256U;
 
-    m_serial.write(buffer, 7U);
+    buffer[7U] = 0x00U;
+
+    if (m_txFormat == SERIALMODEM_FORMAT::BASEBAND) {
+        // The unused RSSI and COS bytes
+        buffer[8U] = 0x00U;
+        buffer[9U] = 0x00U;
+
+        m_serial.write(buffer, 10U);
+    } else {
+        m_serial.write(buffer, 8U);
+    }
 
     m_serial.write(data, len);
 
     return true;
 }
 
-// XXX What about RSSI bytes?
-uint8_t CSerialModem::fsk24ToType0(int16_t frequency, uint8_t amplitude)
+bool CSerialModem::processBB24TX(uint8_t marker, int16_t frequency, float32_t amplitude)
 {
-    m_txBuffer[m_txLen++] = uint8_t(frequency % 256);       // LSB
-    m_txBuffer[m_txLen++] = uint8_t(frequency / 256);       // MSB
+    IQSampleU16 sample;
 
-    return 1U;
+    sample.control = marker;
+    sample.iValue  = uint16_t(frequency + (UINT16_MAX / 2));
+    sample.qValue  = 0U;
+
+    m_toModem.put(sample);
+
+    return true;
 }
 
-uint8_t CSerialModem::fsk24ToType1(int16_t frequency, uint8_t amplitude)
+bool CSerialModem::processIQ24TX(uint8_t marker, int16_t frequency, float32_t amplitude)
 {
-    // Upsample to 72 kHz and then create I + Q
+    m_phase += frequency * DEVIATION;
 
-    q15_t out[SR_24K_TO_72K];
-    upsample24Kto72K(frequency, out);
+    float32_t phase = float32_t(m_phase) * M_PI;
 
-    for (uint8_t j = 0U; j < SR_24K_TO_72K; j++) {
-        m_phase += out[j] * DEVIATION;
+    IQSampleF32 sample;
 
-        // 2 * PI * t = 29826 in Q31 for 72 kHz sample rate
-        q31_t phaseQ31 = normaliseQ31(m_phase, 29826);
+    sample.iValue  = amplitude * ::cos(phase);
+    sample.qValue  = amplitude * ::sin(phase);
+    sample.control = marker;
 
-        q31_t q31 = amplitude * ::arm_sin_q31(phaseQ31);
-        q31_t i31 = amplitude * ::arm_cos_q31(phaseQ31);
+    m_toModem24.put(sample);
 
-        q15_t q15 = q31 >> 16;
-        q15_t i15 = i31 >> 16;
-
-        m_txBuffer[m_txLen++] = uint8_t(i15 % 256);     // LSB
-        m_txBuffer[m_txLen++] = uint8_t(i15 / 256);     // MSB
-
-        m_txBuffer[m_txLen++] = uint8_t(q15 % 256);     // LSB
-        m_txBuffer[m_txLen++] = uint8_t(q15 / 256);     // MSB
-    }
-
-    return SR_24K_TO_72K;
+    return true;
 }
 
-uint8_t CSerialModem::psk72ToType1(int16_t phase, uint8_t amplitude)
+bool CSerialModem::processIQ72TX(uint8_t marker, int16_t phase, float32_t amplitude)
 {
     // Create I + Q
 
-    q15_t q = amplitude * ::arm_sin_q15(phase);
-    q15_t i = amplitude * ::arm_cos_q15(phase);
+    IQSampleF32 sample;
 
-    m_txBuffer[m_txLen++] = uint8_t(i % 256);       // LSB
-    m_txBuffer[m_txLen++] = uint8_t(i / 256);       // MSB
+    sample.iValue  = amplitude * ::arm_sin_q15(phase);
+    sample.qValue  = amplitude * ::arm_cos_q15(phase);
+    sample.control = marker;
 
-    m_txBuffer[m_txLen++] = uint8_t(q % 256);       // LSB
-    m_txBuffer[m_txLen++] = uint8_t(q / 256);       // MSB
+    m_toModem72.put(sample);
 
-    return 1U;
+    return true;
 }
 
-void CSerialModem::processType0(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
+void CSerialModem::processBBRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
 {
+    assert(data != nullptr);
+    assert(length > 0U);
+
     uint16_t rssi = data[0U];           // LSB
     rssi |= (data[1U] & 0x7FU) << 8;    // MSB minus COS
 
     bool cos = (data[1U] & 0x80U) == 0x80U;
 
-    uint16_t count = (length - sizeof(uint16_t)) / TYPE0_ELEMENT_LEN;
+    uint16_t count = (length - sizeof(uint16_t)) / BB_ELEMENT_LEN;
 
-    uint16_t n = sizeof(uint16_t);
+    const q15_t* p = (const q15_t*)data;
 
-    for (uint16_t i = 0U; n < count; i++) {
-        q15_t sample  = int16_t(data[n++]);     // LSB
-        sample |= int16_t(data[n++]) << 8;      // MSB
+    for (uint16_t i = 0U; i < count; i++) {
+        q15_t sample = *p++;
 
         if (i == offset)
             io.read24FSK(marker, sample, cos, rssi);
@@ -683,107 +650,78 @@ void CSerialModem::processType0(uint8_t marker, uint16_t offset, const uint8_t* 
     }
 }
 
-void CSerialModem::processType1(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
+void CSerialModem::processIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
 {
-    uint16_t count = length / (2 * sizeof(int16_t));
+    assert(data != nullptr);
+    assert(length > 0U);
 
-    bool cos = true;        // XXX
-    uint16_t rssi = 0;
+    uint16_t count = length / IQ_ELEMENT_LEN;
 
-    uint16_t n = 0U;
-    for (uint16_t j = 0U; j < count; j++) {
-        q15_t i15 = int16_t(data[n++]);         // LSB
-        i15 |= int16_t(data[n++]) << 8;         // MSB
+    const uint16_t* p = (const uint16_t*)data;
 
-        q15_t q15 = int16_t(data[n++]);         // LSB
-        q15 |= int16_t(data[n++]) << 8;         // MSB
+    for (uint16_t i = 0U; i < count; i++) {
+        IQSampleF32 sample;
 
-        q31_t out = 0;
-        ::arm_sqrt_q31(i15 * i15 + q15 * q15, &out);
-        rssi += out;
+        sample.iValue = UINT16_TO_FLOAT32(*p++);
+        sample.qValue = UINT16_TO_FLOAT32(*p++);
+        sample.control = (i == offset) ? marker : 0x00U;
 
-        // Multiply by the conjugate of the last I/Q sample
-        q31_t i = (i15 * m_lastI) + (q15 * m_lastQ);
-        q31_t q = (q15 * m_lastI) - (i15 * m_lastQ);
-
-        q15_t phase = ::arm_atan_q31(q, i) >> 16;
-
-        q15_t freq = 0;
-        bool ret = downsample72Kto24K(phase, freq);
-        if (ret) {
-            if (j == count)
-                io.read24FSK(marker, freq, cos, (rssi / 3U) >> 16);
-            else
-                io.read24FSK(MARK_NONE, freq, cos, (rssi / 3U) >> 16);
-            rssi = 0U;
-        }
-
-        if (j == count)
-            io.read72PSK(marker, phase, rssi);
-        else
-            io.read72PSK(MARK_NONE, phase, rssi);
-
-        m_lastI = i15;
-        m_lastQ = q15;
+        m_fromModem24.put(sample);
+        m_fromModem72.put(sample);
     }
 }
 
-void CSerialModem::upsample24Kto72K(q15_t in, q15_t* out)
+void CSerialModem::processIQ24RX(uint8_t marker, float32_t iValue, float32_t qValue)
 {
-    q15_t temp[SR_24K_TO_72K];
-    temp[0U] = in;
-    temp[1U] = 0;
-    temp[2U] = 0;
+    // Put main selectivity here
 
-    ::arm_fir_fast_q15(&m_upsampleFilter, temp, out, SR_24K_TO_72K);
+    bool cos = true;        // XXX
+
+    float32_t rssi = ::sqrt(iValue * iValue + qValue * qValue);
+
+    // Multiply by the conjugate of the last I/Q sample
+    float32_t i = (iValue * m_lastI24) + (qValue * m_lastQ24);
+    float32_t q = (qValue * m_lastI24) - (iValue * m_lastQ24);
+
+    float32_t phase = ::atan2(q, i);
+
+    io.read24FSK(marker, ::FLOAT32_TO_Q15(phase), cos, uint16_t(rssi));
+
+    m_lastI24 = iValue;
+    m_lastQ24 = qValue;
 }
 
-bool CSerialModem::downsample72Kto24K(q15_t in, q15_t& out)
+void CSerialModem::processIQ72RX(uint8_t marker, float32_t iValue, float32_t qValue)
 {
-    static uint8_t n = 0U;
-    static q15_t tIn[SR_24K_TO_72K];
+    // Put main selectivity here
 
-    tIn[n++] = in;
-    if (n < 3U)
-        return false;
+/*
+    bool cos = true;        // XXX
 
-    q15_t tOut[SR_24K_TO_72K];
-    ::arm_fir_fast_q15(&m_downsampleFilter, tIn, tOut, SR_24K_TO_72K);
+    float32_t rssi = ::sqrt(iValue * iValue + qValue * qValue);
 
-    out = tOut[0U];
-    n = 0U;
+    // Multiply by the conjugate of the last I/Q sample
+    float32_t i = (iValue * m_lastI72) + (qValue * m_lastQ72);
+    float32_t q = (qValue * m_lastI72) - (iValue * m_lastQ72);
 
-    return true;
-}
+    float32_t phase = ::atan2(q, i);
 
-q15_t CSerialModem::normaliseQ15(q15_t val1, q15_t val2) const
-{
-    q31_t val = val1 * val2;
+    if (j == offset)
+        io.read72PSK(marker, phase, rssi);
+    else
+        io.read72PSK(MARK_NONE, phase, rssi);
 
-    while (val >= INT16_MAX)
-        val -= INT16_MAX;
-
-    while (val <= INT16_MIN)
-        val += INT16_MIN;
-
-    return q15_t(val);
-}
-
-q31_t CSerialModem::normaliseQ31(q31_t val1, q31_t val2) const
-{
-    q63_t val = val1 * val2;
-
-    while (val >= INT32_MAX)
-        val -= INT32_MAX;
-
-    while (val <= INT32_MIN)
-        val += INT32_MIN;
-
-    return q31_t(val);
+    m_lastI72 = iValue;
+    m_lastQ72 = qValue;
+*/
 }
 
 void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) const
 {
+    assert(text != nullptr);
+    assert(data != nullptr);
+    assert(length > 0U);
+
     ::printf("%s:\n", text);
 
     unsigned int offset = 0U;
@@ -819,4 +757,32 @@ void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) 
         else
             length = 0U;
     }
+}
+
+/*
+    IQSample<uint16_t> sample;
+
+    sample.iSample = ::FLOAT_TO_UINT16(iValue);
+    sample.qSample = ::FLOAT_TO_UINT16(qValue);
+
+    m_ptr->m_toModem.put(sample);
+
+    m_ptr->m_fromModem.get(sample);
+
+    iValue = ::UINT16_TO_FLOAT(sample.iValue);
+    qValue = ::UINT16_TO_FLOAT(sample.qValue);
+*/
+
+void CSerialModem::callback72(float32_t& iValue, float32_t& qValue)
+{
+    assert(m_ptr != nullptr);
+
+    m_ptr->processIQ72RX(iValue, qValue);
+}
+
+void CSerialModem::callback24(float32_t& iValue, float32_t& qValue)
+{
+    assert(m_ptr != nullptr);
+
+    m_ptr->processIQ24RX(iValue, qValue);
 }

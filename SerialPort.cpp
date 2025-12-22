@@ -366,7 +366,6 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 #if defined(MODE_YSF)
   bool ysfLoDev        = (data[0U] & 0x08U) == 0x08U;
 #endif
-  bool useCOSAsLockout = (data[0U] & 0x20U) == 0x20U;
   bool simplex         = (data[0U] & 0x80U) == 0x80U;
 
   m_debug = (data[0U] & 0x10U) == 0x10U;
@@ -458,9 +457,6 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
     return 4U;
 #endif
 
-  int16_t txDCOffset = int16_t(data[5U]) - 128;
-  int16_t rxDCOffset = int16_t(data[6U]) - 128;
-
   uint8_t rxLevel = data[7U];
 
   uint8_t cwIdTXLevel   = data[8U];
@@ -531,7 +527,7 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
   m_fmEnable     = fmEnable;
 #endif
 
-  io.setParameters(rxInvert, txInvert, pttInvert, rxLevel, cwIdTXLevel, dstarTXLevel, dmrTXLevel, ysfTXLevel, p25TXLevel, nxdnTXLevel, pocsagTXLevel, fmTXLevel, txDCOffset, rxDCOffset, useCOSAsLockout);
+  io.setParameters(rxInvert, txInvert, pttInvert, rxLevel, cwIdTXLevel, dstarTXLevel, dmrTXLevel, ysfTXLevel, p25TXLevel, nxdnTXLevel, pocsagTXLevel, fmTXLevel);
 
   io.start();
 

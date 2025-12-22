@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2021,2022,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,10 +16,13 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(VERSION_H)
-#define  VERSION_H
+#if !defined(COMPLEX_H)
+#define	COMPLEX_H
 
-#define VERSION "20251222"
+inline void COMPLEX_MULT(float& x, float& y, float a, float b, float c, float d)
+{
+	x = (a * c) - (b * d);
+	y = (a * d) + (b * c);
+}
 
 #endif
-

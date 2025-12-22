@@ -20,7 +20,10 @@
 #define  SERIALMODEM_H
 
 #include "UARTController.h"
+#include "RingBuffer.h"
+#include "IQSample.h"
 #include "Timer.h"
+#include "FDUDC.h"
 
 #include "arm_math.h"
 
@@ -35,6 +38,12 @@ enum class SERIALMODEM_STATE {
 	RUNNING
 };
 
+enum class SERIALMODEM_FORMAT : uint8_t {
+	BASEBAND,
+	IQ,
+	NONE = 255U
+};
+
 class CSerialModem {
 public:
 	CSerialModem();
@@ -46,14 +55,13 @@ public:
 	bool hasTX() const;
 	bool hasRX() const;
 
-	bool canPSK() const;
+	bool canTETRA() const;
 
 	void start();
 
 	void process();
 
-	bool writeFrequencyAndAmplitudeSample24(uint8_t marker, int16_t frequency, uint8_t amplitude = 255U);
-	bool writePhaseAndAmplitudeSample72(uint8_t marker, int16_t phase, uint8_t amplitude = 255U);
+	bool writeSample24(uint8_t marker, q15_t frequency, uint8_t amplitude = 255U);
 
 	uint16_t getTXSpace() const;
 	bool     isTX() const;
@@ -62,12 +70,8 @@ private:
 	CUARTController   m_serial;
 	SERIALMODEM_STATE m_state;
 	uint8_t*          m_rxBuffer;
-	uint8_t*          m_txBuffer;
 	uint16_t          m_rxPtr;
 	uint16_t          m_rxLen;
-	uint16_t          m_txLen;
-	uint8_t           m_txMarker;
-	uint16_t          m_txOffset;
 	CTimer            m_timer;
 
 	uint8_t           m_power;
@@ -75,25 +79,37 @@ private:
 	uint32_t          m_rxFreq;
 	uint32_t          m_pocsagFreq;
 
-	bool              m_hasDuplex;
-	bool              m_hasTX;
-	bool              m_hasRX;
-	uint8_t           m_txFormat;
-	uint8_t           m_rxFormat;
-	uint16_t          m_maxTXSamples;
+	bool               m_duplex;
+	bool               m_hasTX;
+	bool               m_hasRX;
+	uint8_t            m_sampleRate;
+	SERIALMODEM_FORMAT m_txFormat;
+	SERIALMODEM_FORMAT m_rxFormat;
+	uint16_t           m_maxTXSamples;
+
+	IFDUDC*           m_fdudc24;
+	IFDUDC*           m_fdudc72;
+
+	CRingBuffer<IQSampleU16> m_toModem;
+	CRingBuffer<IQSampleU16> m_fromModem;
+
+	CRingBuffer<IQSampleF32> m_toModem24;
+	CRingBuffer<IQSampleF32> m_fromModem24;
+
+	CRingBuffer<IQSampleF32> m_toModem72;
+	CRingBuffer<IQSampleF32> m_fromModem72;
 
 	uint16_t          m_spaceLeft;
 	bool              m_tx;
 
 	uint32_t          m_phase;
 	int16_t           m_lastPhase;
-	q15_t             m_lastI;
-	q15_t             m_lastQ;
+	float32_t         m_lastI24;
+	float32_t         m_lastQ24;
+	float32_t         m_lastI72;
+	float32_t         m_lastQ72;
 
-	arm_fir_instance_q15 m_upsampleFilter;
-	q15_t                m_upsampleState[48U];      // NoTaps + BlockSize - 1, 39 + 10 - 1 plus some spare
-	arm_fir_instance_q15 m_downsampleFilter;
-	q15_t                m_downsampleState[48U];    // NoTaps + BlockSize - 1, 39 + 10 - 1 plus some spare
+	static CSerialModem* m_ptr;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
@@ -103,23 +119,23 @@ private:
 	void writeStop();
 	bool writeTransmitData(uint8_t marker, uint16_t offset, const uint8_t* buffer, uint16_t len);
 
-	uint8_t fsk24ToType0(int16_t frequency, uint8_t amplitude);
-	uint8_t fsk24ToType1(int16_t frequency, uint8_t amplitude);
+	bool processBB24TX(uint8_t marker, int16_t frequency, float32_t amplitude);
 
-	uint8_t psk72ToType1(int16_t phase, uint8_t amplitude);
+	bool processIQ24TX(uint8_t marker, int16_t frequency, float32_t amplitude);
+	bool processIQ72TX(uint8_t marker, int16_t phase, float32_t amplitude);
 
-	void processType0(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
-	void processType1(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processBBRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 
-	q15_t normaliseQ15(q15_t val1, q15_t val2) const;
-	q31_t normaliseQ31(q31_t val1, q31_t val2) const;
-
-	void upsample24Kto72K(q15_t in, q15_t* out);
-	bool downsample72Kto24K(q15_t in, q15_t& out);
+	void processIQ24RX(uint8_t marker, float32_t iValue, float32_t qValue);
+	void processIQ72RX(uint8_t marker, float32_t iValue, float32_t qValue);
 
 	void processVersion(const uint8_t* data, uint16_t length);
 
 	void dump(const char* text, const uint8_t* data, uint16_t length) const;
+
+	static void callback72(float32_t& iValue, float32_t& qValue);
+	static void callback24(float32_t& iValue, float32_t& qValue);
 };
 
 #endif
