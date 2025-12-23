@@ -164,6 +164,8 @@
     <ClInclude Include="DStarDefines.h" />
     <ClInclude Include="DStarRX.h" />
     <ClInclude Include="DStarTX.h" />
+    <ClInclude Include="FDDC.h" />
+    <ClInclude Include="FDUC.h" />
     <ClInclude Include="FDUDC.h" />
     <ClInclude Include="FM.h" />
     <ClInclude Include="FMBlanking.h" />
@@ -215,6 +217,8 @@
     <ClCompile Include="DMRTX.cpp" />
     <ClCompile Include="DStarRX.cpp" />
     <ClCompile Include="DStarTX.cpp" />
+    <ClCompile Include="FDDC.cpp" />
+    <ClCompile Include="FDUC.cpp" />
     <ClCompile Include="FDUDC.cpp" />
     <ClCompile Include="FM.cpp" />
     <ClCompile Include="FMBlanking.cpp" />

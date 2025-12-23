@@ -176,6 +176,12 @@
     <ClInclude Include="IQSample.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FDDC.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FDUC.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CWIdTX.cpp">
@@ -293,6 +299,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FDUDC.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FDDC.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FDUC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

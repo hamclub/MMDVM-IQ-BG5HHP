@@ -23,7 +23,8 @@
 #include "RingBuffer.h"
 #include "IQSample.h"
 #include "Timer.h"
-#include "FDUDC.h"
+#include "FDUC.h"
+#include "FDDC.h"
 
 #include "arm_math.h"
 
@@ -91,18 +92,18 @@ private:
 	SERIALMODEM_FORMAT m_rxFormat;
 	uint16_t           m_maxTXSamples;
 
-	IFDUDC*            m_fdudc24RX;
-	IFDUDC*            m_fdudc24TX;
-	IFDUDC*            m_fdudc72RX;
-	IFDUDC*            m_fdudc72TX;
+	IFDDC*             m_fddc24RX;
+	IFDUC*             m_fduc24TX;
+	IFDDC*             m_fddc72RX;
+	IFDUC*             m_fduc72TX;
 
-	CRingBuffer<IQSampleU16> m_toModem;
+	CRingBuffer<IQSample<uint16_t>> m_toModem;
 
-	CRingBuffer<IQSampleF32> m_toModem24;
-	CRingBuffer<IQSampleF32> m_fromModem24;
+	CRingBuffer<IQSample<float32_t>> m_toModem24;
+	CRingBuffer<IQSample<float32_t>> m_fromModem24;
 
-	CRingBuffer<IQSampleF32> m_toModem72;
-	CRingBuffer<IQSampleF32> m_fromModem72;
+	CRingBuffer<IQSample<float32_t>> m_toModem72;
+	CRingBuffer<IQSample<float32_t>> m_fromModem72;
 
 	uint16_t           m_spaceLeft;
 	bool               m_tx;
@@ -113,8 +114,6 @@ private:
 	float32_t          m_lastQ24;
 	float32_t          m_lastI72;
 	float32_t          m_lastQ72;
-
-	static CSerialModem* m_ptr;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
@@ -140,11 +139,6 @@ private:
 	void processVersion(const uint8_t* data, uint16_t length);
 
 	void dump(const char* text, const uint8_t* data, uint16_t length) const;
-
-	static void callback72RX(float32_t& iValue, float32_t& qValue);
-	static void callback72TX(float32_t& iValue, float32_t& qValue);
-	static void callback24RX(float32_t& iValue, float32_t& qValue);
-	static void callback24TX(float32_t& iValue, float32_t& qValue);
 };
 
 #endif

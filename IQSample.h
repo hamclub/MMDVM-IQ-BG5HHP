@@ -19,62 +19,30 @@
 #if !defined(IQSAMPLE_H)
 #define  IQSAMPLE_H
 
-#include "arm_math.h"
+#include <cstdint>
 
-
-class IQSampleU16 {
+template <typename TDATATYPE>
+class IQSample {
 public:
-	uint16_t iValue;
-	uint16_t qValue;
-	uint8_t  control;
-
-	IQSampleU16() :
-	iValue(0U),
-	qValue(0U),
-	control(0U)
-	{
-	}
-
-	IQSampleU16(const IQSampleU16& sample) :
-	iValue(sample.iValue),
-	qValue(sample.qValue),
-	control(sample.control)
-	{
-	}
-
-	IQSampleU16& operator=(const IQSampleU16& sample)
-	{
-		if (&sample != this) {
-			iValue  = sample.iValue;
-			qValue  = sample.qValue;
-			control = sample.control;
-		}
-
-		return *this;
-	}
-};
-
-class IQSampleF32 {
-public:
-	float32_t iValue;
-	float32_t qValue;
+	TDATATYPE iValue;
+	TDATATYPE qValue;
 	uint8_t   control;
 
-	IQSampleF32() :
-	iValue(0.0F),
-	qValue(0.0F),
+	IQSample() :
+	iValue(),
+	qValue(),
 	control(0U)
 	{
 	}
 
-	IQSampleF32(const IQSampleF32& sample) :
+	IQSample(const IQSample& sample) :
 	iValue(sample.iValue),
 	qValue(sample.qValue),
 	control(sample.control)
 	{
 	}
 
-	IQSampleF32& operator=(const IQSampleF32& sample)
+	IQSample& operator=(const IQSample& sample)
 	{
 		if (&sample != this) {
 			iValue  = sample.iValue;
