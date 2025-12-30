@@ -31,24 +31,6 @@
 const unsigned int FDDC_VECLEN = 4U;
 const unsigned int FDDC_VECSIZE = sizeof(float32_t) * FDDC_VECLEN;
 
-IFDDC::~IFDDC()
-{
-}
-
-CFDDCDummy::CFDDCDummy()
-{
-}
-
-CFDDCDummy::~CFDDCDummy()
-{
-}
-
-void CFDDCDummy::process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out)
-{
-    IQSample<float32_t> sample;
-    while (in.get(sample))
-        out.put(sample);
-}
 
 CFDDC::CFDDC(
 unsigned int resampNum,
@@ -72,7 +54,8 @@ m_inRe(nullptr),
 m_inIm(nullptr),
 m_ddc_sineI(nullptr),
 m_ddc_sineQ(nullptr),
-m_ddc_sineLen(0U)
+m_ddc_sineLen(0U),
+m_callback(nullptr)
 {
     unsigned int approxlen = resampDen * length;
 
@@ -136,48 +119,56 @@ CFDDC::~CFDDC()
     delete[] m_ddc_sineQ;
 }
 
-void CFDDC::process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out)
+void CFDDC::setCallback(void (*callback)(const IQSample<float32_t>& sample))
 {
-    IQSample<float32_t> sample;
-    while (in.get(sample)) {
-        float32_t real = 0.0F, imag = 0.0F;
-        COMPLEX_MULT(real, imag, sample.iValue, sample.qValue, m_ddc_sineI[m_ddc_i], m_ddc_sineQ[m_ddc_i]);
+    assert(callback != nullptr);
 
-        if (++m_ddc_i >= m_ddc_sineLen)
-            m_ddc_i = 0U;
+    m_callback = callback;
+}
 
-        m_inRe[m_i] = m_inRe[m_i + m_branchlen] = real;
-        m_inIm[m_i] = m_inIm[m_i + m_branchlen] = imag;
+void CFDDC::process(const IQSample<float32_t>& sample)
+{
+    assert(m_callback != nullptr);
 
-        m_p += m_resampNum;
-        while (m_p >= m_resampDen) {
-            m_p -= m_resampDen;
+    float32_t real = 0.0F, imag = 0.0F;
+    COMPLEX_MULT(real, imag, sample.iValue, sample.qValue, m_ddc_sineI[m_ddc_i], m_ddc_sineQ[m_ddc_i]);
 
-            sample.iValue = 0.0F;
-            sample.qValue = 0.0F;
+    if (++m_ddc_i >= m_ddc_sineLen)
+        m_ddc_i = 0U;
 
-            unsigned int iTap = m_p * m_branchlen;
-            unsigned int iI = m_i + 1U;
+    m_inRe[m_i] = m_inRe[m_i + m_branchlen] = real;
+    m_inIm[m_i] = m_inIm[m_i + m_branchlen] = imag;
 
-            for (unsigned int i = 0U; i < m_branchlen; i++) {
-                const float32_t tap = m_taps[iTap];
+    m_p += m_resampNum;
+    while (m_p >= m_resampDen) {
+        m_p -= m_resampDen;
 
-                sample.iValue += m_inRe[iI] * tap;
-                sample.qValue += m_inIm[iI] * tap;
+        IQSample<float32_t> out;
+        out.iValue  = 0.0F;
+        out.qValue  = 0.0F;
+        out.control = sample.control;
 
-                if (++iTap >= m_tapsLen)
-                    iTap = 0U;
+        unsigned int iTap = m_p * m_branchlen;
+        unsigned int iI = m_i + 1U;
 
-                if (++iI >= (m_branchlen * 2U))
-                    iI = 0U;
-            }
+        for (unsigned int i = 0U; i < m_branchlen; i++) {
+            const float32_t tap = m_taps[iTap];
 
-            out.put(sample);
+            out.iValue += m_inRe[iI] * tap;
+            out.qValue += m_inIm[iI] * tap;
+
+            if (++iTap >= m_tapsLen)
+                iTap = 0U;
+
+            if (++iI >= (m_branchlen * 2U))
+                iI = 0U;
         }
 
-        if (++m_i >= m_branchlen)
-            m_i = 0U;
+        (*m_callback)(out);
     }
+
+    if (++m_i >= m_branchlen)
+        m_i = 0U;
 }
 
 float32_t CFDDC::sinc(float32_t v) const

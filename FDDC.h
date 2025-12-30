@@ -20,31 +20,9 @@
 #if !defined(FDDC_H)
 #define FDDC_H
 
-#include "RingBuffer.h"
-#include "IQSample.h"
+#include "FDUDC.h"
 
-#include <arm_math.h>
-
-class IFDDC {
-public:
-    virtual ~IFDDC() = 0;
-
-    virtual void process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out) = 0;
-
-private:
-};
-
-class CFDDCDummy : public IFDDC {
-public:
-    CFDDCDummy();
-    virtual ~CFDDCDummy();
-
-    virtual void process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out);
-
-private:
-};
-
-class CFDDC : public IFDDC {
+class CFDDC : public IFDUDC {
 public:
     CFDDC(
         unsigned int resampNum,
@@ -66,7 +44,9 @@ public:
 
     virtual ~CFDDC();
 
-    virtual void process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer < IQSample<float32_t>>& out);
+    virtual void setCallback(void (*callback)(const IQSample<float32_t>& sample));
+
+    virtual void process(const IQSample<float32_t>& in);
 
 private:
     // Numerator of sample rate ratio
@@ -98,6 +78,8 @@ private:
     float32_t* m_ddc_sineI;
     float32_t* m_ddc_sineQ;
     unsigned int m_ddc_sineLen;
+
+    void (*m_callback)(const IQSample<float32_t>& sample);
 
     float32_t sinc(float32_t v) const;
     float32_t hann_window(unsigned int i, unsigned int length) const;

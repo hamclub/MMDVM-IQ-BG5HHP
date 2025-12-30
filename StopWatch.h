@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2018 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,34 +16,34 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "FDUDC.h"
+#if !defined(STOPWATCH_H)
+#define	STOPWATCH_H
 
-#include <cassert>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
 
-
-IFDUDC::~IFDUDC()
+class CStopWatch
 {
-}
+public:
+	CStopWatch();
+	~CStopWatch();
 
-CFDUDCDummy::CFDUDCDummy() :
-m_callback(nullptr)
-{
-}
+	unsigned long long time() const;
 
-CFDUDCDummy::~CFDUDCDummy()
-{
-}
+	unsigned long long start();
+	unsigned int       elapsed();
 
-void CFDUDCDummy::setCallback(void (*callback)(const IQSample<float32_t>& sample))
-{
-	assert(callback != nullptr);
+private:
+#if defined(_WIN32) || defined(_WIN64)
+	LARGE_INTEGER  m_frequencyS;
+	LARGE_INTEGER  m_frequencyMS;
+	LARGE_INTEGER  m_start;
+#else
+	unsigned long long m_startMS;
+#endif
+};
 
-	m_callback = callback;
-}
-
-void CFDUDCDummy::process(const IQSample<float32_t>& sample)
-{
-	assert(m_callback != nullptr);
-
-	(*m_callback)(sample);
-}
+#endif

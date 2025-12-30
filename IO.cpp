@@ -521,9 +521,9 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
     if (control == NULL)
-        modem.writeSample24(MARK_NONE, res2);
+        modem.writeSampleFSK24(MARK_NONE, res2);
     else
-        modem.writeSample24(control[i], res2);
+        modem.writeSampleFSK24(control[i], res2);
   }
 }
 
@@ -535,7 +535,7 @@ uint16_t CIO::getSpace() const
 void CIO::setDecode(bool dcd)
 {
   if (dcd != m_dcd)
-    setCOSInt(dcd ? true : false);
+    setCOSInt(dcd);
 
   m_dcd = dcd;
 }

@@ -21,10 +21,10 @@
 
 #include "UARTController.h"
 #include "RingBuffer.h"
+#include "StopWatch.h"
 #include "IQSample.h"
 #include "Timer.h"
-#include "FDUC.h"
-#include "FDDC.h"
+#include "FDUDC.h"
 
 #include "arm_math.h"
 
@@ -62,7 +62,7 @@ public:
 
 	void process();
 
-	bool writeSample24(uint8_t marker, q15_t frequency, uint8_t amplitude = 255U);
+	bool writeSampleFSK24(uint8_t marker, q15_t frequency, uint8_t amplitude = 255U);
 
 	uint16_t getTXSpace() const;
 	bool     isTX() const;
@@ -70,7 +70,7 @@ public:
 private:
 	CUARTController    m_serial;
 	SERIALMODEM_STATE  m_state;
-	uint16_t*          m_txBuffer;
+	int16_t*           m_txBuffer;
 	uint8_t*           m_rxBuffer;
 	uint16_t           m_rxPtr;
 	uint16_t           m_txLen;
@@ -92,18 +92,12 @@ private:
 	SERIALMODEM_FORMAT m_rxFormat;
 	uint16_t           m_maxTXSamples;
 
-	IFDDC*             m_fddc24RX;
-	IFDUC*             m_fduc24TX;
-	IFDDC*             m_fddc72RX;
-	IFDUC*             m_fduc72TX;
+	IFDUDC*            m_fddc24RX;
+	IFDUDC*            m_fduc24TX;
+	IFDUDC*            m_fddc72RX;
+	IFDUDC*            m_fduc72TX;
 
-	CRingBuffer<IQSample<uint16_t>> m_toModem;
-
-	CRingBuffer<IQSample<float32_t>> m_toModem24;
-	CRingBuffer<IQSample<float32_t>> m_fromModem24;
-
-	CRingBuffer<IQSample<float32_t>> m_toModem72;
-	CRingBuffer<IQSample<float32_t>> m_fromModem72;
+	CRingBuffer<IQSample<int16_t>> m_toModem;
 
 	uint16_t           m_spaceLeft;
 	bool               m_tx;
@@ -115,6 +109,13 @@ private:
 	float32_t          m_lastI72;
 	float32_t          m_lastQ72;
 
+	CStopWatch         m_stopwatch;
+
+	static CSerialModem* m_ptr;
+
+	void watchdogTimeout();
+	void transmitTimeout();
+
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
 	void writeGetVersion();
@@ -125,20 +126,21 @@ private:
 	bool writeTransmitDataBB();
 	bool writeTransmitDataIQ();
 
-	bool processBB24TX(uint8_t marker, int16_t frequency, float32_t amplitude);
+	bool processSampleFSK24BB(uint8_t marker, int16_t frequency, float32_t amplitude);
+	bool processSampleFSK24IQ(uint8_t marker, int16_t frequency, float32_t amplitude);
 
-	bool processIQ24TX(uint8_t marker, int16_t frequency, float32_t amplitude);
-	bool processIQ72TX(uint8_t marker, int16_t phase, float32_t amplitude);
+	bool processSamplePSK72IQ(uint8_t marker, int16_t phase, float32_t amplitude);
 
 	void processBBRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 	void processIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 
-	void processIQ24RX(uint8_t marker, float32_t iValue, float32_t qValue);
-	void processIQ72RX(uint8_t marker, float32_t iValue, float32_t qValue);
-
-	void processVersion(const uint8_t* data, uint16_t length);
+	bool processVersion(const uint8_t* data, uint16_t length);
 
 	void dump(const char* text, const uint8_t* data, uint16_t length) const;
+
+	static void callbackTX(const IQSample<float32_t>& sample);
+	static void callbackRX24(const IQSample<float32_t>& sample);
+	static void callbackRX72(const IQSample<float32_t>& sample);
 };
 
 #endif

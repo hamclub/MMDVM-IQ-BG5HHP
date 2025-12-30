@@ -18,6 +18,9 @@
 
 #include "SerialModem.h"
 #include "Globals.h"
+#include "Utils.h"
+#include "FDDC.h"
+#include "FDUC.h"
 
 #include <cassert>
 #include <cstdio>
@@ -63,53 +66,9 @@ const uint8_t  STOP_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_STOP};
 const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
 
 const uint16_t BB_ELEMENT_LEN = sizeof(uint16_t);
-const uint16_t IQ_ELEMENT_LEN = sizeof(uint16_t) + sizeof(uint16_t);
+const uint16_t IQ_ELEMENT_LEN = sizeof(int16_t) + sizeof(int16_t);
 
-
-static inline q15_t FLOAT32_TO_Q15(float32_t in)
-{
-    if (in > 1.0F)
-        return INT16_MAX;
-    else if (in < -1.0f)
-        return INT16_MIN;
-    else
-        return q15_t((float32_t(INT16_MAX) * in) + 0.5F);
-}
-
-static inline int16_t FLOAT32_TO_INT16(float32_t in)
-{
-    if (in > 1.0F)
-        return INT16_MAX;
-    else if (in < -1.0f)
-        return INT16_MIN;
-    else
-        return q15_t((float32_t(INT16_MAX) * in) + 0.5F);
-}
-
-static inline uint16_t FLOAT32_TO_UINT16(float32_t in)
-{
-    if (in > 1.0F)
-        return UINT16_MAX;
-    else if (in < -1.0f)
-        return 0U;
-    else
-        return uint16_t(float32_t(UINT16_MAX) * ((in + 1.0F) / 2.0F));
-}
-
-static inline float32_t Q15_TO_FLOAT32(q15_t in)
-{
-    return float32_t(in) / float32_t(INT16_MAX);
-}
-
-static inline float32_t INT16_TO_FLOAT32(int16_t in)
-{
-    return float32_t(in) / float32_t(INT16_MAX);
-}
-
-static inline float32_t UINT16_TO_FLOAT32(uint16_t in)
-{
-    return ((float32_t(in) / float32_t(UINT16_MAX)) * 2.0F) - 1.0F;
-}
+CSerialModem* CSerialModem::m_ptr;
 
 
 CSerialModem::CSerialModem() :
@@ -139,10 +98,6 @@ m_fduc24TX(nullptr),
 m_fddc72RX(nullptr),
 m_fduc72TX(nullptr),
 m_toModem(5000U),
-m_toModem24(5000U),
-m_fromModem24(5000U),
-m_toModem72(5000U),
-m_fromModem72(5000U),
 m_spaceLeft(0U),
 m_tx(false),
 m_phase(0U),
@@ -150,8 +105,10 @@ m_lastPhase(0),
 m_lastI24(0.0F),
 m_lastQ24(0.0F),
 m_lastI72(0.0F),
-m_lastQ72(0.0F)
+m_lastQ72(0.0F),
+m_stopwatch()
 {
+    m_ptr = this;
 }
 
 CSerialModem::~CSerialModem()
@@ -197,12 +154,15 @@ bool CSerialModem::canTETRA() const
 
 void CSerialModem::start()
 {
-    m_serial.open("\\\\.\\COM8", 921600U);
+    bool ret = m_serial.open("\\\\.\\COM8", 921600U);
+    if (!ret)
+        throw;
 
     m_spaceLeft = 0U;
 
     m_state = SERIALMODEM_STATE::WAIT_VERSION;
 
+    m_stopwatch.start();
     m_timer.start();
 }
 
@@ -247,7 +207,8 @@ void CSerialModem::process()
     }
 
     // Is this correct?
-    m_timer.clock(10U);
+    unsigned int ms = m_stopwatch.elapsed();
+    m_timer.clock(ms);
     if (m_timer.isRunning() && m_timer.hasExpired()) {
         switch (m_state) {
         case SERIALMODEM_STATE::NONE:
@@ -289,7 +250,7 @@ void CSerialModem::process()
 }
 
 // For all modes bar TETRA and P25 phase 2
-bool CSerialModem::writeSample24(uint8_t marker, q15_t frequency, uint8_t amplitude)
+bool CSerialModem::writeSampleFSK24(uint8_t marker, q15_t frequency, uint8_t amplitude)
 {
     if (m_state != SERIALMODEM_STATE::RUNNING)
         return false;
@@ -299,10 +260,10 @@ bool CSerialModem::writeSample24(uint8_t marker, q15_t frequency, uint8_t amplit
 
     switch (m_txFormat) {
     case SERIALMODEM_FORMAT::BASEBAND:
-        return processBB24TX(marker, frequency, amplitude);
+        return processSampleFSK24BB(marker, frequency, amplitude);
 
     case SERIALMODEM_FORMAT::IQ:
-        return processIQ24TX(marker, frequency, amplitude);
+        return processSampleFSK24IQ(marker, frequency, amplitude);
 
     default:
         ::fprintf(stderr, "Unknown TX format for FSK24\n");
@@ -325,7 +286,10 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
     switch (type) {
     case TYPE_GET_VERSION:
         if (m_state == SERIALMODEM_STATE::WAIT_VERSION) {
-            processVersion(data, length);
+            bool ret = processVersion(data, length);
+            if (!ret)
+                throw;
+
             m_state = SERIALMODEM_STATE::NONE;
             m_timer.start();
         }
@@ -456,36 +420,54 @@ void CSerialModem::writeStop()
     m_state = SERIALMODEM_STATE::WAIT_STOP;
 }
 
-void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
+bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
 {
-    m_duplex = (data[1U] & CAP_DUPLEX) == CAP_DUPLEX;
-    m_hasTX = (data[1U] & CAP_HAS_TRANSMIT) == CAP_HAS_TRANSMIT;
-    m_hasRX = (data[1U] & CAP_HAS_RECEIVE) == CAP_HAS_RECEIVE;
+    m_duplex = (data[1U] & CAP_DUPLEX)       == CAP_DUPLEX;
+    m_hasTX  = (data[1U] & CAP_HAS_TRANSMIT) == CAP_HAS_TRANSMIT;
+    m_hasRX  = (data[1U] & CAP_HAS_RECEIVE)  == CAP_HAS_RECEIVE;
 
     m_sampleRate = data[2U];
 
     if (m_sampleRate > 24U) {
-        ::printf("Instantiating the 24 kHz FDDC/FDUC\n");
+        ::printf("Instantiating the 24 kHz downsampler\n");
         m_fddc24RX = new CFDDC(24U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
+        m_fddc24RX->setCallback(CSerialModem::callbackRX24);
+
         m_fduc24TX = new CFDUC(24U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
+        m_fduc24TX->setCallback(CSerialModem::callbackTX);
     } else if (m_sampleRate == 24U) {
-        ::printf("Instantiating the dummy 24 kHz FDDC/FDUC\n");
-        m_fddc24RX = new CFDDCDummy;
-        m_fduc24TX = new CFDUCDummy;
+        ::printf("Instantiating the dummy 24 kHz resampler\n");
+        m_fddc24RX = new CFDUDCDummy;
+        m_fddc24RX->setCallback(CSerialModem::callbackRX24);
+
+        m_fduc24TX = new CFDUDCDummy;
+        m_fduc24TX->setCallback(CSerialModem::callbackTX);
     } else {
-        ::printf("Instantiating no 24 kHz FDDC/FDUC\n");
+        ::fprintf(stderr, "Invalid sample rate\n");
+        return false;
     }
 
     if (m_sampleRate > 72U) {
-        ::printf("Instantiating the 72 kHz FDDC/FDUC\n");
+        ::printf("Instantiating the 72 kHz downsampler\n");
         m_fddc72RX = new CFDDC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
+        m_fddc72RX->setCallback(CSerialModem::callbackRX72);
+
         m_fduc72TX = new CFDUC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
+        m_fduc72TX->setCallback(CSerialModem::callbackTX);
     } else if (m_sampleRate == 72U) {
-        ::printf("Instantiating the dummy 72 kHz FDDC/FDUC\n");
-        m_fddc72RX = new CFDDCDummy;
-        m_fduc72TX = new CFDUCDummy;
+        ::printf("Instantiating the dummy 72 kHz resampler\n");
+        m_fddc72RX = new CFDUDCDummy;
+        m_fddc72RX->setCallback(CSerialModem::callbackRX72);
+
+        m_fduc72TX = new CFDUDCDummy;
+        m_fduc72TX->setCallback(CSerialModem::callbackTX);
     } else {
-        ::printf("Instantiating no 72 kHz FDDC/FDUC\n");
+        ::printf("Instantiating the 72 kHz upsampler\n");
+        m_fddc72RX = new CFDUC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
+        m_fddc72RX->setCallback(CSerialModem::callbackRX72);
+
+        m_fduc72TX = new CFDDC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
+        m_fduc72TX->setCallback(CSerialModem::callbackTX);
     }
 
     m_txFormat = SERIALMODEM_FORMAT(data[3U]);
@@ -503,7 +485,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         break;
     default:
         ::fprintf(stderr, "Unknown TX format - %u\n", m_txFormat);
-        throw;
+        return false;
     }
 
     switch (m_rxFormat) {
@@ -515,7 +497,7 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         break;
     default:
         ::fprintf(stderr, "Unknown RX format - %u\n", m_rxFormat);
-        throw;
+        return false;
     }
 
     m_maxTXSamples = data[5U] + data[6U] * 256U;
@@ -541,35 +523,31 @@ void CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     delete[] m_txBuffer;
     delete[] m_rxBuffer;
 
-    m_txBuffer = new uint16_t[txBytes + 20U];
+    m_txBuffer = new int16_t[txBytes + 20U];
     m_rxBuffer = new uint8_t[rxBytes + 20U];
-
-    if (m_sampleRate < 24U) {
-        ::printf("Invalid sample rate - %ukHz\n", m_sampleRate);
-        ::fflush(stdout);
-        throw;
-    }
 
     // This may need updating when new hardware becomes available
     if ((m_txFormat != SERIALMODEM_FORMAT::BASEBAND) && (m_txFormat != SERIALMODEM_FORMAT::IQ)) {
         ::printf("Invalid transmit format - %u\n", data[2U]);
         ::fflush(stdout);
-        throw;
+        return false;
     }
 
     // This may need updating when new hardware becomes available
     if ((m_rxFormat != SERIALMODEM_FORMAT::BASEBAND) && (m_rxFormat != SERIALMODEM_FORMAT::IQ)) {
         ::printf("Invalid receive format - %u\n", data[3U]);
         ::fflush(stdout);
-        throw;
+        return false;
     }
+
+    return true;
 }
 
 bool CSerialModem::writeTransmitDataBB()
 {
     bool full = false;
 
-    IQSample<uint16_t> sample;
+    IQSample<int16_t> sample;
     while (m_toModem.get(sample)) {
         m_txBuffer[m_txLen] = sample.iValue;
 
@@ -625,7 +603,7 @@ bool CSerialModem::writeTransmitDataIQ()
 
     uint16_t n = m_txLen * IQ_ELEMENT_LEN;
 
-    IQSample<uint16_t> sample;
+    IQSample<int16_t> sample;
     while (m_toModem.get(sample)) {
         m_txBuffer[n++] = sample.iValue;
         m_txBuffer[n++] = sample.qValue;
@@ -672,13 +650,13 @@ bool CSerialModem::writeTransmitDataIQ()
     return true;
 }
 
-bool CSerialModem::processBB24TX(uint8_t marker, int16_t frequency, float32_t amplitude)
+bool CSerialModem::processSampleFSK24BB(uint8_t marker, int16_t frequency, float32_t amplitude)
 {
-    IQSample<uint16_t> sample;
+    IQSample<int16_t> sample;
 
     sample.control = marker;
-    sample.iValue  = uint16_t(frequency + (UINT16_MAX / 2));
-    sample.qValue  = 0U;
+    sample.iValue  = frequency;
+    sample.qValue  = 0;
 
     // Send straight to the modem, no resampling is needed
     m_toModem.put(sample);
@@ -686,8 +664,10 @@ bool CSerialModem::processBB24TX(uint8_t marker, int16_t frequency, float32_t am
     return true;
 }
 
-bool CSerialModem::processIQ24TX(uint8_t marker, int16_t frequency, float32_t amplitude)
+bool CSerialModem::processSampleFSK24IQ(uint8_t marker, int16_t frequency, float32_t amplitude)
 {
+    assert(m_fduc24TX != nullptr);
+
     m_phase += frequency * DEVIATION;
 
     float32_t phase = float32_t(m_phase) * M_PI;
@@ -698,13 +678,15 @@ bool CSerialModem::processIQ24TX(uint8_t marker, int16_t frequency, float32_t am
     sample.qValue  = amplitude * ::sin(phase);
     sample.control = marker;
 
-    m_toModem24.put(sample);
+    m_fduc24TX->process(sample);
 
     return true;
 }
 
-bool CSerialModem::processIQ72TX(uint8_t marker, int16_t phase, float32_t amplitude)
+bool CSerialModem::processSamplePSK72IQ(uint8_t marker, int16_t phase, float32_t amplitude)
 {
+    assert(m_fduc72TX != nullptr);
+
     // Create I + Q
 
     IQSample<float32_t> sample;
@@ -713,7 +695,7 @@ bool CSerialModem::processIQ72TX(uint8_t marker, int16_t phase, float32_t amplit
     sample.qValue  = amplitude * ::arm_cos_q15(phase);
     sample.control = marker;
 
-    m_toModem72.put(sample);
+    m_fduc72TX->process(sample);
 
     return true;
 }
@@ -730,10 +712,10 @@ void CSerialModem::processBBRX(uint8_t marker, uint16_t offset, const uint8_t* d
 
     uint16_t count = (length - sizeof(uint16_t)) / BB_ELEMENT_LEN;
 
-    const uint16_t* p = (const uint16_t*)data;
+    const int16_t* p = (const int16_t*)data;
 
     for (uint16_t i = 0U; i < count; i++) {
-        q15_t sample = q15_t(*p++ - INT16_MAX);
+        q15_t sample = *p++;
 
         if (i == offset)
             io.read24FSK(marker, sample, cos, rssi);
@@ -744,68 +726,25 @@ void CSerialModem::processBBRX(uint8_t marker, uint16_t offset, const uint8_t* d
 
 void CSerialModem::processIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length)
 {
+    assert(m_fddc24RX != nullptr);
+    assert(m_fddc72RX != nullptr);
     assert(data != nullptr);
     assert(length > 0U);
 
     uint16_t count = length / IQ_ELEMENT_LEN;
 
-    const uint16_t* p = (const uint16_t*)data;
+    const int16_t* p = (const int16_t*)data;
 
     for (uint16_t i = 0U; i < count; i++) {
         IQSample<float32_t> sample;
 
-        sample.iValue = UINT16_TO_FLOAT32(*p++);
-        sample.qValue = UINT16_TO_FLOAT32(*p++);
+        sample.iValue = INT16_TO_FLOAT32(*p++);
+        sample.qValue = INT16_TO_FLOAT32(*p++);
         sample.control = (i == offset) ? marker : 0x00U;
 
-        m_fromModem24.put(sample);
-        m_fromModem72.put(sample);
+        m_fddc24RX->process(sample);
+        m_fddc72RX->process(sample);
     }
-}
-
-void CSerialModem::processIQ24RX(uint8_t marker, float32_t iValue, float32_t qValue)
-{
-    // Put main selectivity here
-
-    bool cos = true;        // XXX
-
-    float32_t rssi = ::sqrt(iValue * iValue + qValue * qValue);
-
-    // Multiply by the conjugate of the last I/Q sample
-    float32_t i = (iValue * m_lastI24) + (qValue * m_lastQ24);
-    float32_t q = (qValue * m_lastI24) - (iValue * m_lastQ24);
-
-    float32_t phase = ::atan2(q, i);
-
-    io.read24FSK(marker, ::FLOAT32_TO_Q15(phase), cos, uint16_t(rssi));
-
-    m_lastI24 = iValue;
-    m_lastQ24 = qValue;
-}
-
-void CSerialModem::processIQ72RX(uint8_t marker, float32_t iValue, float32_t qValue)
-{
-    // Put main selectivity here
-
-/*
-    bool cos = true;        // XXX
-
-    float32_t rssi = ::sqrt(iValue * iValue + qValue * qValue);
-
-    // Multiply by the conjugate of the last I/Q sample
-    float32_t i = (iValue * m_lastI72) + (qValue * m_lastQ72);
-    float32_t q = (qValue * m_lastI72) - (iValue * m_lastQ72);
-
-    float32_t phase = ::atan2(q, i);
-
-    if (j == offset)
-        io.read72PSK(marker, phase, rssi);
-    else
-        io.read72PSK(MARK_NONE, phase, rssi);
-
-    m_lastI72 = iValue;
-    m_lastQ72 = qValue;
-*/
 }
 
 void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) const
@@ -849,4 +788,63 @@ void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) 
         else
             length = 0U;
     }
+}
+
+void CSerialModem::callbackTX(const IQSample<float32_t>& sample)
+{
+    assert(m_ptr != nullptr);
+
+    IQSample<int16_t> sample2;
+
+    sample2.iValue  = ::FLOAT32_TO_INT16(sample.iValue);
+    sample2.qValue  = ::FLOAT32_TO_INT16(sample.qValue);
+    sample2.control = sample.control;
+
+    m_ptr->m_toModem.put(sample2);
+}
+
+void CSerialModem::callbackRX24(const IQSample<float32_t>& sample)
+{
+    assert(m_ptr != nullptr);
+
+    // Put main selectivity here
+
+    bool cos = true;        // XXX
+
+    float32_t rssi = ::sqrt(sample.iValue * sample.iValue + sample.qValue * sample.qValue);
+
+    // Multiply by the conjugate of the last I/Q sample
+    float32_t i = (sample.iValue * m_ptr->m_lastI24) + (sample.qValue * m_ptr->m_lastQ24);
+    float32_t q = (sample.qValue * m_ptr->m_lastI24) - (sample.iValue * m_ptr->m_lastQ24);
+
+    float32_t phase = ::atan2(q, i);
+
+    io.read24FSK(sample.control, ::FLOAT32_TO_Q15(phase), cos, uint16_t(rssi));
+
+    m_ptr->m_lastI24 = sample.iValue;
+    m_ptr->m_lastQ24 = sample.qValue;
+}
+
+void CSerialModem::callbackRX72(const IQSample<float32_t>& sample)
+{
+    assert(m_ptr != nullptr);
+
+    // Put main selectivity here
+
+/*
+    bool cos = true;        // XXX
+
+    float32_t rssi = ::sqrt(sample.iValue * sample.iValue + sample.qValue * sample.qValue);
+
+    // Multiply by the conjugate of the last I/Q sample
+    float32_t i = (sample.iValue * m_ptr->m_lastI72) + (sample.qValue * m_ptr->m_lastQ72);
+    float32_t q = (sample.qValue * m_ptr->m_lastI72) - (sample.iValue * m_ptr->m_lastQ72);
+
+    float32_t phase = ::atan2(q, i);
+
+    io.read72PSK(sample.control, phase, cos, uint16_t(rssi));
+
+    m_ptr->m_lastI72 = sample.iValue;
+    m_ptr->m_lastQ72 = sample.qValue;
+*/
 }

@@ -20,31 +20,9 @@
 #if !defined(FDUC_H)
 #define FDUC_H
 
-#include "RingBuffer.h"
-#include "IQSample.h"
+#include "FDUDC.h"
 
-#include <arm_math.h>
-
-class IFDUC {
-public:
-    virtual ~IFDUC() = 0;
-
-    virtual void process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out) = 0;
-
-private:
-};
-
-class CFDUCDummy : public IFDUC {
-public:
-    CFDUCDummy();
-    virtual ~CFDUCDummy();
-
-    virtual void process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out);
-
-private:
-};
-
-class CFDUC : public IFDUC {
+class CFDUC : public IFDUDC {
 public:
     CFDUC(
         unsigned int resampNum,
@@ -66,7 +44,9 @@ public:
 
     virtual ~CFDUC();
 
-    virtual void process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out);
+    virtual void setCallback(void (*callback)(const IQSample<float32_t>& sample));
+
+    virtual void process(const IQSample<float32_t>& sample);
 
 private:
     // Numerator of sample rate ratio
@@ -101,6 +81,8 @@ private:
 
     // Scaling needed so that DUC has unity gain in passband
     float32_t    m_ducScaling;
+
+    void (*m_callback)(const IQSample<float32_t>& sample);
 
     float32_t sinc(float32_t v) const;
     float32_t hann_window(unsigned int i, unsigned int length) const;

@@ -19,13 +19,54 @@
 #if !defined(UTILS_H)
 #define  UTILS_H
 
-#if defined(STM32F4XX)
-#include "stm32f4xx.h"
-#elif defined(STM32F7XX)
-#include "stm32f7xx.h"
-#else
 #include <Arduino.h>
-#endif
+
+#include "arm_math.h"
+
+static inline q15_t FLOAT32_TO_Q15(float32_t in)
+{
+    if (in > 1.0F)
+        return INT16_MAX;
+    else if (in < -1.0f)
+        return INT16_MIN;
+    else
+        return q15_t((float32_t(INT16_MAX) * in) + 0.5F);
+}
+
+static inline int16_t FLOAT32_TO_INT16(float32_t in)
+{
+    if (in > 1.0F)
+        return INT16_MAX;
+    else if (in < -1.0f)
+        return INT16_MIN;
+    else
+        return q15_t((float32_t(INT16_MAX) * in) + 0.5F);
+}
+
+static inline uint16_t FLOAT32_TO_UINT16(float32_t in)
+{
+    if (in > 1.0F)
+        return UINT16_MAX;
+    else if (in < -1.0f)
+        return 0U;
+    else
+        return uint16_t(float32_t(UINT16_MAX) * ((in + 1.0F) / 2.0F));
+}
+
+static inline float32_t Q15_TO_FLOAT32(q15_t in)
+{
+    return float32_t(in) / float32_t(INT16_MAX);
+}
+
+static inline float32_t INT16_TO_FLOAT32(int16_t in)
+{
+    return float32_t(in) / float32_t(INT16_MAX);
+}
+
+static inline float32_t UINT16_TO_FLOAT32(uint16_t in)
+{
+    return ((float32_t(in) / float32_t(UINT16_MAX)) * 2.0F) - 1.0F;
+}
 
 uint8_t countBits8(uint8_t bits);
 

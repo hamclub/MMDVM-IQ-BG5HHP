@@ -31,24 +31,6 @@
 const unsigned int FDUC_VECLEN = 4U;
 const unsigned int FDUC_VECSIZE = sizeof(float32_t) * FDUC_VECLEN;
 
-IFDUC::~IFDUC()
-{
-}
-
-CFDUCDummy::CFDUCDummy()
-{
-}
-
-CFDUCDummy::~CFDUCDummy()
-{
-}
-
-void CFDUCDummy::process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out)
-{
-    IQSample<float32_t> sample;
-    while (in.get(sample))
-        out.put(sample);
-}
 
 CFDUC::CFDUC(
     unsigned int resampNum,
@@ -73,7 +55,8 @@ m_outIm(nullptr),
 m_duc_sineI(nullptr),
 m_duc_sineQ(nullptr),
 m_duc_sineLen(0U),
-m_ducScaling(0.0F)
+m_ducScaling(0.0F),
+m_callback(nullptr)
 {
     unsigned int approxlen = resampDen * length;
 
@@ -140,51 +123,59 @@ CFDUC::~CFDUC()
     delete[] m_duc_sineQ;
 }
 
-void CFDUC::process(CRingBuffer<IQSample<float32_t>>& in, CRingBuffer<IQSample<float32_t>>& out)
+void CFDUC::setCallback(void (*callback)(const IQSample<float32_t>& sample))
 {
-    IQSample<float32_t> sample;
-    while (in.get(sample)) {
-        sample.iValue *= m_ducScaling;
-        sample.qValue *= m_ducScaling;
+    assert(callback != nullptr);
 
-        m_p += m_resampDen;
-        while (m_p >= m_resampNum) {
-            m_p -= m_resampNum;
+    m_callback = callback;
+}
 
-            unsigned int iTap = m_p * m_branchlen;
-            unsigned int iI   = m_i + 1U;
+void CFDUC::process(const IQSample<float32_t>& sample)
+{
+    assert(m_callback != nullptr);
 
-            for (unsigned int i = 0U; i < m_branchlen; i++) {
-                const float32_t tap = m_taps[iTap];
+    IQSample<float32_t> in;
+    in.iValue  = sample.iValue * m_ducScaling;
+    in.qValue  = sample.qValue * m_ducScaling;
+    in.control = sample.control;
 
-                m_outRe[iI] += sample.iValue * tap;
-                m_outIm[iI] += sample.qValue * tap;
+    m_p += m_resampDen;
+    while (m_p >= m_resampNum) {
+        m_p -= m_resampNum;
 
-                if (++iTap >= m_tapsLen)
-                    iTap = 0U;
+        unsigned int iTap = m_p * m_branchlen;
+        unsigned int iI   = m_i + 1U;
 
-                if (++iI >= (m_branchlen * 2U))
-                    iI = 0U;
-            }
+        for (unsigned int i = 0U; i < m_branchlen; i++) {
+            const float32_t tap = m_taps[iTap];
+
+            m_outRe[iI] += in.iValue * tap;
+            m_outIm[iI] += in.qValue * tap;
+
+            if (++iTap >= m_tapsLen)
+                iTap = 0U;
+
+            if (++iI >= (m_branchlen * 2U))
+                iI = 0U;
         }
-
-        COMPLEX_MULT(sample.iValue, sample.qValue,
-            m_outRe[m_i] + m_outRe[m_i + m_branchlen],
-            m_outIm[m_i] + m_outIm[m_i + m_branchlen],
-            m_duc_sineI[m_duc_i],
-            m_duc_sineQ[m_duc_i]);
-
-        out.put(sample);
-
-        if (++m_duc_i >= m_duc_sineLen)
-            m_duc_i = 0U;
-
-        m_outRe[m_i] = m_outRe[m_i + m_branchlen] = 0.0F;
-        m_outIm[m_i] = m_outIm[m_i + m_branchlen] = 0.0F;
-
-        if (++m_i >= m_branchlen)
-            m_i = 0U;
     }
+
+    COMPLEX_MULT(in.iValue, in.qValue,
+        m_outRe[m_i] + m_outRe[m_i + m_branchlen],
+        m_outIm[m_i] + m_outIm[m_i + m_branchlen],
+        m_duc_sineI[m_duc_i],
+        m_duc_sineQ[m_duc_i]);
+
+    (*m_callback)(in);
+
+    if (++m_duc_i >= m_duc_sineLen)
+        m_duc_i = 0U;
+
+    m_outRe[m_i] = m_outRe[m_i + m_branchlen] = 0.0F;
+    m_outIm[m_i] = m_outIm[m_i + m_branchlen] = 0.0F;
+
+    if (++m_i >= m_branchlen)
+        m_i = 0U;
 }
 
 float32_t CFDUC::sinc(float32_t v) const
