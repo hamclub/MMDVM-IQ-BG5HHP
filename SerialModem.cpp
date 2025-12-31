@@ -18,6 +18,7 @@
 
 #include "SerialModem.h"
 #include "Globals.h"
+#include "Thread.h"
 #include "Utils.h"
 #include "FDDC.h"
 #include "FDUC.h"
@@ -77,11 +78,10 @@ m_state(SERIALMODEM_STATE::NONE),
 m_txBuffer(nullptr),
 m_rxBuffer(nullptr),
 m_rxPtr(0U),
-m_txLen(0U),
 m_rxLen(0U),
-m_offset(0U),
-m_marker(0x00U),
-m_timer(1000U, 0U, 100U),
+m_messageTimer(1000U, 0U, 100U),
+m_watchdogTimer(1000U, 1U),
+m_transmitTimer(1000U, 0U, 200U),
 m_power(0U),
 m_txFreq(0U),
 m_rxFreq(0U),
@@ -149,7 +149,7 @@ bool CSerialModem::hasRX() const
 
 bool CSerialModem::canTETRA() const
 {
-    return (m_sampleRate >= 72U) && (m_txFormat == SERIALMODEM_FORMAT::IQ) && (m_rxFormat == SERIALMODEM_FORMAT::IQ);
+    return (m_txFormat == SERIALMODEM_FORMAT::IQ) && (m_rxFormat == SERIALMODEM_FORMAT::IQ);
 }
 
 void CSerialModem::start()
@@ -163,7 +163,7 @@ void CSerialModem::start()
     m_state = SERIALMODEM_STATE::WAIT_VERSION;
 
     m_stopwatch.start();
-    m_timer.start();
+    m_messageTimer.start();
 }
 
 // Called from the main loop
@@ -208,30 +208,34 @@ void CSerialModem::process()
 
     // Is this correct?
     unsigned int ms = m_stopwatch.elapsed();
-    m_timer.clock(ms);
-    if (m_timer.isRunning() && m_timer.hasExpired()) {
+    m_messageTimer.clock(ms);
+    m_watchdogTimer.clock(ms);
+    m_transmitTimer.clock(ms);
+    m_stopwatch.start();
+
+    if (m_messageTimer.isRunning() && m_messageTimer.hasExpired()) {
         switch (m_state) {
         case SERIALMODEM_STATE::NONE:
-            m_timer.stop();
+            m_messageTimer.stop();
             break;
         case SERIALMODEM_STATE::WAIT_VERSION:
             writeGetVersion();
-            m_timer.start();
+            m_messageTimer.start();
             break;
         case SERIALMODEM_STATE::WAIT_FREQ_POWER:
             writeSetFreqPower();
-            m_timer.start();
+            m_messageTimer.start();
             break;
         case SERIALMODEM_STATE::WAIT_START:
             writeStart();
-            m_timer.start();
+            m_messageTimer.start();
             break;
         case SERIALMODEM_STATE::WAIT_STOP:
             writeStop();
-            m_timer.start();
+            m_messageTimer.start();
             break;
         default:	// SMS_RUNNING
-            m_timer.stop();
+            m_messageTimer.stop();
             break;
         }
     }
@@ -239,14 +243,36 @@ void CSerialModem::process()
     // Handle the transmit data
     switch (m_txFormat) {
     case SERIALMODEM_FORMAT::BASEBAND:
-        writeTransmitDataBB();
+        writeTransmitDataBB(false);
         break;
     case SERIALMODEM_FORMAT::IQ:
-        writeTransmitDataIQ();
+        writeTransmitDataIQ(false);
         break;
     default:
         break;
     }
+
+    if (m_transmitTimer.isRunning() && m_transmitTimer.hasExpired()) {
+        ::printf("The transmit timer has expired\n");
+        // Handle the remaining transmit data
+        switch (m_txFormat) {
+        case SERIALMODEM_FORMAT::BASEBAND:
+            writeTransmitDataBB(true);
+            break;
+        case SERIALMODEM_FORMAT::IQ:
+            writeTransmitDataIQ(true);
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (m_watchdogTimer.isRunning() && m_watchdogTimer.hasExpired()) {
+        ::printf("The watchdog timer has expired\n");
+        // Actually not sure what to do here
+    }
+
+    CThread::sleep(5U);
 }
 
 // For all modes bar TETRA and P25 phase 2
@@ -291,7 +317,7 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
                 throw;
 
             m_state = SERIALMODEM_STATE::NONE;
-            m_timer.start();
+            m_messageTimer.start();
         }
         break;
     case TYPE_DEBUG_MESSAGE:
@@ -300,11 +326,11 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
     case TYPE_ACK:
         if (m_state == SERIALMODEM_STATE::WAIT_FREQ_POWER) {
             writeStart();
-            m_timer.start();
+            m_messageTimer.start();
         } else if (m_state == SERIALMODEM_STATE::WAIT_START) {
             ::printf("Modem has been started\n");
             m_state = SERIALMODEM_STATE::RUNNING;
-            m_timer.stop();
+            m_messageTimer.stop();
         }
         break;
     case TYPE_NAK:
@@ -339,6 +365,7 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
     case TYPE_STATUS:
         m_spaceLeft = data[0U] + (data[1U] * 256U);
         m_tx = (data[2U] & STATUS_TX_ON) == STATUS_TX_ON;
+        m_watchdogTimer.start();
         break;
     case TYPE_RECEIVE_DATA:
         if (m_state == SERIALMODEM_STATE::RUNNING) {
@@ -411,6 +438,8 @@ void CSerialModem::writeStart()
     m_serial.write(buffer, 6U);
 
     m_state = SERIALMODEM_STATE::WAIT_START;
+
+    m_watchdogTimer.start();
 }
 
 void CSerialModem::writeStop()
@@ -418,6 +447,9 @@ void CSerialModem::writeStop()
     m_serial.write(STOP_MESSAGE, STOP_MESSAGE_LEN);
 
     m_state = SERIALMODEM_STATE::WAIT_STOP;
+
+    m_watchdogTimer.stop();
+    m_transmitTimer.stop();
 }
 
 bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
@@ -473,37 +505,47 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     m_txFormat = SERIALMODEM_FORMAT(data[3U]);
     m_rxFormat = SERIALMODEM_FORMAT(data[4U]);
 
-    uint8_t txSizeMultiplier = 0U;
-    uint8_t rxSizeMultiplier = 0U;
+    m_maxTXSamples = data[5U] + data[6U] * 256U;
 
     switch (m_txFormat) {
-    case SERIALMODEM_FORMAT::BASEBAND:
-        txSizeMultiplier = BB_ELEMENT_LEN;
+    case SERIALMODEM_FORMAT::BASEBAND: {
+            delete[] m_txBuffer;
+            uint16_t bytes = m_maxTXSamples * BB_ELEMENT_LEN;
+            m_txBuffer = new uint8_t[bytes + 20U];
+        }
         break;
-    case SERIALMODEM_FORMAT::IQ:
-        txSizeMultiplier = IQ_ELEMENT_LEN;
+
+    case SERIALMODEM_FORMAT::IQ: {
+            delete[] m_txBuffer;
+            uint16_t bytes = m_maxTXSamples * IQ_ELEMENT_LEN;
+            m_txBuffer = new uint8_t[bytes + 20U];
+        }
         break;
+
     default:
         ::fprintf(stderr, "Unknown TX format - %u\n", m_txFormat);
         return false;
     }
 
     switch (m_rxFormat) {
-    case SERIALMODEM_FORMAT::BASEBAND:
-        rxSizeMultiplier = BB_ELEMENT_LEN;
+    case SERIALMODEM_FORMAT::BASEBAND: {
+            delete[] m_rxBuffer;
+            uint16_t bytes = MAX_RX_SAMPLES * BB_ELEMENT_LEN;
+            m_rxBuffer = new uint8_t[bytes + 20U];
+        }
         break;
-    case SERIALMODEM_FORMAT::IQ:
-        rxSizeMultiplier = IQ_ELEMENT_LEN;
+
+    case SERIALMODEM_FORMAT::IQ: {
+            delete[] m_rxBuffer;
+            uint16_t bytes = MAX_RX_SAMPLES * IQ_ELEMENT_LEN;
+            m_rxBuffer = new uint8_t[bytes + 20U];
+        }
         break;
+
     default:
         ::fprintf(stderr, "Unknown RX format - %u\n", m_rxFormat);
         return false;
     }
-
-    m_maxTXSamples = data[5U] + data[6U] * 256U;
-
-    uint16_t txBytes = m_maxTXSamples * txSizeMultiplier;
-    uint16_t rxBytes = MAX_RX_SAMPLES * rxSizeMultiplier;
 
     ::printf("Modem version:\n");
     ::printf("\tProtocol version: %u\n", data[0U]);
@@ -517,56 +559,45 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     ::printf("\t\tReceive: %u\n", m_rxFormat);
     ::printf("\tMax TX samples: %u\n", m_maxTXSamples);
     ::printf("\tVersion: \"%.*s\"\n", length - 7U, data + 7U);
-    ::printf("\tTX size multiplier: %u\n", txSizeMultiplier);
-    ::printf("\tRX size multiplier: %u\n", rxSizeMultiplier);
-
-    delete[] m_txBuffer;
-    delete[] m_rxBuffer;
-
-    m_txBuffer = new int16_t[txBytes + 20U];
-    m_rxBuffer = new uint8_t[rxBytes + 20U];
-
-    // This may need updating when new hardware becomes available
-    if ((m_txFormat != SERIALMODEM_FORMAT::BASEBAND) && (m_txFormat != SERIALMODEM_FORMAT::IQ)) {
-        ::printf("Invalid transmit format - %u\n", data[2U]);
-        ::fflush(stdout);
-        return false;
-    }
-
-    // This may need updating when new hardware becomes available
-    if ((m_rxFormat != SERIALMODEM_FORMAT::BASEBAND) && (m_rxFormat != SERIALMODEM_FORMAT::IQ)) {
-        ::printf("Invalid receive format - %u\n", data[3U]);
-        ::fflush(stdout);
-        return false;
-    }
 
     return true;
 }
 
-bool CSerialModem::writeTransmitDataBB()
+bool CSerialModem::writeTransmitDataBB(bool flush)
 {
-    bool full = false;
-
-    IQSample<int16_t> sample;
-    while (m_toModem.get(sample)) {
-        m_txBuffer[m_txLen] = sample.iValue;
-
-        if (sample.control != 0x00U) {
-            m_offset = m_txLen;
-            m_marker = sample.control;
-        }
-
-        m_txLen++;
-        if ((m_txLen + 1U) > m_maxTXSamples) {
-            full = true;
-            break;
+    if (!flush) {
+        // If not flushing the data, only transmit the data if we have a buffer full
+        if (m_toModem.getData() < m_maxTXSamples)
+            return false;
+    } else {
+        // If flushing the data, only transmit when the modem has space
+        if ((m_toModem.getData() > 0U) && (m_spaceLeft > 0U)) {
+            m_transmitTimer.start();
+            return false;
         }
     }
 
-    if (!full)
-        return false;
+    uint16_t offset = 0U;
+    uint8_t marker  = 0x00U;
 
-    uint16_t len = (m_txLen * BB_ELEMENT_LEN) + 10U;
+    uint16_t n = 0U;
+    IQSample<int16_t> sample;
+    while (m_toModem.get(sample) && (n < m_maxTXSamples)) {
+        uint16_t value = uint16_t(sample.iValue);
+
+        ::memcpy(m_txBuffer + (n * BB_ELEMENT_LEN), &value, BB_ELEMENT_LEN);
+
+        if (sample.control != 0x00U) {
+            offset = n;
+            marker = sample.control;
+        }
+
+        n++;
+    }
+
+    m_spaceLeft -= n;
+
+    uint16_t len = (n * BB_ELEMENT_LEN) + 10U;
 
     uint8_t buffer[10U];
 
@@ -575,10 +606,10 @@ bool CSerialModem::writeTransmitDataBB()
     buffer[2U] = len / 256U;
     buffer[3U] = TYPE_TRANSMIT_DATA;
 
-    buffer[4U] = m_marker;
+    buffer[4U] = marker;
 
-    buffer[5U] = m_offset % 256U;
-    buffer[6U] = m_offset / 256U;
+    buffer[5U] = offset % 256U;
+    buffer[6U] = offset / 256U;
 
     buffer[7U] = 0x00U;
 
@@ -588,42 +619,53 @@ bool CSerialModem::writeTransmitDataBB()
 
     m_serial.write(buffer, 10U);
 
-    m_serial.write((const uint8_t*)m_txBuffer, len);
+    m_serial.write(m_txBuffer, len);
 
-    m_txLen  = 0U;
-    m_offset = 0U;
-    m_marker = 0x00U;
+    if (!flush)
+        m_transmitTimer.start();
+    else if (m_toModem.getData() > 0U)
+        m_transmitTimer.start();
 
     return true;
 }
 
-bool CSerialModem::writeTransmitDataIQ()
+bool CSerialModem::writeTransmitDataIQ(bool flush)
 {
-    bool full = false;
-
-    uint16_t n = m_txLen * IQ_ELEMENT_LEN;
-
-    IQSample<int16_t> sample;
-    while (m_toModem.get(sample)) {
-        m_txBuffer[n++] = sample.iValue;
-        m_txBuffer[n++] = sample.qValue;
-
-        if (sample.control != 0x00U) {
-            m_offset = m_txLen;
-            m_marker = sample.control;
-        }
-
-        m_txLen++;
-        if ((m_txLen + 1U) > m_maxTXSamples) {
-            full = true;
-            break;
+    if (!flush) {
+        // If not flushing the data, only transmit the data if we have a buffer full
+        if (m_toModem.getData() < m_maxTXSamples)
+            return false;
+    } else {
+        // If flushing the data, only transmit when the modem has space
+        if ((m_toModem.getData() > 0U) && (m_spaceLeft > 0U)) {
+            m_transmitTimer.start();
+            return false;
         }
     }
 
-    if (!full)
-        return false;
+    uint16_t offset = 0U;
+    uint8_t marker  = 0x00U;
 
-    uint16_t len = (m_txLen * IQ_ELEMENT_LEN) + 8U;
+    uint16_t n = 0U;
+    IQSample<int16_t> sample;
+    while (m_toModem.get(sample) && (n < m_maxTXSamples)) {
+        int16_t iValue = sample.iValue;
+        int16_t qValue = sample.qValue;
+
+        ::memcpy(m_txBuffer + (n * IQ_ELEMENT_LEN) + 0U,              &iValue, sizeof(int16_t));
+        ::memcpy(m_txBuffer + (n * IQ_ELEMENT_LEN) + sizeof(int16_t), &qValue, sizeof(int16_t));
+
+        if (sample.control != 0x00U) {
+            offset = n;
+            marker = sample.control;
+        }
+
+        n++;
+    }
+
+    m_spaceLeft -= n;
+
+    uint16_t len = (n * IQ_ELEMENT_LEN) + 8U;
 
     uint8_t buffer[8U];
 
@@ -632,20 +674,21 @@ bool CSerialModem::writeTransmitDataIQ()
     buffer[2U] = len / 256U;
     buffer[3U] = TYPE_TRANSMIT_DATA;
 
-    buffer[4U] = m_marker;
+    buffer[4U] = marker;
 
-    buffer[5U] = m_offset % 256U;
-    buffer[6U] = m_offset / 256U;
+    buffer[5U] = offset % 256U;
+    buffer[6U] = offset / 256U;
 
     buffer[7U] = 0x00U;
 
     m_serial.write(buffer, 8U);
 
-    m_serial.write((const uint8_t*)m_txBuffer, len);
+    m_serial.write(m_txBuffer, len);
 
-    m_txLen  = 0U;
-    m_offset = 0U;
-    m_marker = 0x00U;
+    if (!flush)
+        m_transmitTimer.start();
+    else if (m_toModem.getData() > 0U)
+        m_transmitTimer.start();
 
     return true;
 }

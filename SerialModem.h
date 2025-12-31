@@ -70,14 +70,13 @@ public:
 private:
 	CUARTController    m_serial;
 	SERIALMODEM_STATE  m_state;
-	int16_t*           m_txBuffer;
+	uint8_t*           m_txBuffer;
 	uint8_t*           m_rxBuffer;
 	uint16_t           m_rxPtr;
-	uint16_t           m_txLen;
 	uint16_t           m_rxLen;
-	uint16_t           m_offset;
-	uint8_t            m_marker;
-	CTimer             m_timer;
+	CTimer             m_messageTimer;
+	CTimer             m_watchdogTimer;
+	CTimer             m_transmitTimer;
 
 	uint8_t            m_power;
 	uint32_t           m_txFreq;
@@ -113,9 +112,6 @@ private:
 
 	static CSerialModem* m_ptr;
 
-	void watchdogTimeout();
-	void transmitTimeout();
-
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
 	void writeGetVersion();
@@ -123,8 +119,8 @@ private:
 	void writeStart();
 	void writeStop();
 
-	bool writeTransmitDataBB();
-	bool writeTransmitDataIQ();
+	bool writeTransmitDataBB(bool flush);
+	bool writeTransmitDataIQ(bool flush);
 
 	bool processSampleFSK24BB(uint8_t marker, int16_t frequency, float32_t amplitude);
 	bool processSampleFSK24IQ(uint8_t marker, int16_t frequency, float32_t amplitude);
