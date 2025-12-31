@@ -44,31 +44,6 @@
 // Enable FM support.
 #define MODE_FM
 
-// Allow for the use of high quality external clock oscillators
-// The number is the frequency of the oscillator in Hertz.
-//
-// The frequency of the TCXO must be an integer multiple of 48000.
-// Frequencies such as 12.0 Mhz (48000 * 250) and 14.4 Mhz (48000 * 300) are suitable.
-// Frequencies such as 10.0 Mhz (48000 * 208.333) or 20 Mhz (48000 * 416.666) are not suitable.
-//
-// For 12 MHz
-#define EXTERNAL_OSC 12000000
-// For 12.288 MHz
-// #define EXTERNAL_OSC 12288000
-// For 14.4 MHz
-// #define EXTERNAL_OSC 14400000
-// For 19.2 MHz
-// #define EXTERNAL_OSC 19200000
-
-// Select a baud rate for host communication. The faster speeds are needed for external FM to work.
-// #define SERIAL_SPEED 115200 // Suitable for most older boards (Arduino Due, etc). External FM will NOT work with this!
-// #define SERIAL_SPEED 230400 // Only works on newer boards like fast M4, M7, Teensy 3.x. External FM might work with this
-#define SERIAL_SPEED 460800	// Only works on newer boards like fast M4, M7, Teensy 3.x. External FM should work with this
-//#define SERIAL_SPEED 500000  // Used with newer boards and Armbian on AllWinner SOCs (H2, H3) that do not support 460800
-
-// Pass RSSI information to the host
-#define SEND_RSSI_DATA
-
 // To reduce CPU load, you can remove the DC blocker by commenting out the next line
 #define USE_DCBLOCKER
 

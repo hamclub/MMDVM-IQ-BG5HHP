@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -520,7 +520,6 @@ void CP25RX::samplesToBits(uint16_t start, uint16_t count, uint8_t* buffer, uint
 
 void CP25RX::writeRSSILdu(uint8_t* ldu)
 {
-#if defined(SEND_RSSI_DATA)
   if (m_rssiCount > 0U) {
     uint16_t rssi = m_rssiAccum / m_rssiCount;
 
@@ -531,9 +530,6 @@ void CP25RX::writeRSSILdu(uint8_t* ldu)
   } else {
     serial.writeP25Ldu(ldu, P25_LDU_FRAME_LENGTH_BYTES + 1U);
   }
-#else
-  serial.writeP25Ldu(ldu, P25_LDU_FRAME_LENGTH_BYTES + 1U);
-#endif
 
   m_rssiAccum = 0U;
   m_rssiCount = 0U;

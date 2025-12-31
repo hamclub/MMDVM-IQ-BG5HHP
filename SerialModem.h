@@ -28,6 +28,8 @@
 
 #include "arm_math.h"
 
+#include <string>
+
 #include <cstdint>
 
 enum class SERIALMODEM_STATE {
@@ -58,7 +60,7 @@ public:
 
 	bool canTETRA() const;
 
-	void start();
+	bool start(const std::string& port, unsigned int speed);
 
 	void process();
 

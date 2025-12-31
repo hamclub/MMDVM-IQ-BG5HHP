@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2024 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2024,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -55,13 +55,14 @@ void CSocket::shutdown()
 	CUDPSocket::shutdown();
 }
 
-bool CSocket::open()
+bool CSocket::open(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort)
 {
-	int ret = CUDPSocket::lookup("127.0.0.1", 3335U, m_address, m_addressLength);
+	int ret = CUDPSocket::lookup(hostAddress, hostPort, m_address, m_addressLength);
 	if (ret != 0)
 		return false;
 
-	m_socket = new CUDPSocket("127.0.0.1", 3334U);
+	m_socket = new CUDPSocket(myAddress, myPort);
+
 	return m_socket->open();
 }
 

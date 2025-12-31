@@ -150,6 +150,7 @@
     <ClInclude Include="CMSIS-DSP\Arduino.h" />
     <ClInclude Include="CMSIS-DSP\arm_math.h" />
     <ClInclude Include="Complex.h" />
+    <ClInclude Include="Conf.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CWIdTX.h" />
     <ClInclude Include="Debug.h" />
@@ -208,6 +209,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CMSIS-DSP\arm_math.cpp" />
+    <ClCompile Include="Conf.cpp" />
     <ClCompile Include="CWIdTX.cpp" />
     <ClCompile Include="DMRDMORX.cpp" />
     <ClCompile Include="DMRDMOTX.cpp" />

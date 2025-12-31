@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -465,7 +465,6 @@ void CDStarRX::processData()
 
 void CDStarRX::writeRSSIHeader(unsigned char* header)
 {
-#if defined(SEND_RSSI_DATA)
   if (m_rssiCount > 0U) {
     uint16_t rssi = m_rssiAccum / m_rssiCount;
 
@@ -476,9 +475,6 @@ void CDStarRX::writeRSSIHeader(unsigned char* header)
   } else {
     serial.writeDStarHeader(header, DSTAR_HEADER_LENGTH_BYTES + 0U);
   }
-#else
-  serial.writeDStarHeader(header, DSTAR_HEADER_LENGTH_BYTES + 0U);
-#endif
 
   m_rssiAccum = 0U;
   m_rssiCount = 0U;
@@ -486,7 +482,6 @@ void CDStarRX::writeRSSIHeader(unsigned char* header)
 
 void CDStarRX::writeRSSIData(unsigned char* data)
 {
-#if defined(SEND_RSSI_DATA)
   if (m_rssiCount > 0U) {
     uint16_t rssi = m_rssiAccum / m_rssiCount;
 
@@ -497,9 +492,6 @@ void CDStarRX::writeRSSIData(unsigned char* data)
   } else {
     serial.writeDStarData(data, DSTAR_DATA_LENGTH_BYTES + 0U);
   }
-#else
-  serial.writeDStarData(data, DSTAR_DATA_LENGTH_BYTES + 0U);
-#endif
 
   m_rssiAccum = 0U;
   m_rssiCount = 0U;

@@ -18,6 +18,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "Conf.h"
 #include "Config.h"
 #include "Globals.h"
 #include "Thread.h"
@@ -81,16 +82,9 @@ CSerialModem modem;
 CSerialPort serial;
 CIO io;
 
-void setup()
-{
-  serial.start();
-
-  modem.start();
-}
-
 void loop()
 {
-  CThread::sleep(10U);
+  CThread::sleep(5U);
 
   serial.process();
   
@@ -144,8 +138,25 @@ void loop()
 
 int main(int argc, char** argv)
 {
-  setup();
+    const char* file = "MMDVM.ini";
 
-  for (;;)
-    loop();
+    if (argc > 1)
+        file = argv[1];
+
+    CConf conf(file);
+
+    if (!conf.read())
+        return 1;
+
+    bool ret = serial.start(conf.getNetworkLocalAddress(), conf.getNetworkLocalPort(),
+                            conf.getNetworkHostAddress(),  conf.getNetworkHostPort());
+    if (!ret)
+        return 1;
+
+    ret = modem.start(conf.getModemPort(), conf.getModemSpeed());
+    if (!ret)
+        return 1;
+
+    for (;;)
+        loop();
 }

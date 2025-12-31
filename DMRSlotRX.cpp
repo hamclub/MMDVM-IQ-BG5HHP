@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -386,7 +386,6 @@ void CDMRSlotRX::setDelay(uint8_t delay)
 
 void CDMRSlotRX::writeRSSIData(uint8_t* frame)
 {
-#if defined(SEND_RSSI_DATA)
   // Calculate RSSI average over a burst period. We don't take into account 2.5 ms at the beginning and 2.5 ms at the end
   uint16_t start = m_startPtr + DMR_SYNC_LENGTH_SAMPLES / 2U;
 
@@ -399,9 +398,6 @@ void CDMRSlotRX::writeRSSIData(uint8_t* frame)
   frame[35U] = (avg >> 0) & 0xFFU;
 
   serial.writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 3U);
-#else
-  serial.writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 1U);
-#endif
 }
 
 #endif

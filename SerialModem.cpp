@@ -18,7 +18,6 @@
 
 #include "SerialModem.h"
 #include "Globals.h"
-#include "Thread.h"
 #include "Utils.h"
 #include "FDDC.h"
 #include "FDUC.h"
@@ -69,7 +68,7 @@ const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
 const uint16_t BB_ELEMENT_LEN = sizeof(uint16_t);
 const uint16_t IQ_ELEMENT_LEN = sizeof(int16_t) + sizeof(int16_t);
 
-CSerialModem* CSerialModem::m_ptr;
+CSerialModem* CSerialModem::m_ptr = nullptr;
 
 
 CSerialModem::CSerialModem() :
@@ -152,11 +151,11 @@ bool CSerialModem::canTETRA() const
     return (m_txFormat == SERIALMODEM_FORMAT::IQ) && (m_rxFormat == SERIALMODEM_FORMAT::IQ);
 }
 
-void CSerialModem::start()
+bool CSerialModem::start(const std::string& port, unsigned int speed)
 {
-    bool ret = m_serial.open("\\\\.\\COM8", 921600U);
+    bool ret = m_serial.open(port.c_str(), speed);
     if (!ret)
-        throw;
+        return false;
 
     m_spaceLeft = 0U;
 
@@ -164,6 +163,8 @@ void CSerialModem::start()
 
     m_stopwatch.start();
     m_messageTimer.start();
+
+    return true;
 }
 
 // Called from the main loop
@@ -271,8 +272,6 @@ void CSerialModem::process()
         ::printf("The watchdog timer has expired\n");
         // Actually not sure what to do here
     }
-
-    CThread::sleep(5U);
 }
 
 // For all modes bar TETRA and P25 phase 2
@@ -448,6 +447,8 @@ void CSerialModem::writeStop()
 
     m_state = SERIALMODEM_STATE::WAIT_STOP;
 
+    m_toModem.reset();
+
     m_watchdogTimer.stop();
     m_transmitTimer.stop();
 }
@@ -580,12 +581,11 @@ bool CSerialModem::writeTransmitDataBB(bool flush)
     uint16_t offset = 0U;
     uint8_t marker  = 0x00U;
 
+    int16_t* ptr = (int16_t*)m_txBuffer;
     uint16_t n = 0U;
     IQSample<int16_t> sample;
     while (m_toModem.get(sample) && (n < m_maxTXSamples)) {
-        uint16_t value = uint16_t(sample.iValue);
-
-        ::memcpy(m_txBuffer + (n * BB_ELEMENT_LEN), &value, BB_ELEMENT_LEN);
+        *ptr++ = sample.iValue;
 
         if (sample.control != 0x00U) {
             offset = n;
@@ -646,14 +646,12 @@ bool CSerialModem::writeTransmitDataIQ(bool flush)
     uint16_t offset = 0U;
     uint8_t marker  = 0x00U;
 
+    int16_t* ptr = (int16_t*)m_txBuffer;
     uint16_t n = 0U;
     IQSample<int16_t> sample;
     while (m_toModem.get(sample) && (n < m_maxTXSamples)) {
-        int16_t iValue = sample.iValue;
-        int16_t qValue = sample.qValue;
-
-        ::memcpy(m_txBuffer + (n * IQ_ELEMENT_LEN) + 0U,              &iValue, sizeof(int16_t));
-        ::memcpy(m_txBuffer + (n * IQ_ELEMENT_LEN) + sizeof(int16_t), &qValue, sizeof(int16_t));
+        *ptr++ = sample.iValue;
+        *ptr++ = sample.qValue;
 
         if (sample.control != 0x00U) {
             offset = n;

@@ -24,16 +24,12 @@
 #include "RingBuffer.h"
 #include "Socket.h"
 
-#if !defined(SERIAL_SPEED)
-#define SERIAL_SPEED 115200
-#endif
-
 
 class CSerialPort {
 public:
   CSerialPort();
 
-  void start();
+  bool start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort);
 
   void process();
 
@@ -101,13 +97,6 @@ private:
   uint8_t setFMParams3(const uint8_t* data, uint16_t length);
   uint8_t setFMParams4(const uint8_t* data, uint16_t length);
 #endif
-
-  // Hardware versions
-  void    beginInt(uint8_t n, int speed);
-  int     availableForReadInt(uint8_t n);
-  int     availableForWriteInt(uint8_t n);
-  uint8_t readInt(uint8_t n);
-  void    writeInt(uint8_t n, const uint8_t* data, uint16_t length, bool flush = false);
 
   void dump(const char* text, const uint8_t* data, uint16_t length) const;
 };

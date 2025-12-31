@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020,2024 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2024,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -387,7 +387,6 @@ void CYSFRX::samplesToBits(uint16_t start, uint16_t count, uint8_t* buffer, uint
 
 void CYSFRX::writeRSSIData(uint8_t* data)
 {
-#if defined(SEND_RSSI_DATA)
   if (m_rssiCount > 0U) {
     uint16_t rssi = m_rssiAccum / m_rssiCount;
 
@@ -398,9 +397,6 @@ void CYSFRX::writeRSSIData(uint8_t* data)
   } else {
     serial.writeYSFData(data, YSF_FRAME_LENGTH_BYTES + 1U);
   }
-#else
-  serial.writeYSFData(data, YSF_FRAME_LENGTH_BYTES + 1U);
-#endif
 
   m_rssiAccum = 0U;
   m_rssiCount = 0U;
