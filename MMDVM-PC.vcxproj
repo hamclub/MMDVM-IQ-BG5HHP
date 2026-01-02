@@ -184,6 +184,7 @@
     <ClInclude Include="IO.h" />
     <ClInclude Include="IOPins.h" />
     <ClInclude Include="IQSample.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="NXDNDefines.h" />
     <ClInclude Include="NXDNRX.h" />
     <ClInclude Include="NXDNTX.h" />
@@ -234,6 +235,7 @@
     <ClCompile Include="FMTimer.cpp" />
     <ClCompile Include="FMUpSampler.cpp" />
     <ClCompile Include="IO.cpp" />
+    <ClCompile Include="Log.cpp" />
     <ClCompile Include="MMDVM.cpp" />
     <ClCompile Include="NXDNRX.cpp" />
     <ClCompile Include="NXDNTX.cpp" />

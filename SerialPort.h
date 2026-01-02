@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ class CSerialPort {
 public:
   CSerialPort();
 
-  bool start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort);
+  bool start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort, bool debug);
 
   void process();
 
@@ -80,6 +80,7 @@ private:
   uint16_t  m_len;
   bool      m_debug;
   CSocket   m_socket;
+  bool      m_trace;
 
   void    sendACK(uint8_t type);
   void    sendNAK(uint8_t type, uint8_t err);

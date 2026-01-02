@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "Utils.h"
 #include "FDDC.h"
 #include "FDUC.h"
+#include "Log.h"
 
 #include <cassert>
 #include <cstdio>
@@ -105,7 +106,8 @@ m_lastI24(0.0F),
 m_lastQ24(0.0F),
 m_lastI72(0.0F),
 m_lastQ72(0.0F),
-m_stopwatch()
+m_stopwatch(),
+m_debug(false)
 {
     m_ptr = this;
 }
@@ -151,11 +153,13 @@ bool CSerialModem::canTETRA() const
     return (m_txFormat == SERIALMODEM_FORMAT::IQ) && (m_rxFormat == SERIALMODEM_FORMAT::IQ);
 }
 
-bool CSerialModem::start(const std::string& port, unsigned int speed)
+bool CSerialModem::start(const std::string& port, unsigned int speed, bool debug)
 {
     bool ret = m_serial.open(port.c_str(), speed);
     if (!ret)
         return false;
+
+    m_debug = debug;
 
     m_spaceLeft = 0U;
 
@@ -200,6 +204,9 @@ void CSerialModem::process()
 
             // The full packet has been received, process it
             if (m_rxPtr == m_rxLen) {
+                if (m_debug)
+                    dump("Read Modem", m_rxBuffer, m_rxLen);
+
                 processMessage(m_rxBuffer[3U], m_rxBuffer + 4U, m_rxLen - 4U);
                 m_rxPtr = 0U;
                 m_rxLen = 0U;
@@ -254,7 +261,7 @@ void CSerialModem::process()
     }
 
     if (m_transmitTimer.isRunning() && m_transmitTimer.hasExpired()) {
-        ::printf("The transmit timer has expired\n");
+        LogWarning("The transmit timer has expired");
         // Handle the remaining transmit data
         switch (m_txFormat) {
         case SERIALMODEM_FORMAT::BASEBAND:
@@ -269,7 +276,7 @@ void CSerialModem::process()
     }
 
     if (m_watchdogTimer.isRunning() && m_watchdogTimer.hasExpired()) {
-        ::printf("The watchdog timer has expired\n");
+        LogWarning("The watchdog timer has expired");
         // Actually not sure what to do here
     }
 }
@@ -291,7 +298,7 @@ bool CSerialModem::writeSampleFSK24(uint8_t marker, q15_t frequency, uint8_t amp
         return processSampleFSK24IQ(marker, frequency, amplitude);
 
     default:
-        ::fprintf(stderr, "Unknown TX format for FSK24\n");
+        LogError("Unknown TX format for FSK24");
         return false;
     }
 }
@@ -320,14 +327,14 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         }
         break;
     case TYPE_DEBUG_MESSAGE:
-        ::printf("DEBUG: %.*s\n", length, data);
+        LogMessage("DEBUG: %.*s", length, data);
         break;
     case TYPE_ACK:
         if (m_state == SERIALMODEM_STATE::WAIT_FREQ_POWER) {
             writeStart();
             m_messageTimer.start();
         } else if (m_state == SERIALMODEM_STATE::WAIT_START) {
-            ::printf("Modem has been started\n");
+            LogMessage("Modem has been started");
             m_state = SERIALMODEM_STATE::RUNNING;
             m_messageTimer.stop();
         }
@@ -335,31 +342,30 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
     case TYPE_NAK:
         switch (data[1U]) {
         case ERR_UNKNOWN_MESSAGE_TYPE:
-            ::printf("Unknown message type for message type 0x%02X\n", data[0U]);
+            LogMessage("Unknown message type for message type 0x%02X", data[0U]);
             break;
         case ERR_MALFORMED_MESSAGE:
-            ::printf("Malformed message received for message type 0x%02X\n", data[0U]);
+            LogMessage("Malformed message received for message type 0x%02X", data[0U]);
             break;
         case ERR_TRANSMIT_DATA_BEFORE_START:
-            ::printf("Modem not started for message type 0x%02X\n", data[0U]);
+            LogMessage("Modem not started for message type 0x%02X", data[0U]);
             break;
         case ERR_TRANSMIT_BUFFER_OVERFLOW:
-            ::printf("Transmit buffer overflow for message type 0x%02X\n", data[0U]);
+            LogMessage("Transmit buffer overflow for message type 0x%02X", data[0U]);
             break;
         case ERR_INVALID_FREQUENCY:
-            ::printf("Invalid frequency for the hardware for message type 0x%02X\n", data[0U]);
+            LogMessage("Invalid frequency for the hardware for message type 0x%02X", data[0U]);
             break;
         case ERR_TRANSMIT_DATA_ERROR:
-            ::printf("Transmit data error for message type 0x%02X\n", data[0U]);
+            LogMessage("Transmit data error for message type 0x%02X", data[0U]);
             break;
         case ERR_OUT_OF_MEMORY:
-            ::printf("Out of memory in the modem for message type 0x%02X\n", data[0U]);
+            LogMessage("Out of memory in the modem for message type 0x%02X", data[0U]);
             break;
         default:
-            ::printf("Unknown error type - 0x%02X for message type 0x%02X\n", data[1U], data[0U]);
+            LogMessage("Unknown error type - 0x%02X for message type 0x%02X", data[1U], data[0U]);
             break;
         }
-        ::fflush(stdout);
         throw;
     case TYPE_STATUS:
         m_spaceLeft = data[0U] + (data[1U] * 256U);
@@ -384,7 +390,7 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         }
         break;
     default:
-        ::fprintf(stderr, "Unknown message type - 0x%02X\n", type);
+        LogMessage("Unknown message type - 0x%02X", type);
         break;
     }
 }
@@ -392,6 +398,9 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
 void CSerialModem::writeGetVersion()
 {
     m_serial.write(GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
+
+    if (m_debug)
+        dump("Write Modem", GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
 
     m_state = SERIALMODEM_STATE::WAIT_VERSION;
 }
@@ -419,6 +428,9 @@ void CSerialModem::writeSetFreqPower()
 
     m_serial.write(buffer, 13U);
 
+    if (m_debug)
+        dump("Write Modem", buffer, 13U);
+
     m_state = SERIALMODEM_STATE::WAIT_FREQ_POWER;
 }
 
@@ -435,6 +447,9 @@ void CSerialModem::writeStart()
     buffer[5U] = MAX_RX_SAMPLES / 256U;     // MSB
 
     m_serial.write(buffer, 6U);
+
+    if (m_debug)
+        dump("Write Modem", buffer, 6U);
 
     m_state = SERIALMODEM_STATE::WAIT_START;
 
@@ -462,40 +477,40 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     m_sampleRate = data[2U];
 
     if (m_sampleRate > 24U) {
-        ::printf("Instantiating the 24 kHz downsampler\n");
+        LogMessage("Instantiating the 24 kHz downsampler");
         m_fddc24RX = new CFDDC(24U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
         m_fddc24RX->setCallback(CSerialModem::callbackRX24);
 
         m_fduc24TX = new CFDUC(24U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
         m_fduc24TX->setCallback(CSerialModem::callbackTX);
     } else if (m_sampleRate == 24U) {
-        ::printf("Instantiating the dummy 24 kHz resampler\n");
+        LogMessage("Instantiating the dummy 24 kHz resampler");
         m_fddc24RX = new CFDUDCDummy;
         m_fddc24RX->setCallback(CSerialModem::callbackRX24);
 
         m_fduc24TX = new CFDUDCDummy;
         m_fduc24TX->setCallback(CSerialModem::callbackTX);
     } else {
-        ::fprintf(stderr, "Invalid sample rate\n");
+        LogError("Invalid sample rate");
         return false;
     }
 
     if (m_sampleRate > 72U) {
-        ::printf("Instantiating the 72 kHz downsampler\n");
+        LogMessage("Instantiating the 72 kHz downsampler");
         m_fddc72RX = new CFDDC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
         m_fddc72RX->setCallback(CSerialModem::callbackRX72);
 
         m_fduc72TX = new CFDUC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
         m_fduc72TX->setCallback(CSerialModem::callbackTX);
     } else if (m_sampleRate == 72U) {
-        ::printf("Instantiating the dummy 72 kHz resampler\n");
+        LogMessage("Instantiating the dummy 72 kHz resampler");
         m_fddc72RX = new CFDUDCDummy;
         m_fddc72RX->setCallback(CSerialModem::callbackRX72);
 
         m_fduc72TX = new CFDUDCDummy;
         m_fduc72TX->setCallback(CSerialModem::callbackTX);
     } else {
-        ::printf("Instantiating the 72 kHz upsampler\n");
+        LogMessage("Instantiating the 72 kHz upsampler");
         m_fddc72RX = new CFDUC(72U, m_sampleRate, 1U, 12U, 1U, 12U, 11U, 0.5F);
         m_fddc72RX->setCallback(CSerialModem::callbackRX72);
 
@@ -524,7 +539,7 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         break;
 
     default:
-        ::fprintf(stderr, "Unknown TX format - %u\n", m_txFormat);
+        LogError("Unknown TX format - %u", m_txFormat);
         return false;
     }
 
@@ -544,22 +559,22 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         break;
 
     default:
-        ::fprintf(stderr, "Unknown RX format - %u\n", m_rxFormat);
+        LogError("Unknown RX format - %u", m_rxFormat);
         return false;
     }
 
-    ::printf("Modem version:\n");
-    ::printf("\tProtocol version: %u\n", data[0U]);
-    ::printf("\tCapabilities:\n");
-    ::printf("\t\tDuplex: %s\n", m_duplex ? "yes" : "no");
-    ::printf("\t\tTransmit: %s\n", m_hasTX ? "yes" : "no");
-    ::printf("\t\tReceive: %s\n", m_hasRX ? "yes" : "no");
-    ::printf("\t\tSample rate: %ukHz\n", m_sampleRate);
-    ::printf("\tFormats:\n");
-    ::printf("\t\tTransmit: %u\n", m_txFormat);
-    ::printf("\t\tReceive: %u\n", m_rxFormat);
-    ::printf("\tMax TX samples: %u\n", m_maxTXSamples);
-    ::printf("\tVersion: \"%.*s\"\n", length - 7U, data + 7U);
+    LogMessage("Modem version:");
+    LogMessage("\tProtocol version: %u", data[0U]);
+    LogMessage("\tCapabilities:");
+    LogMessage("\t\tDuplex: %s", m_duplex ? "yes" : "no");
+    LogMessage("\t\tTransmit: %s", m_hasTX ? "yes" : "no");
+    LogMessage("\t\tReceive: %s", m_hasRX ? "yes" : "no");
+    LogMessage("\t\tSample rate: %ukHz", m_sampleRate);
+    LogMessage("\tFormats:");
+    LogMessage("\t\tTransmit: %u", m_txFormat);
+    LogMessage("\t\tReceive: %u", m_rxFormat);
+    LogMessage("\tMax TX samples: %u", m_maxTXSamples);
+    LogMessage("\tVersion: \"%.*s\"", length - 7U, data + 7U);
 
     return true;
 }
@@ -620,6 +635,11 @@ bool CSerialModem::writeTransmitDataBB(bool flush)
     m_serial.write(buffer, 10U);
 
     m_serial.write(m_txBuffer, len);
+
+    if (m_debug) {
+        dump("Write Modem 1/2", buffer, 10U);
+        dump("Write Modem 2/2", m_txBuffer, len);
+    }
 
     if (!flush)
         m_transmitTimer.start();
@@ -682,6 +702,11 @@ bool CSerialModem::writeTransmitDataIQ(bool flush)
     m_serial.write(buffer, 8U);
 
     m_serial.write(m_txBuffer, len);
+
+    if (m_debug) {
+        dump("Write Modem 1/2", buffer, 8U);
+        dump("Write Modem 2/2", m_txBuffer, len);
+    }
 
     if (!flush)
         m_transmitTimer.start();
@@ -794,33 +819,37 @@ void CSerialModem::dump(const char* text, const uint8_t* data, uint16_t length) 
     assert(data != nullptr);
     assert(length > 0U);
 
-    ::printf("%s:\n", text);
+    LogDebug("%s:", text);
+
+    char line[100U];
 
     unsigned int offset = 0U;
 
     while (length > 0U) {
-        ::printf("%04X:  ", offset);
+        ::sprintf(line, "%04X:  ", offset);
 
         unsigned int bytes = (length > 16U) ? 16U : length;
 
         for (unsigned i = 0U; i < bytes; i++)
-            ::printf("%02X ", data[offset + i]);
+            ::sprintf(line + ::strlen(line), "%02X ", data[offset + i]);
 
         for (unsigned int i = bytes; i < 16U; i++)
-            ::printf("   ");
+            ::strcat(line, "   ");
 
-        ::printf("   *");
+        ::strcat(line, "   *");
 
         for (unsigned i = 0U; i < bytes; i++) {
             uint8_t c = data[offset + i];
 
             if (::isprint(c))
-                ::printf("%c", c);
+                ::sprintf(line + ::strlen(line), "%c", c);
             else
-                ::printf(".");
+                ::strcat(line, ".");
         }
 
-        ::printf("*\n");
+        ::strcat(line, "*");
+
+        LogDebug(line);
 
         offset += 16U;
 

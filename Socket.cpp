@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2024,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2024,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -23,13 +23,7 @@
 #include <cstring>
 #endif
 
-#if defined(HAVE_LOG_H)
 #include "Log.h"
-#else
-#define LogMessage(fmt, ...)	::fprintf(stderr, fmt "\n", ## __VA_ARGS__)
-#define LogError(fmt, ...)	::fprintf(stderr, fmt "\n", ## __VA_ARGS__)
-#define LogInfo(fmt, ...)	::fprintf(stderr, fmt "\n", ## __VA_ARGS__)
-#endif
 
 const unsigned int BUFFER_LENGTH = 3000U;
 

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ public:
 
 	bool canTETRA() const;
 
-	bool start(const std::string& port, unsigned int speed);
+	bool start(const std::string& port, unsigned int speed, bool debug);
 
 	void process();
 
@@ -111,6 +111,8 @@ private:
 	float32_t          m_lastQ72;
 
 	CStopWatch         m_stopwatch;
+
+	bool               m_debug;
 
 	static CSerialModem* m_ptr;
 

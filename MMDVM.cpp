@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Mathis Schmieder DB9MAT
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
@@ -22,6 +22,7 @@
 #include "Config.h"
 #include "Globals.h"
 #include "Thread.h"
+#include "Log.h"
 
 // Global variables
 MMDVM_STATE m_modemState = STATE_IDLE;
@@ -138,24 +139,54 @@ void loop()
 
 int main(int argc, char** argv)
 {
-    const char* file = "MMDVM.ini";
+    const char* file = "MMDVM-PC.ini";
 
     if (argc > 1)
         file = argv[1];
 
     CConf conf(file);
 
-    if (!conf.read())
+    bool ret = conf.read();
+    if (!ret) {
+        ::fprintf(stderr, "MMDVM-PC: cannot read the .ini file\n");
         return 1;
+    }
 
-    bool ret = serial.start(conf.getNetworkLocalAddress(), conf.getNetworkLocalPort(),
-                            conf.getNetworkHostAddress(),  conf.getNetworkHostPort());
-    if (!ret)
+#if !defined(_WIN32) && !defined(_WIN64)
+    ret = ::LogInitialise(m_daemon, conf.getLogFilePath(), conf.getLogFileRoot(), conf.getLogFileLevel(), conf.getLogDisplayLevel(), conf.getLogFileRotate());
+#else
+    ret = ::LogInitialise(false, conf.getLogFilePath(), conf.getLogFileRoot(), conf.getLogFileLevel(), conf.getLogDisplayLevel(), conf.getLogFileRotate());
+#endif
+    if (!ret) {
+        ::fprintf(stderr, "MMDVM-PC: unable to open the log file\n");
         return 1;
+    }
 
-    ret = modem.start(conf.getModemPort(), conf.getModemSpeed());
-    if (!ret)
+    LogInfo("Host Connection");
+    LogInfo("\tLocal Address: \"%s\"", conf.getNetworkLocalAddress().c_str());
+    LogInfo("\tLocal Port: %u", conf.getNetworkLocalPort());
+    LogInfo("\tHost Address: \"%s\"", conf.getNetworkHostAddress().c_str());
+    LogInfo("\tHost Port: %u", conf.getNetworkHostPort());
+    LogInfo("\tDebug: %s", conf.getNetworkDebug() ? "yes" : "no");
+
+    ret = serial.start(conf.getNetworkLocalAddress(), conf.getNetworkLocalPort(),
+                            conf.getNetworkHostAddress(),  conf.getNetworkHostPort(),
+                            conf.getNetworkDebug());
+    if (!ret) {
+        LogError("Unable to open the host network connection");
         return 1;
+    }
+
+    LogInfo("Modem Connection");
+    LogInfo("\tPort: \"%s\"", conf.getModemPort().c_str());
+    LogInfo("\tSpeed: %u", conf.getModemSpeed());
+    LogInfo("\tDebug: %s", conf.getModemDebug() ? "yes" : "no");
+
+    ret = modem.start(conf.getModemPort(), conf.getModemSpeed(), conf.getModemDebug());
+    if (!ret) {
+        LogError("Unable to open the modem connection");
+        return 1;
+    }
 
     for (;;)
         loop();

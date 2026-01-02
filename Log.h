@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2021,2022,2025,2026 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2020 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,10 +16,21 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(VERSION_H)
-#define  VERSION_H
+#if !defined(LOG_H)
+#define	LOG_H
 
-#define VERSION "20260102"
+#include <string>
+
+#define	LogDebug(fmt, ...)	Log(1U, fmt, ##__VA_ARGS__)
+#define	LogMessage(fmt, ...)	Log(2U, fmt, ##__VA_ARGS__)
+#define	LogInfo(fmt, ...)	Log(3U, fmt, ##__VA_ARGS__)
+#define	LogWarning(fmt, ...)	Log(4U, fmt, ##__VA_ARGS__)
+#define	LogError(fmt, ...)	Log(5U, fmt, ##__VA_ARGS__)
+#define	LogFatal(fmt, ...)	Log(6U, fmt, ##__VA_ARGS__)
+
+extern void Log(unsigned int level, const char* fmt, ...);
+
+extern bool LogInitialise(bool daemon, const std::string& filePath, const std::string& fileRoot, unsigned int fileLevel, unsigned int displayLevel, bool rotate);
+extern void LogFinalise();
 
 #endif
-

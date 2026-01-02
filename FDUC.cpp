@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2023 by Tatu Peltola OH2EAT
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -58,10 +58,10 @@ m_duc_sineLen(0U),
 m_ducScaling(0.0F),
 m_callback(nullptr)
 {
-    unsigned int approxlen = resampDen * length;
+    unsigned int approxlen = resampNum * length;
 
     // Number of filter branches:
-    unsigned int branches = resampNum;
+    unsigned int branches = resampDen;
 
     // resampNum determines the number of polyphase branches.
     // Ensure the length is a multiple of that, so that each
@@ -79,7 +79,7 @@ m_callback(nullptr)
     m_tapsLen = totallen;
 
     // Cutoff frequency in radians per sample
-    float32_t sinc_cutoff = (cutoff * M_PIf32) / float32_t((resampDen));
+    float32_t sinc_cutoff = (cutoff * M_PIf32) / float32_t((resampNum));
     float32_t sum = 0.0F;
 
     for (unsigned int branch = 0U; branch < branches; branch++) {

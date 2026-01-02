@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2013,2015-2021,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2013,2015-2021,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 
 #include "SerialPort.h"
 #include "Version.h"
+#include "Log.h"
 
 #include <cassert>
 
@@ -112,7 +113,8 @@ m_buffer(),
 m_ptr(0U),
 m_len(0U),
 m_debug(false),
-m_socket()
+m_socket(),
+m_trace(false)
 {
 }
 
@@ -126,6 +128,9 @@ void CSerialPort::sendACK(uint8_t type)
   reply[3U] = type;
 
   m_socket.write(reply, 4U);
+
+  if (m_trace)
+      dump("TX Host", reply, 4U);
 }
 
 void CSerialPort::sendNAK(uint8_t type, uint8_t err)
@@ -139,6 +144,9 @@ void CSerialPort::sendNAK(uint8_t type, uint8_t err)
   reply[4U] = err;
 
   m_socket.write(reply, 5U);
+
+  if (m_trace)
+      dump("TX Host", reply, 5U);
 }
 
 void CSerialPort::getStatus()
@@ -245,6 +253,9 @@ void CSerialPort::getStatus()
   reply[19U] = 0x00U;
 
   m_socket.write(reply, 20U);
+
+  if (m_trace)
+      dump("TX Host", reply, 20U);
 }
 
 void CSerialPort::getVersion()
@@ -297,6 +308,9 @@ void CSerialPort::getVersion()
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
@@ -766,9 +780,11 @@ void CSerialPort::setMode(MMDVM_STATE modemState)
   io.setMode(modemState);
 }
 
-bool CSerialPort::start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort)
+bool CSerialPort::start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort, bool debug)
 {
     CSocket::startup();
+
+    m_trace = debug;
 
     return m_socket.open(myAddress, myPort, hostAddress, hostPort);
 }
@@ -810,7 +826,10 @@ void CSerialPort::process()
 
       // The full packet has been received, process it
       if (m_ptr == m_len) {
-        if (m_len > 255U)
+          if (m_trace)
+              dump("RX Host", m_buffer, m_len);
+
+          if (m_len > 255U)
           processMessage(m_buffer[3U], m_buffer + 4U, m_len - 4U);
         else
           processMessage(m_buffer[2U], m_buffer + 3U, m_len - 3U);
@@ -1175,6 +1194,9 @@ void CSerialPort::writeDStarHeader(const uint8_t* header, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
@@ -1201,6 +1223,9 @@ void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeDStarLost()
@@ -1218,6 +1243,9 @@ void CSerialPort::writeDStarLost()
   reply[2U] = MMDVM_DSTAR_LOST;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 
 void CSerialPort::writeDStarEOT()
@@ -1235,6 +1263,9 @@ void CSerialPort::writeDStarEOT()
   reply[2U] = MMDVM_DSTAR_EOT;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 #endif
 
@@ -1263,6 +1294,9 @@ void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeDMRLost(bool slot)
@@ -1280,6 +1314,9 @@ void CSerialPort::writeDMRLost(bool slot)
   reply[2U] = slot ? MMDVM_DMR_LOST2 : MMDVM_DMR_LOST1;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 #endif
 
@@ -1308,6 +1345,9 @@ void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeYSFLost()
@@ -1325,6 +1365,9 @@ void CSerialPort::writeYSFLost()
   reply[2U] = MMDVM_YSF_LOST;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 #endif
 
@@ -1353,6 +1396,9 @@ void CSerialPort::writeP25Hdr(const uint8_t* data, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
@@ -1379,6 +1425,9 @@ void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeP25Lost()
@@ -1396,6 +1445,9 @@ void CSerialPort::writeP25Lost()
   reply[2U] = MMDVM_P25_LOST;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 #endif
 
@@ -1424,6 +1476,9 @@ void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
   reply[1U] = count;
 
   m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("TX Host", reply, count);
 }
 
 void CSerialPort::writeNXDNLost()
@@ -1441,6 +1496,9 @@ void CSerialPort::writeNXDNLost()
   reply[2U] = MMDVM_NXDN_LOST;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 #endif
 
@@ -1469,6 +1527,9 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
       reply[i + 4U] = data[i];
 
     m_socket.write(reply, length + 4U);
+
+    if (m_trace)
+        dump("TX Host", reply, length + 4U);
   } else {
     reply[1U] = length + 3U;
     reply[2U] = MMDVM_FM_DATA;
@@ -1477,6 +1538,9 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
       reply[i + 3U] = data[i];
 
     m_socket.write(reply, length + 3U);
+
+    if (m_trace)
+        dump("TX Host", reply, length + 3U);
   }
 }
 
@@ -1496,6 +1560,9 @@ void CSerialPort::writeFMStatus(uint8_t status)
   reply[3U] = status;
 
   m_socket.write(reply, 4U);
+
+  if (m_trace)
+      dump("TX Host", reply, 4U);
 }
 
 void CSerialPort::writeFMEOT()
@@ -1513,6 +1580,9 @@ void CSerialPort::writeFMEOT()
   reply[2U] = MMDVM_FM_EOT;
 
   m_socket.write(reply, 3U);
+
+  if (m_trace)
+      dump("TX Host", reply, 3U);
 }
 #endif
 
@@ -1697,33 +1767,37 @@ void CSerialPort::writeDebugDump(const uint8_t* data, uint16_t length)
 
 void CSerialPort::dump(const char* text, const uint8_t* data, uint16_t length) const
 {
-    ::printf("%s:\n", text);
+    LogDebug("%s:", text);
+
+    char line[100U];
 
     unsigned int offset = 0U;
 
     while (length > 0U) {
-        ::printf("%04X:  ", offset);
+        ::sprintf(line, "%04X:  ", offset);
 
         unsigned int bytes = (length > 16U) ? 16U : length;
 
         for (unsigned i = 0U; i < bytes; i++)
-            ::printf("%02X ", data[offset + i]);
+            ::sprintf(line + ::strlen(line), "%02X ", data[offset + i]);
 
         for (unsigned int i = bytes; i < 16U; i++)
-            ::printf("   ");
+            ::strcat(line, "   ");
 
-        ::printf("   *");
+        ::strcat(line, "   *");
 
         for (unsigned i = 0U; i < bytes; i++) {
             uint8_t c = data[offset + i];
 
             if (::isprint(c))
-                ::printf("%c", c);
+                ::sprintf(line + ::strlen(line), "%c", c);
             else
-                ::printf(".");
+                ::strcat(line, ".");
         }
 
-        ::printf("*\n");
+        ::strcat(line, "*");
+
+        LogDebug(line);
 
         offset += 16U;
 

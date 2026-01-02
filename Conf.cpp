@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2023,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2023,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -44,7 +44,6 @@ m_logFileRoot(),
 m_logFileRotate(true),
 m_modemPort(),
 m_modemSpeed(921600U),
-m_modemTrace(false),
 m_modemDebug(false),
 m_networkHostAddress("127.0.0.1"),
 m_networkHostPort(3335U),
@@ -132,8 +131,6 @@ bool CConf::read()
 				m_modemPort = value;
 			else if (::strcmp(key, "Speed") == 0)
 				m_modemSpeed = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "Trace") == 0)
-				m_modemTrace = ::atoi(value) == 1;
 			else if (::strcmp(key, "Debug") == 0)
 				m_modemDebug = ::atoi(value) == 1;
 		} else if (section == SECTION::MMDVM_HOST) {
@@ -193,11 +190,6 @@ std::string CConf::getModemPort() const
 unsigned int CConf::getModemSpeed() const
 {
 	return m_modemSpeed;
-}
-
-bool CConf::getModemTrace() const
-{
-	return m_modemTrace;
 }
 
 bool CConf::getModemDebug() const

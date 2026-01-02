@@ -149,7 +149,7 @@ void CFDDC::process(const IQSample<float32_t>& sample)
         out.control = sample.control;
 
         unsigned int iTap = m_p * m_branchlen;
-        unsigned int iI = m_i + 1U;
+        unsigned int iI   = m_i + 1U;
 
         for (unsigned int i = 0U; i < m_branchlen; i++) {
             const float32_t tap = m_taps[iTap];

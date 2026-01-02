@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2023,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2023,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@ public:
 	// The Modem section
 	std::string  getModemPort() const;
 	unsigned int getModemSpeed() const;
-	bool         getModemTrace() const;
 	bool         getModemDebug() const;
 
 	// The MMDVMHost section
@@ -65,7 +64,6 @@ private:
 
 	std::string  m_modemPort;
 	unsigned int m_modemSpeed;
-	bool         m_modemTrace;
 	bool         m_modemDebug;
 
 	std::string  m_networkHostAddress;
