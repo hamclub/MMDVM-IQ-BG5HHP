@@ -42,14 +42,14 @@ public:
 	// The Modem section
 	std::string  getModemPort() const;
 	unsigned int getModemSpeed() const;
-	bool         getModemDebug() const;
+	bool         getModemTrace() const;
 
 	// The MMDVMHost section
 	std::string  getNetworkHostAddress() const;
 	unsigned short getNetworkHostPort() const;
 	std::string  getNetworkLocalAddress() const;
 	unsigned short getNetworkLocalPort() const;
-	bool         getNetworkDebug() const;
+	bool         getNetworkTrace() const;
 
 private:
 	std::string m_file;
@@ -64,13 +64,13 @@ private:
 
 	std::string  m_modemPort;
 	unsigned int m_modemSpeed;
-	bool         m_modemDebug;
+	bool         m_modemTrace;
 
 	std::string  m_networkHostAddress;
 	unsigned short m_networkHostPort;
 	std::string  m_networkLocalAddress;
 	unsigned short m_networkLocalPort;
-	bool         m_networkDebug;
+	bool         m_networkTrace;
 };
 
 #endif

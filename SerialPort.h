@@ -67,18 +67,10 @@ public:
   void writeFMEOT();
 #endif
 
-  void writeDebug(const char* text);
-  void writeDebug(const char* text, int16_t n1);
-  void writeDebug(const char* text, int16_t n1, int16_t n2);
-  void writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n3);
-  void writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n3, int16_t n4);
-  void writeDebugDump(const uint8_t* data, uint16_t length);
-
 private:
   uint8_t   m_buffer[512U];
   uint16_t  m_ptr;
   uint16_t  m_len;
-  bool      m_debug;
   CSocket   m_socket;
   bool      m_trace;
 

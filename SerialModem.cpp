@@ -21,7 +21,6 @@
 #include "Utils.h"
 #include "FDDC.h"
 #include "FDUC.h"
-#include "Log.h"
 
 #include <cassert>
 #include <cstdio>
@@ -107,7 +106,7 @@ m_lastQ24(0.0F),
 m_lastI72(0.0F),
 m_lastQ72(0.0F),
 m_stopwatch(),
-m_debug(false)
+m_trace(false)
 {
     m_ptr = this;
 }
@@ -153,13 +152,13 @@ bool CSerialModem::canTETRA() const
     return (m_txFormat == SERIALMODEM_FORMAT::IQ) && (m_rxFormat == SERIALMODEM_FORMAT::IQ);
 }
 
-bool CSerialModem::start(const std::string& port, unsigned int speed, bool debug)
+bool CSerialModem::start(const std::string& port, unsigned int speed, bool trace)
 {
     bool ret = m_serial.open(port.c_str(), speed);
     if (!ret)
         return false;
 
-    m_debug = debug;
+    m_trace = trace;
 
     m_spaceLeft = 0U;
 
@@ -204,7 +203,7 @@ void CSerialModem::process()
 
             // The full packet has been received, process it
             if (m_rxPtr == m_rxLen) {
-                if (m_debug)
+                if (m_trace)
                     dump("Read Modem", m_rxBuffer, m_rxLen);
 
                 processMessage(m_rxBuffer[3U], m_rxBuffer + 4U, m_rxLen - 4U);
@@ -399,8 +398,8 @@ void CSerialModem::writeGetVersion()
 {
     m_serial.write(GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
 
-    if (m_debug)
-        dump("Write Modem", GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
+    if (m_trace)
+        dump("Write Get Version", GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
 
     m_state = SERIALMODEM_STATE::WAIT_VERSION;
 }
@@ -428,8 +427,8 @@ void CSerialModem::writeSetFreqPower()
 
     m_serial.write(buffer, 13U);
 
-    if (m_debug)
-        dump("Write Modem", buffer, 13U);
+    if (m_trace)
+        dump("Write Set Freq/Power", buffer, 13U);
 
     m_state = SERIALMODEM_STATE::WAIT_FREQ_POWER;
 }
@@ -448,8 +447,8 @@ void CSerialModem::writeStart()
 
     m_serial.write(buffer, 6U);
 
-    if (m_debug)
-        dump("Write Modem", buffer, 6U);
+    if (m_trace)
+        dump("Write Start", buffer, 6U);
 
     m_state = SERIALMODEM_STATE::WAIT_START;
 
@@ -459,6 +458,9 @@ void CSerialModem::writeStart()
 void CSerialModem::writeStop()
 {
     m_serial.write(STOP_MESSAGE, STOP_MESSAGE_LEN);
+
+    if (m_trace)
+        dump("Write Stop", STOP_MESSAGE, STOP_MESSAGE_LEN);
 
     m_state = SERIALMODEM_STATE::WAIT_STOP;
 
@@ -636,9 +638,9 @@ bool CSerialModem::writeTransmitDataBB(bool flush)
 
     m_serial.write(m_txBuffer, len);
 
-    if (m_debug) {
-        dump("Write Modem 1/2", buffer, 10U);
-        dump("Write Modem 2/2", m_txBuffer, len);
+    if (m_trace) {
+        dump("Write BB Data 1/2", buffer, 10U);
+        dump("Write BB Data 2/2", m_txBuffer, len);
     }
 
     if (!flush)
@@ -703,9 +705,9 @@ bool CSerialModem::writeTransmitDataIQ(bool flush)
 
     m_serial.write(m_txBuffer, len);
 
-    if (m_debug) {
-        dump("Write Modem 1/2", buffer, 8U);
-        dump("Write Modem 2/2", m_txBuffer, len);
+    if (m_trace) {
+        dump("Write IQ Data 1/2", buffer, 8U);
+        dump("Write IQ Data 2/2", m_txBuffer, len);
     }
 
     if (!flush)

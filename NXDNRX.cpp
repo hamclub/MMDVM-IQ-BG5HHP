@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2018,2020,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2018,2020,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -177,7 +177,7 @@ void CNXDNRX::processData(q15_t sample)
 
     calculateLevels(m_startPtr, NXDN_FRAME_LENGTH_SYMBOLS);
 
-    DEBUG4("NXDNRX: sync found pos/centre/threshold", m_fswPtr, m_centreVal, m_thresholdVal);
+    LogMessage("NXDNRX: sync found pos/centre/threshold: %u/%d/%d", m_fswPtr, m_centreVal, m_thresholdVal);
 
     uint8_t frame[NXDN_FRAME_LENGTH_BYTES + 3U];
     samplesToBits(m_startPtr, NXDN_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -185,7 +185,7 @@ void CNXDNRX::processData(q15_t sample)
     // We've not seen a data sync for too long, signal RXLOST and change to RX_NONE
     m_lostCount--;
     if (m_lostCount == 0U) {
-      DEBUG1("NXDNRX: sync timed out, lost lock");
+      LogMessage("NXDNRX: sync timed out, lost lock");
 
       io.setDecode(false);
       io.setADCDetection(false);
@@ -322,7 +322,7 @@ void CNXDNRX::calculateLevels(uint16_t start, uint16_t count)
 
   q15_t threshold = posThresh - centre;
 
-  DEBUG5("NXDNRX: pos/neg/centre/threshold", posThresh, negThresh, centre, threshold);
+  LogMessage("NXDNRX: pos/neg/centre/threshold: %d/%d/%d/%d", posThresh, negThresh, centre, threshold);
 
   if (m_averagePtr == NOAVEPTR) {
     for (uint8_t i = 0U; i < 16U; i++) {

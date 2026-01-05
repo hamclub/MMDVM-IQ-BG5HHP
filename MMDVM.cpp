@@ -167,11 +167,11 @@ int main(int argc, char** argv)
     LogInfo("\tLocal Port: %u", conf.getNetworkLocalPort());
     LogInfo("\tHost Address: \"%s\"", conf.getNetworkHostAddress().c_str());
     LogInfo("\tHost Port: %u", conf.getNetworkHostPort());
-    LogInfo("\tDebug: %s", conf.getNetworkDebug() ? "yes" : "no");
+    LogInfo("\tTrace: %s", conf.getNetworkTrace() ? "yes" : "no");
 
     ret = serial.start(conf.getNetworkLocalAddress(), conf.getNetworkLocalPort(),
                             conf.getNetworkHostAddress(),  conf.getNetworkHostPort(),
-                            conf.getNetworkDebug());
+                            conf.getNetworkTrace());
     if (!ret) {
         LogError("Unable to open the host network connection");
         return 1;
@@ -180,9 +180,9 @@ int main(int argc, char** argv)
     LogInfo("Modem Connection");
     LogInfo("\tPort: \"%s\"", conf.getModemPort().c_str());
     LogInfo("\tSpeed: %u", conf.getModemSpeed());
-    LogInfo("\tDebug: %s", conf.getModemDebug() ? "yes" : "no");
+    LogInfo("\tTrace: %s", conf.getModemTrace() ? "yes" : "no");
 
-    ret = modem.start(conf.getModemPort(), conf.getModemSpeed(), conf.getModemDebug());
+    ret = modem.start(conf.getModemPort(), conf.getModemSpeed(), conf.getModemTrace());
     if (!ret) {
         LogError("Unable to open the modem connection");
         return 1;

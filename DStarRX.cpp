@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -339,7 +339,7 @@ void CDStarRX::processNone(q15_t sample)
   // Fuzzy matching of the data sync bit sequence
   ret = correlateDataSync();
   if (ret) {
-    DEBUG1("DStarRX: found data sync in None");
+    LogMessage("DStarRX: found data sync in None");
 
     io.setDecode(true);
     io.setADCDetection(true);
@@ -389,7 +389,7 @@ void CDStarRX::processHeader(q15_t sample)
     m_maxSyncPtr = 472U;
     m_minSyncPtr = 470U;
 
-    DEBUG5("DStarRX: calc start/sync/max/min", m_startPtr, m_syncPtr, m_maxSyncPtr, m_minSyncPtr);
+    LogMessage("DStarRX: calc start/sync/max/min: %u/%u/%u/%u", m_startPtr, m_syncPtr, m_maxSyncPtr, m_minSyncPtr);
 
     m_rxState = DSRXS_DATA;
   }
@@ -399,7 +399,7 @@ void CDStarRX::processData()
 {
   // Fuzzy matching of the end frame sequences
   if (countBits64((m_bitBuffer[m_bitPtr] & DSTAR_END_SYNC_MASK) ^ DSTAR_END_SYNC_DATA) <= END_SYNC_ERRS) {
-    DEBUG1("DStarRX: Found end sync in Data");
+    LogMessage("DStarRX: Found end sync in Data");
 
     io.setDecode(false);
     io.setADCDetection(false);
@@ -424,7 +424,7 @@ void CDStarRX::processData()
 
   // We've not seen a data sync for too long, signal RXLOST and change to RX_NONE
   if (m_frameCount >= MAX_FRAMES) {
-    DEBUG1("DStarRX: data sync timed out, lost lock");
+    LogMessage("DStarRX: data sync timed out, lost lock");
 
     io.setDecode(false);
     io.setADCDetection(false);
@@ -448,7 +448,7 @@ void CDStarRX::processData()
         buffer[9U]  = DSTAR_DATA_SYNC_BYTES[9U];
         buffer[10U] = DSTAR_DATA_SYNC_BYTES[10U];
         buffer[11U] = DSTAR_DATA_SYNC_BYTES[11U];
-        DEBUG5("DStarRX: found start/sync/max/min", m_startPtr, m_syncPtr, m_maxSyncPtr, m_minSyncPtr);
+        LogMessage("DStarRX: found start/sync/max/min: %u/%u/%u/%u", m_startPtr, m_syncPtr, m_maxSyncPtr, m_minSyncPtr);
       }
 
       writeRSSIData(buffer);

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@ m_count(0U),
 m_q0(0),
 m_q1(0),
 m_state(false),
-m_validCount(0U)
+m_validCount(0U),
+m_invalidCount(0U)
 {
 
 }
@@ -109,8 +110,8 @@ bool CFMNoiseSquelch::process(q15_t sample)
       m_invalidCount = 0U;
 
     if (previousState != m_state) {
-      DEBUG4("Noise Squelch Value / Threshold / Valid", value, threshold, m_state);
-      DEBUG3("Valid Count / Invalid Count", m_validCount, m_invalidCount);
+      LogDebug("Noise Squelch value/threshold/valid: %d/%d/%s", value, threshold, m_state ? "true" : "false");
+      LogDebug("Valid count/invalid count: %u/%u", m_validCount, m_invalidCount);
     }
 
     m_count = 0U;

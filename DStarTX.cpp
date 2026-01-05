@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -290,7 +290,7 @@ uint8_t CDStarTX::writeHeader(const uint8_t* header, uint16_t length)
 
   uint16_t space = m_buffer.getSpace();
   if (space < (DSTAR_HEADER_LENGTH_BYTES + 1U)) {
-    DEBUG2("DStarTX: header space available", space);
+    LogWarning("DStarTX: not enough header space available: %u", space);
     return 5U;
   }
 
@@ -309,7 +309,7 @@ uint8_t CDStarTX::writeData(const uint8_t* data, uint16_t length)
 
   uint16_t space = m_buffer.getSpace();
   if (space < (DSTAR_DATA_LENGTH_BYTES + 1U)) {
-    DEBUG2("DStarTX: data space available", space);
+    LogWarning("DStarTX: not enough data space available: %u", space);
     return 5U;
   }
 
@@ -325,7 +325,7 @@ uint8_t CDStarTX::writeEOT()
 {
   uint16_t space = m_buffer.getSpace();
   if (space < 1U) {
-    DEBUG2("DStarTX: EOT space available", space);
+    LogWarning("DStarTX: not enough EOT space available: %u", space);
     return 5U;
   }
 

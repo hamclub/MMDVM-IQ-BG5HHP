@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -160,7 +160,7 @@ uint8_t CCWIdTX::write(const uint8_t* data, uint16_t length)
 
   m_poLen += 5U;
 
-  DEBUG2("Message created with length", m_poLen);
+  LogMessage("Message created with length %u", m_poLen);
 
   return 0U;
 }

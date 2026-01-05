@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -147,7 +147,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
 
         switch (dataType) {
           case DT_DATA_HEADER:
-            DEBUG5("DMRSlotRX: data header found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+            LogMessage("DMRSlotRX: data header found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
             writeRSSIData(frame);
             m_state = DMRRXS_DATA;
             m_type  = 0x00U;
@@ -156,33 +156,33 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
           case DT_RATE_34_DATA:
           case DT_RATE_1_DATA:
             if (m_state == DMRRXS_DATA) {
-              DEBUG5("DMRSlotRX: data payload found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+              LogMessage("DMRSlotRX: data payload found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
               writeRSSIData(frame);
               m_type = dataType;
             }
             break;
           case DT_VOICE_LC_HEADER:
-            DEBUG5("DMRSlotRX: voice header found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+            LogMessage("DMRSlotRX: voice header found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
             writeRSSIData(frame);
             m_state = DMRRXS_VOICE;
             break;
           case DT_VOICE_PI_HEADER:
             if (m_state == DMRRXS_VOICE) {
-              DEBUG5("DMRSlotRX: voice pi header found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+              LogMessage("DMRSlotRX: voice pi header found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
               writeRSSIData(frame);
             }
             m_state = DMRRXS_VOICE;
             break;
           case DT_TERMINATOR_WITH_LC:
             if (m_state == DMRRXS_VOICE) {
-              DEBUG5("DMRSlotRX: voice terminator found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+              LogMessage("DMRSlotRX: voice terminator found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
               writeRSSIData(frame);
               m_state  = DMRRXS_NONE;
               m_endPtr = NOENDPTR;
             }
             break;
           default:    // DT_CSBK
-            DEBUG5("DMRSlotRX: csbk found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+            LogMessage("DMRSlotRX: csbk found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
             writeRSSIData(frame);
             m_state  = DMRRXS_NONE;
             m_endPtr = NOENDPTR;
@@ -191,7 +191,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
       }
     } else if (m_control == CONTROL_VOICE) {
       // Voice sync
-      DEBUG5("DMRSlotRX: voice sync found slot/pos/centre/threshold", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
+      LogMessage("DMRSlotRX: voice sync found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
       writeRSSIData(frame);
       m_state     = DMRRXS_VOICE;
       m_syncCount = 0U;

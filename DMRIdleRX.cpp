@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -132,7 +132,7 @@ void CDMRIdleRX::processSample(q15_t sample)
         errs += countBits8((sync[i] & DMR_SYNC_BYTES_MASK[i]) ^ DMR_MS_DATA_SYNC_BYTES[i]);
 
       if (errs <= MAX_SYNC_BYTES_ERRS) {
-        DEBUG3("DMRIdleRX: data sync found centre/threshold", centre, threshold);
+        LogMessage("DMRIdleRX: data sync found centre/threshold: %d/%d", centre, threshold);
         m_maxCorr   = corr;
         m_centre    = centre;
         m_threshold = threshold;

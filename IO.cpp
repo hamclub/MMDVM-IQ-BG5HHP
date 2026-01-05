@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
@@ -250,7 +250,7 @@ void CIO::process()
     if (!modem.isTX() && m_tx) {
         m_tx = false;
         setPTTInt(m_pttInvert ? true : false);
-        DEBUG1("TX OFF");
+        LogMessage("TX OFF");
     }
 
   if (m_rxFSKBuffer.getData() >= RX_BLOCK_SIZE) {
@@ -513,7 +513,7 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
   if (!m_tx) {
       m_tx = true;
       setPTTInt(m_pttInvert ? false : true);
-      DEBUG1("TX ON");
+      LogMessage("TX ON");
   }
 
   for (uint16_t i = 0U; i < length; i++) {

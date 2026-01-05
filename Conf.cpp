@@ -44,12 +44,12 @@ m_logFileRoot(),
 m_logFileRotate(true),
 m_modemPort(),
 m_modemSpeed(921600U),
-m_modemDebug(false),
+m_modemTrace(false),
 m_networkHostAddress("127.0.0.1"),
 m_networkHostPort(3335U),
 m_networkLocalAddress("127.0.0.1"),
 m_networkLocalPort(3334U),
-m_networkDebug(false)
+m_networkTrace(false)
 {
 }
 
@@ -131,8 +131,8 @@ bool CConf::read()
 				m_modemPort = value;
 			else if (::strcmp(key, "Speed") == 0)
 				m_modemSpeed = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "Debug") == 0)
-				m_modemDebug = ::atoi(value) == 1;
+			else if (::strcmp(key, "Trace") == 0)
+				m_modemTrace = ::atoi(value) == 1;
 		} else if (section == SECTION::MMDVM_HOST) {
 			if (::strcmp(key, "HostAddress") == 0)
 				m_networkHostAddress = value;
@@ -142,8 +142,8 @@ bool CConf::read()
 				m_networkLocalAddress = value;
 			else if (::strcmp(key, "LocalPort") == 0)
 				m_networkLocalPort = (unsigned short)::atoi(value);
-			else if (::strcmp(key, "Debug") == 0)
-				m_networkDebug = ::atoi(value) == 1;
+			else if (::strcmp(key, "Trace") == 0)
+				m_networkTrace = ::atoi(value) == 1;
 		}
 	}
 
@@ -192,9 +192,9 @@ unsigned int CConf::getModemSpeed() const
 	return m_modemSpeed;
 }
 
-bool CConf::getModemDebug() const
+bool CConf::getModemTrace() const
 {
-	return m_modemDebug;
+	return m_modemTrace;
 }
 
 std::string CConf::getNetworkHostAddress() const
@@ -217,7 +217,7 @@ unsigned short CConf::getNetworkLocalPort() const
 	return m_networkLocalPort;
 }
 
-bool CConf::getNetworkDebug() const
+bool CConf::getNetworkTrace() const
 {
-	return m_networkDebug;
+	return m_networkTrace;
 }

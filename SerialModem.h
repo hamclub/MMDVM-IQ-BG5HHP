@@ -60,7 +60,7 @@ public:
 
 	bool canTETRA() const;
 
-	bool start(const std::string& port, unsigned int speed, bool debug);
+	bool start(const std::string& port, unsigned int speed, bool trace);
 
 	void process();
 
@@ -112,7 +112,7 @@ private:
 
 	CStopWatch         m_stopwatch;
 
-	bool               m_debug;
+	bool               m_trace;
 
 	static CSerialModem* m_ptr;
 

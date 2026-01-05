@@ -26,7 +26,6 @@
 
 #include "SerialPort.h"
 #include "Version.h"
-#include "Log.h"
 
 #include <cassert>
 
@@ -112,7 +111,6 @@ CSerialPort::CSerialPort() :
 m_buffer(),
 m_ptr(0U),
 m_len(0U),
-m_debug(false),
 m_socket(),
 m_trace(false)
 {
@@ -130,7 +128,7 @@ void CSerialPort::sendACK(uint8_t type)
   m_socket.write(reply, 4U);
 
   if (m_trace)
-      dump("TX Host", reply, 4U);
+      dump("Send ACK", reply, 4U);
 }
 
 void CSerialPort::sendNAK(uint8_t type, uint8_t err)
@@ -146,7 +144,7 @@ void CSerialPort::sendNAK(uint8_t type, uint8_t err)
   m_socket.write(reply, 5U);
 
   if (m_trace)
-      dump("TX Host", reply, 5U);
+      dump("Send NAK", reply, 5U);
 }
 
 void CSerialPort::getStatus()
@@ -255,7 +253,7 @@ void CSerialPort::getStatus()
   m_socket.write(reply, 20U);
 
   if (m_trace)
-      dump("TX Host", reply, 20U);
+      dump("Get Status", reply, 20U);
 }
 
 void CSerialPort::getVersion()
@@ -310,7 +308,7 @@ void CSerialPort::getVersion()
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Get Version", reply, count);
 }
 
 uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
@@ -365,8 +363,6 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
   bool ysfLoDev        = (data[0U] & 0x08U) == 0x08U;
 #endif
   bool simplex         = (data[0U] & 0x80U) == 0x80U;
-
-  m_debug = (data[0U] & 0x10U) == 0x10U;
 
 #if defined(MODE_DSTAR)
   bool dstarEnable  = (data[1U] & 0x01U) == 0x01U;
@@ -717,28 +713,28 @@ void CSerialPort::setMode(MMDVM_STATE modemState)
 {
   switch (modemState) {
     case STATE_DSTAR:
-      DEBUG1("Mode set to D-Star");
+      LogMessage("Mode set to D-Star");
       break;
     case STATE_DMR:
-      DEBUG1("Mode set to DMR");
+      LogMessage("Mode set to DMR");
       break;
     case STATE_YSF:
-      DEBUG1("Mode set to System Fusion");
+      LogMessage("Mode set to System Fusion");
       break;
     case STATE_P25:
-      DEBUG1("Mode set to P25");
+      LogMessage("Mode set to P25");
       break;
     case STATE_NXDN:
-      DEBUG1("Mode set to NXDN");
+      LogMessage("Mode set to NXDN");
       break;
     case STATE_POCSAG:
-      DEBUG1("Mode set to POCSAG");
+      LogMessage("Mode set to POCSAG");
       break;
     case STATE_FM:
-      DEBUG1("Mode set to FM");
+      LogMessage("Mode set to FM");
       break;
     default:        // STATE_IDLE
-      DEBUG1("Mode set to Idle");
+      LogMessage("Mode set to Idle");
       break;
   }
 
@@ -830,9 +826,9 @@ void CSerialPort::process()
               dump("RX Host", m_buffer, m_len);
 
           if (m_len > 255U)
-          processMessage(m_buffer[3U], m_buffer + 4U, m_len - 4U);
-        else
-          processMessage(m_buffer[2U], m_buffer + 3U, m_len - 3U);
+            processMessage(m_buffer[3U], m_buffer + 4U, m_len - 4U);
+          else
+            processMessage(m_buffer[2U], m_buffer + 3U, m_len - 3U);
       }
     }
   }
@@ -889,7 +885,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (err == 0U) {
         sendACK(type);
       } else {
-        DEBUG2("Received invalid FM params 1", err);
+        LogWarning("Received invalid FM params 1, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -899,7 +895,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (err == 0U) {
         sendACK(type);
       } else {
-        DEBUG2("Received invalid FM params 2", err);
+        LogWarning("Received invalid FM params 2, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -909,7 +905,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (err == 0U) {
         sendACK(type);
       } else {
-        DEBUG2("Received invalid FM params 3", err);
+        LogWarning("Received invalid FM params 3, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -919,7 +915,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (err == 0U) {
         sendACK(type);
       } else {
-        DEBUG2("Received invalid FM params 4", err);
+        LogWarning("Received invalid FM params 4, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -937,7 +933,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (m_modemState == STATE_IDLE)
         err = cwIdTX.write(buffer, length);
       if (err != 0U) {
-        DEBUG2("Invalid CW Id data", err);
+        LogWarning("Invalid CW Id data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -952,7 +948,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_DSTAR);
       } else {
-        DEBUG2("Received invalid D-Star header", err);
+        LogWarning("Received invalid D-Star header, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -966,7 +962,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_DSTAR);
       } else {
-        DEBUG2("Received invalid D-Star data", err);
+        LogWarning("Received invalid D-Star data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -980,7 +976,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_DSTAR);
       } else {
-        DEBUG2("Received invalid D-Star EOT", err);
+        LogWarning("Received invalid D-Star EOT, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -998,7 +994,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_DMR);
       } else {
-        DEBUG2("Received invalid DMR data", err);
+        LogWarning("Received invalid DMR data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1016,7 +1012,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_DMR);
       } else {
-        DEBUG2("Received invalid DMR data", err);
+        LogWarning("Received invalid DMR data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1037,7 +1033,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         }
       }
       if (err != 0U) {
-        DEBUG2("Received invalid DMR start", err);
+        LogWarning("Received invalid DMR start, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1046,7 +1042,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (m_dmrEnable)
         err = dmrTX.writeShortLC(buffer, length);
       if (err != 0U) {
-        DEBUG2("Received invalid DMR Short LC", err);
+        LogWarning("Received invalid DMR Short LC, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1055,7 +1051,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (m_dmrEnable)
         err = dmrTX.writeAbort(buffer, length);
       if (err != 0U) {
-        DEBUG2("Received invalid DMR Abort", err);
+        LogWarning("Received invalid DMR Abort, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1071,7 +1067,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_YSF);
       } else {
-        DEBUG2("Received invalid System Fusion data", err);
+        LogWarning("Received invalid System Fusion data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1087,7 +1083,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_P25);
       } else {
-        DEBUG2("Received invalid P25 header", err);
+        LogWarning("Received invalid P25 header, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1101,7 +1097,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_P25);
       } else {
-        DEBUG2("Received invalid P25 LDU", err);
+        LogWarning("Received invalid P25 LDU, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1117,7 +1113,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_NXDN);
       } else {
-        DEBUG2("Received invalid NXDN data", err);
+        LogWarning("Received invalid NXDN data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1133,7 +1129,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_POCSAG);
       } else {
-        DEBUG2("Received invalid POCSAG data", err);
+        LogWarning("Received invalid POCSAG data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1149,7 +1145,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         if (m_modemState == STATE_IDLE)
           setMode(STATE_FM);
       } else {
-        DEBUG2("Received invalid FM data", err);
+        LogWarning("Received invalid FM data, err=%u", err);
         sendNAK(type, err);
       }
       break;
@@ -1196,7 +1192,7 @@ void CSerialPort::writeDStarHeader(const uint8_t* header, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write D-Star Header", reply, count);
 }
 
 void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
@@ -1225,7 +1221,7 @@ void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write D-Star Data", reply, count);
 }
 
 void CSerialPort::writeDStarLost()
@@ -1245,7 +1241,7 @@ void CSerialPort::writeDStarLost()
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write D-Star Lost", reply, 3U);
 }
 
 void CSerialPort::writeDStarEOT()
@@ -1265,7 +1261,7 @@ void CSerialPort::writeDStarEOT()
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write D-Star EOT", reply, 3U);
 }
 #endif
 
@@ -1296,7 +1292,7 @@ void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write DMR Data", reply, count);
 }
 
 void CSerialPort::writeDMRLost(bool slot)
@@ -1316,7 +1312,7 @@ void CSerialPort::writeDMRLost(bool slot)
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write DMR Lost", reply, 3U);
 }
 #endif
 
@@ -1347,7 +1343,7 @@ void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write YSF Data", reply, count);
 }
 
 void CSerialPort::writeYSFLost()
@@ -1367,7 +1363,7 @@ void CSerialPort::writeYSFLost()
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write YSF Lost", reply, 3U);
 }
 #endif
 
@@ -1398,7 +1394,7 @@ void CSerialPort::writeP25Hdr(const uint8_t* data, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write P25 Header", reply, count);
 }
 
 void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
@@ -1427,7 +1423,7 @@ void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write P25 LDU", reply, count);
 }
 
 void CSerialPort::writeP25Lost()
@@ -1447,7 +1443,7 @@ void CSerialPort::writeP25Lost()
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write P25 Lost", reply, 3U);
 }
 #endif
 
@@ -1478,7 +1474,7 @@ void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
   m_socket.write(reply, count);
 
   if (m_trace)
-      dump("TX Host", reply, count);
+      dump("Write NXDN Data", reply, count);
 }
 
 void CSerialPort::writeNXDNLost()
@@ -1498,7 +1494,7 @@ void CSerialPort::writeNXDNLost()
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write NXDN Lost", reply, 3U);
 }
 #endif
 
@@ -1529,7 +1525,7 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
     m_socket.write(reply, length + 4U);
 
     if (m_trace)
-        dump("TX Host", reply, length + 4U);
+        dump("Write FM Data", reply, length + 4U);
   } else {
     reply[1U] = length + 3U;
     reply[2U] = MMDVM_FM_DATA;
@@ -1540,7 +1536,7 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
     m_socket.write(reply, length + 3U);
 
     if (m_trace)
-        dump("TX Host", reply, length + 3U);
+        dump("Write FM Data", reply, length + 3U);
   }
 }
 
@@ -1562,7 +1558,7 @@ void CSerialPort::writeFMStatus(uint8_t status)
   m_socket.write(reply, 4U);
 
   if (m_trace)
-      dump("TX Host", reply, 4U);
+      dump("Write FM Status", reply, 4U);
 }
 
 void CSerialPort::writeFMEOT()
@@ -1582,188 +1578,9 @@ void CSerialPort::writeFMEOT()
   m_socket.write(reply, 3U);
 
   if (m_trace)
-      dump("TX Host", reply, 3U);
+      dump("Write FM EOT", reply, 3U);
 }
 #endif
-
-void CSerialPort::writeDebug(const char* text)
-{
-    assert(text != nullptr);
-
-    if (!m_debug)
-    return;
-
-  uint8_t reply[130U];
-
-  reply[0U] = MMDVM_FRAME_START;
-  reply[1U] = 0U;
-  reply[2U] = MMDVM_DEBUG1;
-
-  uint8_t count = 3U;
-  for (uint8_t i = 0U; text[i] != '\0'; i++, count++)
-    reply[count] = text[i];
-
-  reply[1U] = count;
-
-  dump("Written Debug", reply, count);
-
-  m_socket.write(reply, count);
-}
-
-void CSerialPort::writeDebug(const char* text, int16_t n1)
-{
-    assert(text != nullptr);
-
-    if (!m_debug)
-    return;
-
-  uint8_t reply[130U];
-
-  reply[0U] = MMDVM_FRAME_START;
-  reply[1U] = 0U;
-  reply[2U] = MMDVM_DEBUG2;
-
-  uint8_t count = 3U;
-  for (uint8_t i = 0U; text[i] != '\0'; i++, count++)
-    reply[count] = text[i];
-
-  reply[count++] = (n1 >> 8) & 0xFF;
-  reply[count++] = (n1 >> 0) & 0xFF;
-
-  reply[1U] = count;
-
-  dump("Written Debug", reply, count);
-
-  m_socket.write(reply, count);
-}
-
-void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2)
-{
-    assert(text != nullptr);
-
-    if (!m_debug)
-    return;
-
-  uint8_t reply[130U];
-
-  reply[0U] = MMDVM_FRAME_START;
-  reply[1U] = 0U;
-  reply[2U] = MMDVM_DEBUG3;
-
-  uint8_t count = 3U;
-  for (uint8_t i = 0U; text[i] != '\0'; i++, count++)
-    reply[count] = text[i];
-
-  reply[count++] = (n1 >> 8) & 0xFF;
-  reply[count++] = (n1 >> 0) & 0xFF;
-
-  reply[count++] = (n2 >> 8) & 0xFF;
-  reply[count++] = (n2 >> 0) & 0xFF;
-
-  reply[1U] = count;
-
-  dump("Written Debug", reply, count);
-
-  m_socket.write(reply, count);
-}
-
-void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n3)
-{
-    assert(text != nullptr);
-
-    if (!m_debug)
-    return;
-
-  uint8_t reply[130U];
-
-  reply[0U] = MMDVM_FRAME_START;
-  reply[1U] = 0U;
-  reply[2U] = MMDVM_DEBUG4;
-
-  uint8_t count = 3U;
-  for (uint8_t i = 0U; text[i] != '\0'; i++, count++)
-    reply[count] = text[i];
-
-  reply[count++] = (n1 >> 8) & 0xFF;
-  reply[count++] = (n1 >> 0) & 0xFF;
-
-  reply[count++] = (n2 >> 8) & 0xFF;
-  reply[count++] = (n2 >> 0) & 0xFF;
-
-  reply[count++] = (n3 >> 8) & 0xFF;
-  reply[count++] = (n3 >> 0) & 0xFF;
-
-  reply[1U] = count;
-
-  dump("Written Debug", reply, count);
-
-  m_socket.write(reply, count);
-}
-
-void CSerialPort::writeDebug(const char* text, int16_t n1, int16_t n2, int16_t n3, int16_t n4)
-{
-    assert(text != nullptr);
-    
-    if (!m_debug)
-        return;
-
-  uint8_t reply[130U];
-
-  reply[0U] = MMDVM_FRAME_START;
-  reply[1U] = 0U;
-  reply[2U] = MMDVM_DEBUG5;
-
-  uint8_t count = 3U;
-  for (uint8_t i = 0U; text[i] != '\0'; i++, count++)
-    reply[count] = text[i];
-
-  reply[count++] = (n1 >> 8) & 0xFF;
-  reply[count++] = (n1 >> 0) & 0xFF;
-
-  reply[count++] = (n2 >> 8) & 0xFF;
-  reply[count++] = (n2 >> 0) & 0xFF;
-
-  reply[count++] = (n3 >> 8) & 0xFF;
-  reply[count++] = (n3 >> 0) & 0xFF;
-
-  reply[count++] = (n4 >> 8) & 0xFF;
-  reply[count++] = (n4 >> 0) & 0xFF;
-
-  reply[1U] = count;
-
-  dump("Written Debug", reply, count);
-
-  m_socket.write(reply, count);
-}
-
-void CSerialPort::writeDebugDump(const uint8_t* data, uint16_t length)
-{
-    assert(data != nullptr);
-    assert(length > 0U);
-
-    uint8_t reply[512U];
-
-  reply[0U] = MMDVM_FRAME_START;
-
-  if (length > 252U) {
-    reply[1U] = 0U;
-    reply[2U] = (length + 4U) - 255U;
-    reply[3U] = MMDVM_DEBUG_DUMP;
-
-    for (uint16_t i = 0U; i < length; i++)
-      reply[i + 4U] = data[i];
-
-    m_socket.write(reply, length + 4U);
-  } else {
-    reply[1U] = length + 3U;
-    reply[2U] = MMDVM_DEBUG_DUMP;
-
-    for (uint16_t i = 0U; i < length; i++)
-      reply[i + 3U] = data[i];
-
-    m_socket.write(reply, length + 3U);
-  }
-}
 
 void CSerialPort::dump(const char* text, const uint8_t* data, uint16_t length) const
 {

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -193,7 +193,7 @@ void CP25RX::processHdr(q15_t sample)
         case P25_DUID_HDU: {
                 calculateLevels(m_hdrStartPtr, P25_HDR_FRAME_LENGTH_SYMBOLS);
 
-                DEBUG4("P25RX: sync found in Hdr pos/centre/threshold", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
+                LogMessage("P25RX: sync found in Hdr pos/centre/threshold: %u/%d/%d", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
 
                 uint8_t frame[P25_HDR_FRAME_LENGTH_BYTES + 1U];
                 samplesToBits(m_hdrStartPtr, P25_HDR_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -205,7 +205,7 @@ void CP25RX::processHdr(q15_t sample)
 		case P25_DUID_PDU: {
 				calculateLevels(m_hdrSyncPtr, P25_PDU_HDR_FRAME_LENGTH_SYMBOLS);
 
-				DEBUG4("P25RX: sync found in PDU pos/centre/threshold", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
+				LogMessage("P25RX: sync found in PDU pos/centre/threshold: %u/%d/%d", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
 
 				uint8_t frame[P25_PDU_HDR_FRAME_LENGTH_BYTES + 1U];
 				samplesToBits(m_hdrSyncPtr, P25_PDU_HDR_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -217,7 +217,7 @@ void CP25RX::processHdr(q15_t sample)
 		case P25_DUID_TSDU: {
                 calculateLevels(m_hdrStartPtr, P25_TSDU_FRAME_LENGTH_SYMBOLS);
 
-                DEBUG4("P25RX: sync found in TSDU pos/centre/threshold", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
+                LogMessage("P25RX: sync found in TSDU pos/centre/threshold: %u/%d/%d", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
 
                 uint8_t frame[P25_TSDU_FRAME_LENGTH_BYTES + 1U];
                 samplesToBits(m_hdrStartPtr, P25_TSDU_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -229,7 +229,7 @@ void CP25RX::processHdr(q15_t sample)
         case P25_DUID_TDU: {
                 calculateLevels(m_hdrStartPtr, P25_TERM_FRAME_LENGTH_SYMBOLS);
 
-                DEBUG4("P25RX: sync found in TDU pos/centre/threshold", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
+                LogMessage("P25RX: sync found in TDU pos/centre/threshold: %u/%d/%d", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
 
                 uint8_t frame[P25_TERM_FRAME_LENGTH_BYTES + 1U];
                 samplesToBits(m_hdrStartPtr, P25_TERM_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -241,7 +241,7 @@ void CP25RX::processHdr(q15_t sample)
         case P25_DUID_TDULC: {
                 calculateLevels(m_hdrStartPtr, P25_TERMLC_FRAME_LENGTH_SYMBOLS);
 
-                DEBUG4("P25RX: sync found in TDULC pos/centre/threshold", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
+                LogMessage("P25RX: sync found in TDULC pos/centre/threshold: %u/%d/%d", m_hdrSyncPtr, m_centreVal, m_thresholdVal);
 
                 uint8_t frame[P25_TERMLC_FRAME_LENGTH_BYTES + 1U];
                 samplesToBits(m_hdrStartPtr, P25_TERMLC_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -291,7 +291,7 @@ void CP25RX::processLdu(q15_t sample)
 
     calculateLevels(m_lduStartPtr, P25_LDU_FRAME_LENGTH_SYMBOLS);
 
-    DEBUG4("P25RX: sync found in Ldu pos/centre/threshold", m_lduSyncPtr, m_centreVal, m_thresholdVal);
+    LogMessage("P25RX: sync found in Ldu pos/centre/threshold: %u/%d/%d", m_lduSyncPtr, m_centreVal, m_thresholdVal);
 
     uint8_t frame[P25_LDU_FRAME_LENGTH_BYTES + 3U];
     samplesToBits(m_lduStartPtr, P25_LDU_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -299,7 +299,7 @@ void CP25RX::processLdu(q15_t sample)
     // We've not seen a data sync for too long, signal RXLOST and change to RX_NONE
     m_lostCount--;
     if (m_lostCount == 0U) {
-      DEBUG1("P25RX: sync timed out, lost lock");
+      LogMessage("P25RX: sync timed out, lost lock");
 
       io.setDecode(false);
       io.setADCDetection(false);
@@ -455,7 +455,7 @@ void CP25RX::calculateLevels(uint16_t start, uint16_t count)
 
   q15_t threshold = posThresh - centre;
 
-  DEBUG5("P25RX: pos/neg/centre/threshold", posThresh, negThresh, centre, threshold);
+  LogMessage("P25RX: pos/neg/centre/threshold: %u/%u/%d/%d", posThresh, negThresh, centre, threshold);
 
   if (m_averagePtr == NOAVEPTR) {
     for (uint8_t i = 0U; i < 16U; i++) {
