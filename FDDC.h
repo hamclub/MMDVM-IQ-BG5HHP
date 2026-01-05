@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2023 by Tatu Peltola OH2EAT
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -20,17 +20,15 @@
 #if !defined(FDDC_H)
 #define FDDC_H
 
-#include "FDUDC.h"
+#include "FDC.h"
 
-class CFDDC : public IFDUDC {
+class CFDDC : public IFDC {
 public:
     CFDDC(
         unsigned int resampNum,
         unsigned int resampDen,
-        int          rxIfNum,
-        unsigned int rxIfDen,
-        int          txIfNum,
-        unsigned int txIfDen,
+        int          ifNum,
+        unsigned int ifDen,
         // Approximate length of the filter in downconverted samples.
         // A higher value results in a narrower transition band
         // but higher CPU use.
@@ -39,23 +37,20 @@ public:
         unsigned int length,
         // Cutoff frequency as a fraction of Nyquist frequency
         // of downconverted sampler rate
-        float32_t cutoff
+        float32_t cutoff,
+        void (*callback)(const IQSample<float32_t>& sample)
     );
 
     virtual ~CFDDC();
-
-    virtual void setCallback(void (*callback)(const IQSample<float32_t>& sample));
 
     virtual void process(const IQSample<float32_t>& in);
 
 private:
     // Numerator of sample rate ratio
     // This determines the interpolation factor for DDC
-    // and decimation factor for DUC.
     unsigned int m_resampNum;
     // Denominator of sample rate ratio.
     // This determines the decimation factor for DDC
-    // and interpolation factor for DUC.
     unsigned int m_resampDen;
 
     unsigned int m_branchlen;
@@ -63,8 +58,8 @@ private:
     unsigned int m_p;
     // Index to m_in and m_out
     unsigned int m_i;
-    // Index to m_ddc_sine
-    unsigned int m_ddc_i;
+    // Index to m_sine
+    unsigned int m_sine_i;
 
     // Polyphase filter taps
     float32_t* m_taps;
@@ -75,9 +70,9 @@ private:
     float32_t* m_inIm;
 
     // Downconversion sine table
-    float32_t* m_ddc_sineI;
-    float32_t* m_ddc_sineQ;
-    unsigned int m_ddc_sineLen;
+    float32_t* m_sineI;
+    float32_t* m_sineQ;
+    unsigned int m_sineLen;
 
     void (*m_callback)(const IQSample<float32_t>& sample);
 

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2023 by Tatu Peltola OH2EAT
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -35,28 +35,29 @@ const unsigned int FDDC_VECSIZE = sizeof(float32_t) * FDDC_VECLEN;
 CFDDC::CFDDC(
 unsigned int resampNum,
 unsigned int resampDen,
-int          rxIfNum,
-unsigned int rxIfDen,
-int          txIfNum,
-unsigned int txIfDen,
+int          ifNum,
+unsigned int ifDen,
 unsigned int length,
-float32_t cutoff
+float32_t    cutoff,
+void (*callback)(const IQSample<float32_t>& sample)
 ) :
 m_resampNum(resampNum),
 m_resampDen(resampDen),
 m_branchlen(0U),
 m_p(0U),
 m_i(0U),
-m_ddc_i(0U),
+m_sine_i(0U),
 m_taps(nullptr),
 m_tapsLen(0U),
 m_inRe(nullptr),
 m_inIm(nullptr),
-m_ddc_sineI(nullptr),
-m_ddc_sineQ(nullptr),
-m_ddc_sineLen(0U),
-m_callback(nullptr)
+m_sineI(nullptr),
+m_sineQ(nullptr),
+m_sineLen(0U),
+m_callback(callback)
 {
+    assert(callback != nullptr);
+
     unsigned int approxlen = resampDen * length;
 
     // Number of filter branches:
@@ -72,10 +73,9 @@ m_callback(nullptr)
     m_branchlen = (m_branchlen + FDDC_VECLEN - 1U) / FDDC_VECLEN * FDDC_VECLEN;
 
     // Total length of filter prototype:
-    unsigned int totallen = m_branchlen * branches;
+    m_tapsLen = m_branchlen * branches;
 
-    m_taps = new float32_t[totallen];
-    m_tapsLen = totallen;
+    m_taps = new float32_t[m_tapsLen];
 
     // Cutoff frequency in radians per sample
     float32_t sinc_cutoff = (cutoff * M_PIf32) / float32_t((resampDen));
@@ -83,7 +83,7 @@ m_callback(nullptr)
 
     for (unsigned int branch = 0U; branch < branches; branch++) {
         for (unsigned int i = 0U; i < m_branchlen; i++) {
-            float32_t v = windowed_sinc(branches * i + branch, totallen, sinc_cutoff);
+            float32_t v = windowed_sinc(branches * i + branch, m_tapsLen, sinc_cutoff);
 
             // Store taps of each branch contiguously
             m_taps[m_branchlen * branch + i] = v;
@@ -101,11 +101,11 @@ m_callback(nullptr)
     m_inRe = new float32_t[m_branchlen * 2U];
     m_inIm = new float32_t[m_branchlen * 2U];
 
-    m_ddc_sineI = new float32_t[rxIfDen];
-    m_ddc_sineQ = new float32_t[rxIfDen];
-    m_ddc_sineLen = rxIfDen;
+    m_sineI = new float32_t[ifDen];
+    m_sineQ = new float32_t[ifDen];
+    m_sineLen = ifDen;
 
-    make_sine_table(m_ddc_sineI, m_ddc_sineQ, -rxIfNum, rxIfDen);
+    make_sine_table(m_sineI, m_sineQ, -ifNum, ifDen);
 }
 
 CFDDC::~CFDDC()
@@ -115,15 +115,8 @@ CFDDC::~CFDDC()
     delete[] m_inRe;
     delete[] m_inIm;
 
-    delete[] m_ddc_sineI;
-    delete[] m_ddc_sineQ;
-}
-
-void CFDDC::setCallback(void (*callback)(const IQSample<float32_t>& sample))
-{
-    assert(callback != nullptr);
-
-    m_callback = callback;
+    delete[] m_sineI;
+    delete[] m_sineQ;
 }
 
 void CFDDC::process(const IQSample<float32_t>& sample)
@@ -131,10 +124,10 @@ void CFDDC::process(const IQSample<float32_t>& sample)
     assert(m_callback != nullptr);
 
     float32_t real = 0.0F, imag = 0.0F;
-    COMPLEX_MULT(real, imag, sample.iValue, sample.qValue, m_ddc_sineI[m_ddc_i], m_ddc_sineQ[m_ddc_i]);
+    COMPLEX_MULT(real, imag, sample.iValue, sample.qValue, m_sineI[m_sine_i], m_sineQ[m_sine_i]);
 
-    if (++m_ddc_i >= m_ddc_sineLen)
-        m_ddc_i = 0U;
+    if (++m_sine_i >= m_sineLen)
+        m_sine_i = 0U;
 
     m_inRe[m_i] = m_inRe[m_i + m_branchlen] = real;
     m_inIm[m_i] = m_inIm[m_i + m_branchlen] = imag;

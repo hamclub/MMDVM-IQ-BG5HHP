@@ -164,9 +164,6 @@
     <ClInclude Include="Timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FDUDC.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Complex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -186,6 +183,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FDC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -310,9 +310,6 @@
     <ClCompile Include="FDUC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FDUDC.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="StopWatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -320,6 +317,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FDC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

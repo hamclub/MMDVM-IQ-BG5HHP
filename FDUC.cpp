@@ -35,29 +35,30 @@ const unsigned int FDUC_VECSIZE = sizeof(float32_t) * FDUC_VECLEN;
 CFDUC::CFDUC(
     unsigned int resampNum,
     unsigned int resampDen,
-    int          rxIfNum,
-    unsigned int rxIfDen,
-    int          txIfNum,
-    unsigned int txIfDen,
+    int          ifNum,
+    unsigned int ifDen,
     unsigned int length,
-    float32_t cutoff
+    float32_t cutoff,
+    void (*callback)(const IQSample<float32_t>& sample)
 ) :
 m_resampNum(resampNum),
 m_resampDen(resampDen),
 m_branchlen(0U),
 m_p(0U),
 m_i(0U),
-m_duc_i(0U),
+m_sine_i(0U),
 m_taps(nullptr),
 m_tapsLen(0U),
 m_outRe(nullptr),
 m_outIm(nullptr),
-m_duc_sineI(nullptr),
-m_duc_sineQ(nullptr),
-m_duc_sineLen(0U),
-m_ducScaling(0.0F),
-m_callback(nullptr)
+m_sineI(nullptr),
+m_sineQ(nullptr),
+m_sineLen(0U),
+m_scaling(0.0F),
+m_callback(callback)
 {
+    assert(callback != nullptr);
+
     unsigned int approxlen = resampNum * length;
 
     // Number of filter branches:
@@ -73,10 +74,9 @@ m_callback(nullptr)
     m_branchlen = (m_branchlen + FDUC_VECLEN - 1U) / FDUC_VECLEN * FDUC_VECLEN;
 
     // Total length of filter prototype:
-    unsigned int totallen = m_branchlen * branches;
+    m_tapsLen = m_branchlen * branches;
 
-    m_taps = new float32_t[totallen];
-    m_tapsLen = totallen;
+    m_taps = new float32_t[m_tapsLen];
 
     // Cutoff frequency in radians per sample
     float32_t sinc_cutoff = (cutoff * M_PIf32) / float32_t((resampNum));
@@ -84,7 +84,7 @@ m_callback(nullptr)
 
     for (unsigned int branch = 0U; branch < branches; branch++) {
         for (unsigned int i = 0U; i < m_branchlen; i++) {
-            float32_t v = windowed_sinc(branches * i + branch, totallen, sinc_cutoff);
+            float32_t v = windowed_sinc(branches * i + branch, m_tapsLen, sinc_cutoff);
 
             // Store taps of each branch contiguously
             m_taps[m_branchlen * branch + i] = v;
@@ -100,16 +100,16 @@ m_callback(nullptr)
         m_taps[i] *= scaling;
 
     // Additional scaling needed so that DUC has unity gain in passband
-    m_ducScaling = float32_t(resampDen) / float32_t(resampNum);
+    m_scaling = float32_t(resampDen) / float32_t(resampNum);
 
     m_outRe = new float32_t[m_branchlen * 2U];
     m_outIm = new float32_t[m_branchlen * 2U];
 
-    m_duc_sineI = new float32_t[txIfDen];
-    m_duc_sineQ = new float32_t[txIfDen];
-    m_duc_sineLen = txIfDen;
+    m_sineI = new float32_t[ifDen];
+    m_sineQ = new float32_t[ifDen];
+    m_sineLen = ifDen;
 
-    make_sine_table(m_duc_sineI, m_duc_sineQ, txIfNum, txIfDen);
+    make_sine_table(m_sineI, m_sineQ, ifNum, ifDen);
 }
 
 CFDUC::~CFDUC()
@@ -119,15 +119,8 @@ CFDUC::~CFDUC()
     delete[] m_outRe;
     delete[] m_outIm;
 
-    delete[] m_duc_sineI;
-    delete[] m_duc_sineQ;
-}
-
-void CFDUC::setCallback(void (*callback)(const IQSample<float32_t>& sample))
-{
-    assert(callback != nullptr);
-
-    m_callback = callback;
+    delete[] m_sineI;
+    delete[] m_sineQ;
 }
 
 void CFDUC::process(const IQSample<float32_t>& sample)
@@ -135,8 +128,8 @@ void CFDUC::process(const IQSample<float32_t>& sample)
     assert(m_callback != nullptr);
 
     IQSample<float32_t> in;
-    in.iValue  = sample.iValue * m_ducScaling;
-    in.qValue  = sample.qValue * m_ducScaling;
+    in.iValue  = sample.iValue * m_scaling;
+    in.qValue  = sample.qValue * m_scaling;
     in.control = sample.control;
 
     m_p += m_resampDen;
@@ -163,13 +156,13 @@ void CFDUC::process(const IQSample<float32_t>& sample)
     COMPLEX_MULT(in.iValue, in.qValue,
         m_outRe[m_i] + m_outRe[m_i + m_branchlen],
         m_outIm[m_i] + m_outIm[m_i + m_branchlen],
-        m_duc_sineI[m_duc_i],
-        m_duc_sineQ[m_duc_i]);
+        m_sineI[m_sine_i],
+        m_sineQ[m_sine_i]);
 
     (*m_callback)(in);
 
-    if (++m_duc_i >= m_duc_sineLen)
-        m_duc_i = 0U;
+    if (++m_sine_i >= m_sineLen)
+        m_sine_i = 0U;
 
     m_outRe[m_i] = m_outRe[m_i + m_branchlen] = 0.0F;
     m_outIm[m_i] = m_outIm[m_i + m_branchlen] = 0.0F;

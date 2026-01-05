@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2023 by Tatu Peltola OH2EAT
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -20,17 +20,15 @@
 #if !defined(FDUC_H)
 #define FDUC_H
 
-#include "FDUDC.h"
+#include "FDC.h"
 
-class CFDUC : public IFDUDC {
+class CFDUC : public IFDC {
 public:
     CFDUC(
         unsigned int resampNum,
         unsigned int resampDen,
-        int          rxIfNum,
-        unsigned int rxIfDen,
-        int          txIfNum,
-        unsigned int txIfDen,
+        int          ifNum,
+        unsigned int ifDen,
         // Approximate length of the filter in downconverted samples.
         // A higher value results in a narrower transition band
         // but higher CPU use.
@@ -39,23 +37,20 @@ public:
         unsigned int length,
         // Cutoff frequency as a fraction of Nyquist frequency
         // of downconverted sampler rate
-        float32_t cutoff
+        float32_t cutoff,
+        void (*callback)(const IQSample<float32_t>& sample)
     );
 
     virtual ~CFDUC();
-
-    virtual void setCallback(void (*callback)(const IQSample<float32_t>& sample));
 
     virtual void process(const IQSample<float32_t>& sample);
 
 private:
     // Numerator of sample rate ratio
-    // This determines the interpolation factor for DDC
-    // and decimation factor for DUC.
+    // This determines the decimation factor for DUC.
     unsigned int m_resampNum;
     // Denominator of sample rate ratio.
-    // This determines the decimation factor for DDC
-    // and interpolation factor for DUC.
+    // This determines the interpolation factor for DUC.
     unsigned int m_resampDen;
 
     unsigned int m_branchlen;
@@ -63,8 +58,8 @@ private:
     unsigned int m_p;
     // Index to m_in and m_out
     unsigned int m_i;
-    // Index to m_duc_sine
-    unsigned int m_duc_i;
+    // Index to m_sine
+    unsigned int m_sine_i;
 
     // Polyphase filter taps
     float32_t* m_taps;
@@ -75,12 +70,12 @@ private:
     float32_t* m_outIm;
 
     // Upconversion sine table
-    float32_t* m_duc_sineI;
-    float32_t* m_duc_sineQ;
-    unsigned int m_duc_sineLen;
+    float32_t* m_sineI;
+    float32_t* m_sineQ;
+    unsigned int m_sineLen;
 
     // Scaling needed so that DUC has unity gain in passband
-    float32_t    m_ducScaling;
+    float32_t    m_scaling;
 
     void (*m_callback)(const IQSample<float32_t>& sample);
 

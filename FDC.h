@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,30 +16,26 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(FDUDC_H)
-#define FDUDC_H
+#if !defined(FDC_H)
+#define FDC_H
 
 #include "IQSample.h"
 
 #include <arm_math.h>
 
-class IFDUDC {
+class IFDC {
 public:
-    virtual ~IFDUDC() = 0;
-
-    virtual void setCallback(void (*callback)(const IQSample<float32_t>& sample)) = 0;
+    virtual ~IFDC() = 0;
 
     virtual void process(const IQSample<float32_t>& sample) = 0;
 
 private:
 };
 
-class CFDUDCDummy : public IFDUDC {
+class CFDCDummy : public IFDC {
 public:
-    CFDUDCDummy();
-    virtual ~CFDUDCDummy();
-
-    virtual void setCallback(void (*callback)(const IQSample<float32_t>& sample));
+    CFDCDummy(void (*callback)(const IQSample<float32_t>& sample));
+    virtual ~CFDCDummy();
 
     virtual void process(const IQSample<float32_t>& sample);
 

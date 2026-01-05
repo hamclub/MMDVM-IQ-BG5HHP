@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,32 +16,26 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "FDUDC.h"
+#include "FDC.h"
 
 #include <cassert>
 
 
-IFDUDC::~IFDUDC()
+IFDC::~IFDC()
 {
 }
 
-CFDUDCDummy::CFDUDCDummy() :
-m_callback(nullptr)
-{
-}
-
-CFDUDCDummy::~CFDUDCDummy()
-{
-}
-
-void CFDUDCDummy::setCallback(void (*callback)(const IQSample<float32_t>& sample))
+CFDCDummy::CFDCDummy(void (*callback)(const IQSample<float32_t>& sample)) :
+m_callback(callback)
 {
 	assert(callback != nullptr);
-
-	m_callback = callback;
 }
 
-void CFDUDCDummy::process(const IQSample<float32_t>& sample)
+CFDCDummy::~CFDCDummy()
+{
+}
+
+void CFDCDummy::process(const IQSample<float32_t>& sample)
 {
 	assert(m_callback != nullptr);
 

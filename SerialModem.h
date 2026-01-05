@@ -24,7 +24,7 @@
 #include "StopWatch.h"
 #include "IQSample.h"
 #include "Timer.h"
-#include "FDUDC.h"
+#include "FDC.h"
 
 #include "arm_math.h"
 
@@ -93,10 +93,10 @@ private:
 	SERIALMODEM_FORMAT m_rxFormat;
 	uint16_t           m_maxTXSamples;
 
-	IFDUDC*            m_fddc24RX;
-	IFDUDC*            m_fduc24TX;
-	IFDUDC*            m_fddc72RX;
-	IFDUDC*            m_fduc72TX;
+	IFDC*              m_fdc24RX;
+	IFDC*              m_fdc24TX;
+	IFDC*              m_fdc72RX;
+	IFDC*              m_fdc72TX;
 
 	CRingBuffer<IQSample<int16_t>> m_toModem;
 
