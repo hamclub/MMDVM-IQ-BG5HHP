@@ -108,6 +108,9 @@ m_lastQ72(0.0F),
 m_stopwatch(),
 m_trace(false)
 {
+    // The largest needed
+    m_rxBuffer = new uint8_t[MAX_RX_SAMPLES * IQ_ELEMENT_LEN + 20U];
+
     m_ptr = this;
 }
 
@@ -314,9 +317,13 @@ bool CSerialModem::isTX() const
 
 void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t length)
 {
+    assert(data != nullptr);
+
     switch (type) {
     case TYPE_GET_VERSION:
         if (m_state == SERIALMODEM_STATE::WAIT_VERSION) {
+            LogDebug("Received Modem::GET_VERSION");
+
             bool ret = processVersion(data, length);
             if (!ret)
                 throw;
@@ -330,15 +337,18 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
         break;
     case TYPE_ACK:
         if (m_state == SERIALMODEM_STATE::WAIT_FREQ_POWER) {
+            LogDebug("Received Modem::ACK");
             writeStart();
             m_messageTimer.start();
         } else if (m_state == SERIALMODEM_STATE::WAIT_START) {
+            LogDebug("Received Modem::ACK");
             LogMessage("Modem has been started");
             m_state = SERIALMODEM_STATE::RUNNING;
             m_messageTimer.stop();
         }
         break;
     case TYPE_NAK:
+        LogDebug("Received Modem::NAK 0x%02X", data[1U]);
         switch (data[1U]) {
         case ERR_UNKNOWN_MESSAGE_TYPE:
             LogMessage("Unknown message type for message type 0x%02X", data[0U]);
@@ -365,13 +375,15 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             LogMessage("Unknown error type - 0x%02X for message type 0x%02X", data[1U], data[0U]);
             break;
         }
-        throw;
+        break;
     case TYPE_STATUS:
+        LogDebug("Received Modem::STATUS");
         m_spaceLeft = data[0U] + (data[1U] * 256U);
         m_tx = (data[2U] & STATUS_TX_ON) == STATUS_TX_ON;
         m_watchdogTimer.start();
         break;
     case TYPE_RECEIVE_DATA:
+        LogDebug("Received Modem::RECEIVE_DATA");
         if (m_state == SERIALMODEM_STATE::RUNNING) {
             uint8_t  marker = data[0U];
             uint16_t offset = data[1U] + (data[2U] * 256U);
@@ -400,6 +412,8 @@ void CSerialModem::writeGetVersion()
 
     if (m_trace)
         dump("Write Get Version", GET_VERSION_MESSAGE, GET_VERSION_MESSAGE_LEN);
+    else
+        LogDebug("Sent Modem::GET_VERSION");
 
     m_state = SERIALMODEM_STATE::WAIT_VERSION;
 }
@@ -429,6 +443,8 @@ void CSerialModem::writeSetFreqPower()
 
     if (m_trace)
         dump("Write Set Freq/Power", buffer, 13U);
+    else
+        LogDebug("Sent Modem::SET_FREQUENCY_AND_POWER");
 
     m_state = SERIALMODEM_STATE::WAIT_FREQ_POWER;
 }
@@ -449,6 +465,8 @@ void CSerialModem::writeStart()
 
     if (m_trace)
         dump("Write Start", buffer, 6U);
+    else
+        LogDebug("Sent Modem::START");
 
     m_state = SERIALMODEM_STATE::WAIT_START;
 
@@ -461,6 +479,8 @@ void CSerialModem::writeStop()
 
     if (m_trace)
         dump("Write Stop", STOP_MESSAGE, STOP_MESSAGE_LEN);
+    else
+        LogDebug("Sent Modem::STOP");
 
     m_state = SERIALMODEM_STATE::WAIT_STOP;
 
@@ -510,11 +530,14 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
 
     m_maxTXSamples = data[5U] + data[6U] * 256U;
 
+    const char* txProto = nullptr;
+
     switch (m_txFormat) {
     case SERIALMODEM_FORMAT::BASEBAND: {
             delete[] m_txBuffer;
             uint16_t bytes = m_maxTXSamples * BB_ELEMENT_LEN;
             m_txBuffer = new uint8_t[bytes + 20U];
+            txProto = "Baseband";
         }
         break;
 
@@ -522,6 +545,7 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
             delete[] m_txBuffer;
             uint16_t bytes = m_maxTXSamples * IQ_ELEMENT_LEN;
             m_txBuffer = new uint8_t[bytes + 20U];
+            txProto = "I/Q";
         }
         break;
 
@@ -530,19 +554,15 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         return false;
     }
 
+    const char* rxProto = nullptr;
+
     switch (m_rxFormat) {
-    case SERIALMODEM_FORMAT::BASEBAND: {
-            delete[] m_rxBuffer;
-            uint16_t bytes = MAX_RX_SAMPLES * BB_ELEMENT_LEN;
-            m_rxBuffer = new uint8_t[bytes + 20U];
-        }
+    case SERIALMODEM_FORMAT::BASEBAND:
+        rxProto = "Baseband";
         break;
 
-    case SERIALMODEM_FORMAT::IQ: {
-            delete[] m_rxBuffer;
-            uint16_t bytes = MAX_RX_SAMPLES * IQ_ELEMENT_LEN;
-            m_rxBuffer = new uint8_t[bytes + 20U];
-        }
+    case SERIALMODEM_FORMAT::IQ:
+        rxProto = "I/Q";
         break;
 
     default:
@@ -550,7 +570,7 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
         return false;
     }
 
-    LogMessage("Modem version:");
+    LogMessage("Modem Information:");
     LogMessage("\tProtocol version: %u", data[0U]);
     LogMessage("\tCapabilities:");
     LogMessage("\t\tDuplex: %s", m_duplex ? "yes" : "no");
@@ -558,10 +578,10 @@ bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
     LogMessage("\t\tReceive: %s", m_hasRX ? "yes" : "no");
     LogMessage("\t\tSample rate: %ukHz", m_sampleRate);
     LogMessage("\tFormats:");
-    LogMessage("\t\tTransmit: %u", m_txFormat);
-    LogMessage("\t\tReceive: %u", m_rxFormat);
+    LogMessage("\t\tTransmit: %s", txProto);
+    LogMessage("\t\tReceive: %s", rxProto);
     LogMessage("\tMax TX samples: %u", m_maxTXSamples);
-    LogMessage("\tVersion: \"%.*s\"", length - 7U, data + 7U);
+    LogMessage("\tFirmware version: \"%.*s\"", length - 7U, data + 7U);
 
     return true;
 }
@@ -626,6 +646,8 @@ bool CSerialModem::writeTransmitDataBB(bool flush)
     if (m_trace) {
         dump("Write BB Data 1/2", buffer, 10U);
         dump("Write BB Data 2/2", m_txBuffer, len);
+    } else {
+        LogDebug("Sent Modem::TRANSMIT_DATA");
     }
 
     if (!flush)
@@ -693,6 +715,8 @@ bool CSerialModem::writeTransmitDataIQ(bool flush)
     if (m_trace) {
         dump("Write IQ Data 1/2", buffer, 8U);
         dump("Write IQ Data 2/2", m_txBuffer, len);
+    } else {
+        LogDebug("Sent Modem::TRANSMIT_DATA");
     }
 
     if (!flush)
