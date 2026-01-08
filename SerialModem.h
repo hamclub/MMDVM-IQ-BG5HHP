@@ -76,6 +76,7 @@ private:
 	uint8_t*           m_rxBuffer;
 	uint16_t           m_rxPtr;
 	uint16_t           m_rxLen;
+	CTimer             m_statusTimer;
 	CTimer             m_messageTimer;
 	CTimer             m_watchdogTimer;
 	CTimer             m_transmitTimer;
@@ -120,6 +121,7 @@ private:
 
 	void writeGetVersion();
 	void writeSetFreqPower();
+	void writeGetStatus();
 	void writeStart();
 	void writeStop();
 

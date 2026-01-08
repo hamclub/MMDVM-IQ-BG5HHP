@@ -36,7 +36,7 @@ const uint8_t TYPE_GET_VERSION              = 0x00U;
 const uint8_t TYPE_SET_FREQUENCY_AND_POWER  = 0x01U;
 const uint8_t TYPE_START                    = 0x02U;
 const uint8_t TYPE_STOP                     = 0x03U;
-const uint8_t TYPE_STATUS                   = 0x04U;
+const uint8_t TYPE_GET_STATUS               = 0x04U;
 const uint8_t TYPE_TRANSMIT_DATA            = 0x05U;
 const uint8_t TYPE_RECEIVE_DATA             = 0x06U;
 const uint8_t TYPE_DEBUG_MESSAGE            = 0xF0U;
@@ -62,6 +62,9 @@ const int32_t DEVIATION = 550000;               // TODO
 const uint8_t  GET_VERSION_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_GET_VERSION};
 const uint16_t GET_VERSION_MESSAGE_LEN = sizeof(GET_VERSION_MESSAGE) / sizeof(uint8_t);
 
+const uint8_t  GET_STATUS_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_GET_STATUS};
+const uint16_t GET_STATUS_MESSAGE_LEN = sizeof(GET_STATUS_MESSAGE) / sizeof(uint8_t);
+
 const uint8_t  STOP_MESSAGE[]   = {FRAME_START, 0x04U, 0x00U, TYPE_STOP};
 const uint16_t STOP_MESSAGE_LEN = sizeof(STOP_MESSAGE) / sizeof(uint8_t);
 
@@ -78,8 +81,9 @@ m_txBuffer(nullptr),
 m_rxBuffer(nullptr),
 m_rxPtr(0U),
 m_rxLen(0U),
+m_statusTimer(1000U, 0U, 100U),
 m_messageTimer(1000U, 0U, 100U),
-m_watchdogTimer(1000U, 1U),
+m_watchdogTimer(1000U, 0U, 500U),
 m_transmitTimer(1000U, 0U, 200U),
 m_power(0U),
 m_txFreq(0U),
@@ -218,6 +222,7 @@ void CSerialModem::process()
 
     // Is this correct?
     unsigned int ms = m_stopwatch.elapsed();
+    m_statusTimer.clock(ms);
     m_messageTimer.clock(ms);
     m_watchdogTimer.clock(ms);
     m_transmitTimer.clock(ms);
@@ -262,6 +267,11 @@ void CSerialModem::process()
         break;
     }
 
+    if (m_statusTimer.isRunning() && m_statusTimer.hasExpired()) {
+        writeGetStatus();
+        m_statusTimer.start();
+    }
+
     if (m_transmitTimer.isRunning() && m_transmitTimer.hasExpired()) {
         LogWarning("The transmit timer has expired");
         // Handle the remaining transmit data
@@ -279,6 +289,7 @@ void CSerialModem::process()
 
     if (m_watchdogTimer.isRunning() && m_watchdogTimer.hasExpired()) {
         LogWarning("The watchdog timer has expired");
+        m_state = SERIALMODEM_STATE::NONE;
         // Actually not sure what to do here
     }
 }
@@ -376,23 +387,24 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             break;
         }
         break;
-    case TYPE_STATUS:
-        LogDebug("Received Modem::STATUS");
+    case TYPE_GET_STATUS:
         m_spaceLeft = data[0U] + (data[1U] * 256U);
         m_tx = (data[2U] & STATUS_TX_ON) == STATUS_TX_ON;
+        LogDebug("Received Modem::GET_STATUS space: %u TX: %u", m_spaceLeft, m_tx ? 1U : 0U);
         m_watchdogTimer.start();
         break;
     case TYPE_RECEIVE_DATA:
-        LogDebug("Received Modem::RECEIVE_DATA");
         if (m_state == SERIALMODEM_STATE::RUNNING) {
             uint8_t  marker = data[0U];
             uint16_t offset = data[1U] + (data[2U] * 256U);
 
             switch (m_rxFormat) {
             case SERIALMODEM_FORMAT::BASEBAND:
+                LogDebug("Received Modem::RECEIVE_DATA BB Payload: %u", (length - 4U) / BB_ELEMENT_LEN);
                 processBBRX(marker, offset, data + 4U, length - 4U);
                 break;
             case SERIALMODEM_FORMAT::IQ:
+                LogDebug("Received Modem::RECEIVE_DATA IQ Payload: %u", (length - 4U) / IQ_ELEMENT_LEN);
                 processIQRX(marker, offset, data + 4U, length - 4U);
                 break;
             default:
@@ -449,6 +461,16 @@ void CSerialModem::writeSetFreqPower()
     m_state = SERIALMODEM_STATE::WAIT_FREQ_POWER;
 }
 
+void CSerialModem::writeGetStatus()
+{
+    m_serial.write(GET_STATUS_MESSAGE, GET_STATUS_MESSAGE_LEN);
+
+    if (m_trace)
+        dump("Write Get Status", GET_STATUS_MESSAGE, GET_STATUS_MESSAGE_LEN);
+    else
+        LogDebug("Sent Modem::GET_STATUS");
+}
+
 void CSerialModem::writeStart()
 {
     uint8_t buffer[6U];
@@ -471,6 +493,7 @@ void CSerialModem::writeStart()
     m_state = SERIALMODEM_STATE::WAIT_START;
 
     m_watchdogTimer.start();
+    m_statusTimer.start();
 }
 
 void CSerialModem::writeStop()
@@ -488,6 +511,7 @@ void CSerialModem::writeStop()
 
     m_watchdogTimer.stop();
     m_transmitTimer.stop();
+    m_statusTimer.stop();
 }
 
 bool CSerialModem::processVersion(const uint8_t* data, uint16_t length)
@@ -900,7 +924,10 @@ void CSerialModem::callbackRX24(const IQSample<float32_t>& sample)
 
     float32_t phase = ::atan2(q, i);
 
-    io.read24FSK(sample.control, ::FLOAT32_TO_Q15(phase), cos, uint16_t(rssi));
+    // The base system is based on 12-bits of precision 
+    q15_t frequency = ::FLOAT32_TO_Q15(phase) >> 4;
+
+    io.read24FSK(sample.control, frequency, cos, uint16_t(rssi));
 
     m_ptr->m_lastI24 = sample.iValue;
     m_ptr->m_lastQ24 = sample.qValue;
