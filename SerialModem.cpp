@@ -39,7 +39,6 @@ const uint8_t TYPE_STOP                     = 0x03U;
 const uint8_t TYPE_GET_STATUS               = 0x04U;
 const uint8_t TYPE_TRANSMIT_DATA            = 0x05U;
 const uint8_t TYPE_RECEIVE_DATA             = 0x06U;
-const uint8_t TYPE_DEBUG_MESSAGE            = 0xF0U;
 const uint8_t TYPE_ACK                      = 0xFEU;
 const uint8_t TYPE_NAK                      = 0xFFU;
 
@@ -81,9 +80,9 @@ m_txBuffer(nullptr),
 m_rxBuffer(nullptr),
 m_rxPtr(0U),
 m_rxLen(0U),
-m_statusTimer(1000U, 0U, 100U),
+m_statusTimer(1000U, 0U, 200U),
 m_messageTimer(1000U, 0U, 100U),
-m_watchdogTimer(1000U, 0U, 500U),
+m_watchdogTimer(1000U, 0U, 800U),
 m_transmitTimer(1000U, 0U, 200U),
 m_power(0U),
 m_txFreq(0U),
@@ -255,21 +254,24 @@ void CSerialModem::process()
         }
     }
 
-    // Handle the transmit data
-    switch (m_txFormat) {
-    case SERIALMODEM_FORMAT::BASEBAND:
-        writeTransmitDataBB(false);
-        break;
-    case SERIALMODEM_FORMAT::IQ:
-        writeTransmitDataIQ(false);
-        break;
-    default:
-        break;
-    }
-
-    if (m_statusTimer.isRunning() && m_statusTimer.hasExpired()) {
-        writeGetStatus();
-        m_statusTimer.start();
+    // Handle the transmit data & status
+    if (m_state == SERIALMODEM_STATE::RUNNING) {
+        switch (m_txFormat) {
+        case SERIALMODEM_FORMAT::BASEBAND:
+            writeTransmitDataBB(false);
+            break;
+        case SERIALMODEM_FORMAT::IQ:
+            writeTransmitDataIQ(false);
+            break;
+        default:
+            break;
+        }
+/*
+        if (m_statusTimer.isRunning() && m_statusTimer.hasExpired()) {
+            writeGetStatus();
+            m_statusTimer.start();
+        }
+*/
     }
 
     if (m_transmitTimer.isRunning() && m_transmitTimer.hasExpired()) {
@@ -286,12 +288,13 @@ void CSerialModem::process()
             break;
         }
     }
-
+/*
     if (m_watchdogTimer.isRunning() && m_watchdogTimer.hasExpired()) {
         LogWarning("The watchdog timer has expired");
         m_state = SERIALMODEM_STATE::NONE;
         // Actually not sure what to do here
     }
+*/
 }
 
 // For all modes bar TETRA and P25 phase 2
@@ -342,9 +345,6 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
             m_state = SERIALMODEM_STATE::NONE;
             m_messageTimer.start();
         }
-        break;
-    case TYPE_DEBUG_MESSAGE:
-        LogMessage("DEBUG: %.*s", length, data);
         break;
     case TYPE_ACK:
         if (m_state == SERIALMODEM_STATE::WAIT_FREQ_POWER) {
@@ -400,16 +400,18 @@ void CSerialModem::processMessage(uint8_t type, const uint8_t* data, uint16_t le
 
             switch (m_rxFormat) {
             case SERIALMODEM_FORMAT::BASEBAND:
-                LogDebug("Received Modem::RECEIVE_DATA BB Payload: %u", (length - 4U) / BB_ELEMENT_LEN);
+                LogDebug("Received Modem::RECEIVE_DATA BB Payload: %u %u", data[3U], (length - 4U) / BB_ELEMENT_LEN);
                 processBBRX(marker, offset, data + 4U, length - 4U);
                 break;
             case SERIALMODEM_FORMAT::IQ:
-                LogDebug("Received Modem::RECEIVE_DATA IQ Payload: %u", (length - 4U) / IQ_ELEMENT_LEN);
+                LogDebug("Received Modem::RECEIVE_DATA IQ Payload: %u %u", data[3U], (length - 4U) / IQ_ELEMENT_LEN);
                 processIQRX(marker, offset, data + 4U, length - 4U);
                 break;
             default:
                 break;
             }
+        } else {
+            LogDebug("Received Modem::RECEIVE_DATA !! Payload: %u %u", data[3U], (length - 4U) / IQ_ELEMENT_LEN);
         }
         break;
     default:
@@ -671,7 +673,7 @@ bool CSerialModem::writeTransmitDataBB(bool flush)
         dump("Write BB Data 1/2", buffer, 10U);
         dump("Write BB Data 2/2", m_txBuffer, len);
     } else {
-        LogDebug("Sent Modem::TRANSMIT_DATA");
+        LogDebug("Sent Modem::TRANSMIT_DATA BB");
     }
 
     if (!flush)
@@ -740,7 +742,7 @@ bool CSerialModem::writeTransmitDataIQ(bool flush)
         dump("Write IQ Data 1/2", buffer, 8U);
         dump("Write IQ Data 2/2", m_txBuffer, len);
     } else {
-        LogDebug("Sent Modem::TRANSMIT_DATA");
+        LogDebug("Sent Modem::TRANSMIT_DATA IQ");
     }
 
     if (!flush)

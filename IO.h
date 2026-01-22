@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -75,10 +75,6 @@ public:
   
   uint8_t getCPU() const;
 
-  void getUDID(uint8_t* buffer);
-
-  void selfTest();
-
 private:
   bool                  m_started;
   CRingBuffer<TSample>  m_rxFSKBuffer;
@@ -149,8 +145,6 @@ private:
   void setLEDInt(bool on);
   void setPTTInt(bool on);
   void setCOSInt(bool on);
-
-  void delayInt(unsigned int dly);
 };
 
 #endif

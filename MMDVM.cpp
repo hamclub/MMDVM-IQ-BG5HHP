@@ -85,7 +85,7 @@ CIO io;
 
 void loop()
 {
-  CThread::sleep(5U);
+  CThread::sleep(1U);
 
   serial.process();
   

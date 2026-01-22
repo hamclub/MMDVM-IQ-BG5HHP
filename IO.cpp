@@ -180,23 +180,6 @@ m_lockout(false)
 #endif
 
   initInt();
-  
-  selfTest();
-}
-
-void CIO::selfTest()
-{
-  bool ledValue = false;
-
-  for (uint8_t i = 0U; i < 6U; i++) {
-    ledValue = !ledValue;
-
-    // We exclude PTT to avoid trigger the transmitter
-    setLEDInt(ledValue);
-    setCOSInt(ledValue);
-
-    delayInt(100U);
-  }
 }
 
 void CIO::start()
@@ -602,11 +585,6 @@ uint8_t CIO::getCPU() const
     return 99U;
 }
 
-void CIO::getUDID(uint8_t* buffer)
-{
-    ::memcpy(buffer, "0000000000", 10U);
-}
-
 void CIO::initInt()
 {
 }
@@ -633,9 +611,4 @@ void CIO::setLEDInt(bool on)
 void CIO::setCOSInt(bool on)
 {
     printf("COS: %s\n", on ? "On" : "Off");
-}
-
-void CIO::delayInt(unsigned int dlay)
-{
-    CThread::sleep(dlay);
 }

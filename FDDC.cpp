@@ -21,6 +21,7 @@
 
 #include "Complex.h"
 
+#include <cstring>
 #include <cassert>
 #include <cmath>
 
@@ -100,6 +101,9 @@ m_callback(callback)
 
     m_inRe = new float32_t[m_branchlen * 2U];
     m_inIm = new float32_t[m_branchlen * 2U];
+
+    ::memset(m_inRe, 0x00U, m_branchlen * 2U * sizeof(float32_t));
+    ::memset(m_inIm, 0x00U, m_branchlen * 2U * sizeof(float32_t));
 
     m_sineI = new float32_t[ifDen];
     m_sineQ = new float32_t[ifDen];

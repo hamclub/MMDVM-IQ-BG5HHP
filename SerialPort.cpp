@@ -293,14 +293,10 @@ void CSerialPort::getVersion()
   reply[5U] |= 0x01U;
 #endif
 
-  // CPU type/manufacturer. 0=Atmel ARM, 1=NXP ARM, 2=St-Micro ARM
+  // CPU type/manufacturer. 0=Atmel ARM, 1=NXP ARM, 2=St-Micro ARM, 99=Unknown
   reply[6U] = io.getCPU();
 
-  // Reserve 16 bytes for the UDID
-  ::memset(reply + 7U, 0x00U, 16U);
-  io.getUDID(reply + 7U);
-
-  uint8_t count = 23U;
+  uint8_t count = 7U;
   for (uint8_t i = 0U; HARDWARE[i] != 0x00U; i++, count++)
     reply[count] = HARDWARE[i];
 
