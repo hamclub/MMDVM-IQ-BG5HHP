@@ -44,6 +44,7 @@ enum class SERIALMODEM_STATE {
 enum class SERIALMODEM_FORMAT : uint8_t {
 	BASEBAND,
 	IQ,
+	COMP_IQ,
 	NONE = 255U
 };
 
@@ -127,6 +128,7 @@ private:
 
 	bool writeTransmitDataBB(bool flush);
 	bool writeTransmitDataIQ(bool flush);
+	bool writeTransmitDataCompIQ(bool flush);
 
 	bool processSampleFSK24BB(uint8_t marker, int16_t frequency, float32_t amplitude);
 	bool processSampleFSK24IQ(uint8_t marker, int16_t frequency, float32_t amplitude);
@@ -135,6 +137,7 @@ private:
 
 	void processBBRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 	void processIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processCompIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 
 	bool processVersion(const uint8_t* data, uint16_t length);
 
