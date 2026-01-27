@@ -42,10 +42,11 @@ enum class SERIALMODEM_STATE {
 };
 
 enum class SERIALMODEM_FORMAT : uint8_t {
-	BASEBAND,
-	IQ,
-	COMP_IQ,
-	NONE = 255U
+	BASEBAND = 0x00U,
+	IQ_8     = 0x01U,
+	IQ_12    = 0x02U,
+	IQ_16    = 0x03U,
+	NONE     = 0xFFU
 };
 
 class CSerialModem {
@@ -91,8 +92,7 @@ private:
 	bool               m_hasTX;
 	bool               m_hasRX;
 	uint8_t            m_sampleRate;
-	SERIALMODEM_FORMAT m_txFormat;
-	SERIALMODEM_FORMAT m_rxFormat;
+	SERIALMODEM_FORMAT m_format;
 	uint16_t           m_maxTXSamples;
 
 	IFDC*              m_fdc24RX;
@@ -127,8 +127,9 @@ private:
 	void writeStop();
 
 	bool writeTransmitDataBB(bool flush);
-	bool writeTransmitDataIQ(bool flush);
-	bool writeTransmitDataCompIQ(bool flush);
+	bool writeTransmitDataIQ8(bool flush);
+	bool writeTransmitDataIQ12(bool flush);
+	bool writeTransmitDataIQ16(bool flush);
 
 	bool processSampleFSK24BB(uint8_t marker, int16_t frequency, float32_t amplitude);
 	bool processSampleFSK24IQ(uint8_t marker, int16_t frequency, float32_t amplitude);
@@ -136,8 +137,9 @@ private:
 	bool processSamplePSK72IQ(uint8_t marker, int16_t phase, float32_t amplitude);
 
 	void processBBRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
-	void processIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
-	void processCompIQRX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processIQ8RX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processIQ12RX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
+	void processIQ16RX(uint8_t marker, uint16_t offset, const uint8_t* data, uint16_t length);
 
 	bool processVersion(const uint8_t* data, uint16_t length);
 
