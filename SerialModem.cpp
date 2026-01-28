@@ -794,6 +794,7 @@ bool CSerialModem::writeTransmitDataIQ12(bool flush)
     uint16_t n = 0U;
     IQSample<int16_t> sample;
     while (m_toModem.get(sample) && (n < m_maxTXSamples)) {
+        // Convert to big-endian 12-bit I/Q format
         *p++  = (sample.iValue >> 8)  & 0xFFU;
         *p    = (sample.iValue >> 0)  & 0xF0U;
         *p++ |= (sample.qValue >> 12) & 0x0FU;
@@ -1026,11 +1027,12 @@ void CSerialModem::processIQ12RX(uint8_t marker, uint16_t offset, const uint8_t*
     for (uint16_t i = 0U; i < count; i++) {
         int16_t iData, qData;
 
-        iData  = (*p++) << 8;
-        iData |= (*p) & 0xF0U;
+        // Convert from big-endian 12-bit I/Q format
+        iData  = ((*p++) & 0xFFU) << 8;
+        iData |= ((*p)   & 0xF0U) << 0;
 
-        qData  = (*p++) << 12;
-        qData |= (*p++) << 4;
+        qData  = ((*p++) & 0x0FU) << 12;
+        qData |= ((*p++) & 0xFFU) << 4;
 
         IQSample<float32_t> sample;
 
