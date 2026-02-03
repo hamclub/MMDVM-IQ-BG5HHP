@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2002-2004,2007-2011,2013,2014-2017,2019,2020,2021,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2002-2004,2007-2011,2013,2014-2017,2019,2020,2021,2024 by Jonathan Naylor G4KLX
  *   Copyright (C) 1999-2001 by Thomas Sailor HB9JNX
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -19,8 +19,8 @@
 
 #include "UARTController.h"
 
-#include <cstdio>
 #include <cstring>
+#include <cassert>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <setupapi.h>
@@ -38,30 +38,41 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
-CUARTController::CUARTController() :
+CUARTController::CUARTController(const std::string& device, unsigned int speed) :
+m_device(device),
+m_speed(speed),
 m_handle(INVALID_HANDLE_VALUE)
+{
+	assert(!device.empty());
+}
+
+CUARTController::~CUARTController()
 {
 }
 
-bool CUARTController::open(const char* device, uint32_t speed)
+bool CUARTController::open()
 {
+	assert(m_handle == INVALID_HANDLE_VALUE);
+
 	DWORD errCode;
 
-	m_handle = ::CreateFileA(device, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	std::string baseName = m_device.substr(4U);		// Convert "\\.\COM10" to "COM10"
+
+	m_handle = ::CreateFileA(m_device.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (m_handle == INVALID_HANDLE_VALUE) {
-		::fprintf(stderr, "Cannot open device - %s, err=%04lx\n", device, ::GetLastError());
+		::fprintf(stderr, "Cannot open device - %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
 		return false;
 	}
 
 	DCB dcb;
 	if (::GetCommState(m_handle, &dcb) == 0) {
-		::fprintf(stderr, "Cannot get the attributes for %s, err=%04lx\n", device, ::GetLastError());
-		::ClearCommError(m_handle, &errCode, NULL);
+		::fprintf(stderr, "Cannot get the attributes for %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
+		::ClearCommError(m_handle, &errCode, nullptr);
 		::CloseHandle(m_handle);
 		return false;
 	}
 
-	dcb.BaudRate        = DWORD(speed);
+	dcb.BaudRate        = DWORD(m_speed);
 	dcb.ByteSize        = 8;
 	dcb.Parity          = NOPARITY;
 	dcb.fParity         = FALSE;
@@ -75,16 +86,16 @@ bool CUARTController::open(const char* device, uint32_t speed)
 	dcb.fRtsControl     = RTS_CONTROL_DISABLE;
 
 	if (::SetCommState(m_handle, &dcb) == 0) {
-		::fprintf(stderr, "Cannot set the attributes for %s, err=%04lx\n", device, ::GetLastError());
-		::ClearCommError(m_handle, &errCode, NULL);
+		::fprintf(stderr, "Cannot set the attributes for %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
+		::ClearCommError(m_handle, &errCode, nullptr);
 		::CloseHandle(m_handle);
 		return false;
 	}
 
 	COMMTIMEOUTS timeouts;
 	if (!::GetCommTimeouts(m_handle, &timeouts)) {
-		::fprintf(stderr, "Cannot get the timeouts for %s, err=%04lx\n", device, ::GetLastError());
-		::ClearCommError(m_handle, &errCode, NULL);
+		::fprintf(stderr, "Cannot get the timeouts for %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
+		::ClearCommError(m_handle, &errCode, nullptr);
 		::CloseHandle(m_handle);
 		return false;
 	}
@@ -94,32 +105,35 @@ bool CUARTController::open(const char* device, uint32_t speed)
 	timeouts.ReadTotalTimeoutConstant   = 0UL;
 
 	if (!::SetCommTimeouts(m_handle, &timeouts)) {
-		::fprintf(stderr, "Cannot set the timeouts for %s, err=%04lx\n", device, ::GetLastError());
-		::ClearCommError(m_handle, &errCode, NULL);
+		::fprintf(stderr, "Cannot set the timeouts for %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
+		::ClearCommError(m_handle, &errCode, nullptr);
 		::CloseHandle(m_handle);
 		return false;
 	}
 
 	if (::EscapeCommFunction(m_handle, SETDTR) == 0) {
-		::fprintf(stderr, "Cannot set DTR for %s, err=%04lx\n", device, ::GetLastError());
-		::ClearCommError(m_handle, &errCode, NULL);
+		::fprintf(stderr, "Cannot clear DTR for %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
+		::ClearCommError(m_handle, &errCode, nullptr);
 		::CloseHandle(m_handle);
 		return false;
 	}
 
-	::ClearCommError(m_handle, &errCode, NULL);
+	::ClearCommError(m_handle, &errCode, nullptr);
 
 	return true;
 }
 
-int CUARTController::read(uint8_t* buffer, uint16_t length)
+int16_t CUARTController::read(uint8_t* buffer, uint16_t length)
 {
+	assert(m_handle != INVALID_HANDLE_VALUE);
+	assert(buffer != nullptr);
+
 	uint16_t ptr = 0U;
 
 	while (ptr < length) {
 		int ret = readNonblock(buffer + ptr, length - ptr);
 		if (ret < 0) {
-			return ret;
+			return int16_t(ret);
 		} else if (ret == 0) {
 			if (ptr == 0U)
 				return 0;
@@ -128,18 +142,21 @@ int CUARTController::read(uint8_t* buffer, uint16_t length)
 		}
 	}
 
-	return int(length);
+	return int16_t(length);
 }
 
-int CUARTController::readNonblock(uint8_t* buffer, uint16_t length)
+int16_t CUARTController::readNonblock(uint8_t* buffer, uint16_t length)
 {
+	assert(m_handle != INVALID_HANDLE_VALUE);
+	assert(buffer != nullptr);
+
 	if (length == 0U)
 		return 0;
 
 	DWORD errors;
 	COMSTAT status;
 	if (::ClearCommError(m_handle, &errors, &status) == 0) {
-		::fprintf(stderr, "Error from ClearCommError, err=%04lx\n", ::GetLastError());
+		::fprintf(stderr, "Error from ClearCommError for %s, err=%04lx\n", m_device.c_str(), ::GetLastError());
 		return -1;
 	}
 
@@ -151,17 +168,20 @@ int CUARTController::readNonblock(uint8_t* buffer, uint16_t length)
 		readLength = length;
 
 	DWORD bytes = 0UL;
-	BOOL ret = ::ReadFile(m_handle, buffer, readLength, &bytes, NULL);
+	BOOL ret = ::ReadFile(m_handle, buffer, readLength, &bytes, nullptr);
 	if (!ret) {
-		::fprintf(stderr, "Error from ReadFile, err=%04lx\n", ::GetLastError());
+		::fprintf(stderr, "Error from ReadFile for %s: %04lx\n", m_device.c_str(), ::GetLastError());
 		return -1;
 	}
 
-	return int(bytes);
+	return int16_t(bytes);
 }
 
-int CUARTController::write(const uint8_t* buffer, uint16_t length)
+int16_t CUARTController::write(const uint8_t* buffer, uint16_t length)
 {
+	assert(m_handle != INVALID_HANDLE_VALUE);
+	assert(buffer != nullptr);
+
 	if (length == 0U)
 		return 0;
 
@@ -169,44 +189,51 @@ int CUARTController::write(const uint8_t* buffer, uint16_t length)
 
 	while (ptr < length) {
 		DWORD bytes = 0UL;
-		BOOL ret = ::WriteFile(m_handle, buffer + ptr, length - ptr, &bytes, NULL);
+		BOOL ret = ::WriteFile(m_handle, buffer + ptr, length - ptr, &bytes, nullptr);
 		if (!ret) {
-			::fprintf(stderr, "Error from WriteFile, err=%04lx\n", ::GetLastError());
+			::fprintf(stderr, "Error from WriteFile for %s: %04lx\n", m_device.c_str(), ::GetLastError());
 			return -1;
 		}
 
-		ptr += uint16_t(bytes);
+		ptr += bytes;
 	}
 
-	return int(length);
+	return int16_t(length);
 }
 
 void CUARTController::close()
 {
+	assert(m_handle != INVALID_HANDLE_VALUE);
+
 	::CloseHandle(m_handle);
 	m_handle = INVALID_HANDLE_VALUE;
 }
 
 #else
 
-CUARTController::CUARTController() :
+CUARTController::CUARTController(const std::string& device, unsigned int speed) :
+m_device(device),
+m_speed(speed),
 m_fd(-1)
 {
+	assert(!device.empty());
 }
 
 CUARTController::~CUARTController()
 {
 }
 
-bool CUARTController::open(const char* device, uint32_t speed)
+bool CUARTController::open()
 {
+	assert(m_fd == -1);
+
 #if defined(__APPLE__)
-	m_fd = ::open(device, O_RDWR | O_NOCTTY | O_NONBLOCK); /*open in block mode under OSX*/
+	m_fd = ::open(m_device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); /*open in block mode under OSX*/
 #else
-	m_fd = ::open(device, O_RDWR | O_NOCTTY | O_NDELAY, 0);
+	m_fd = ::open(m_device.c_str(), O_RDWR | O_NOCTTY | O_NDELAY, 0);
 #endif
 	if (m_fd < 0) {
-		::fprintf(stderr, "Cannot open device - %s\n", device);
+		::fprintf(stderr, "Cannot open device - %s\n", m_device.c_str());
 		return false;
 	}
 
@@ -220,7 +247,7 @@ bool CUARTController::setRaw()
 {
 	termios termios;
 	if (::tcgetattr(m_fd, &termios) < 0) {
-		::fprintf(stderr, "Cannot get the tty attributes\n");
+		::fprintf(stderr, "Cannot get the attributes for %s\n", m_device.c_str());
 		::close(m_fd);
 		return false;
 	}
@@ -304,25 +331,34 @@ bool CUARTController::setRaw()
 			break;
 #endif /*B460800*/
 #if defined(B500000)
-       case 500000U:
-           ::cfsetospeed(&termios, B500000);
-           ::cfsetispeed(&termios, B500000);
-           break;
+                case 500000U:
+                        ::cfsetospeed(&termios, B500000);
+                        ::cfsetispeed(&termios, B500000);
+                        break;
 #endif /*B500000*/
-#if defined(B921600)		
-       case 921600U:
-           ::cfsetospeed(&termios, B921600);
-           ::cfsetispeed(&termios, B921600);
-           break;
-#endif /*B921600*/
-       default:
-           ::fprintf(stderr, "Unsupported serial port speed - %u\n", m_speed);
-           ::close(m_fd);
-           return false;
+		default:
+			::fprintf(stderr, "Unsupported serial port speed - %u\n", m_speed);
+			::close(m_fd);
+			return false;
 	}
 
 	if (::tcsetattr(m_fd, TCSANOW, &termios) < 0) {
-		::fprintf(stderr, "Cannot set the tty attributes\n");
+		::fprintf(stderr, "Cannot set the attributes for %s\n", m_device.c_str());
+		::close(m_fd);
+		return false;
+	}
+
+	unsigned int y;
+	if (::ioctl(m_fd, TIOCMGET, &y) < 0) {
+		::fprintf(stderr, "Cannot get the control attributes for %s\n", m_device.c_str());
+		::close(m_fd);
+		return false;
+	}
+
+	y |= TIOCM_DTR;
+
+	if (::ioctl(m_fd, TIOCMSET, &y) < 0) {
+		::fprintf(stderr, "Cannot set the control attributes for %s\n", m_device.c_str());
 		::close(m_fd);
 		return false;
 	}
@@ -348,8 +384,11 @@ int CUARTController::setNonblock(bool nonblock)
 }
 #endif
 
-int CUARTController::read(uint8_t* buffer, uint16_t length)
+int16_t CUARTController::read(uint8_t* buffer, uint16_t length)
 {
+	assert(buffer != nullptr);
+	assert(m_fd != -1);
+
 	if (length == 0U)
 		return 0;
 
@@ -364,11 +403,11 @@ int CUARTController::read(uint8_t* buffer, uint16_t length)
 			struct timeval tv;
 			tv.tv_sec  = 0;
 			tv.tv_usec = 0;
-			n = ::select(m_fd + 1, &fds, NULL, NULL, &tv);
+			n = ::select(m_fd + 1, &fds, nullptr, nullptr, &tv);
 			if (n == 0)
 				return 0;
 		} else {
-			n = ::select(m_fd + 1, &fds, NULL, NULL, NULL);
+			n = ::select(m_fd + 1, &fds, nullptr, nullptr, nullptr);
 		}
 
 		if (n < 0) {
@@ -403,7 +442,7 @@ bool CUARTController::canWrite(){
 	timeo.tv_sec  = 0;
 	timeo.tv_usec = 0;
 
-	int rc = ::select(m_fd + 1, NULL, &wset, NULL, &timeo);
+	int rc = ::select(m_fd + 1, nullptr, &wset, nullptr, &timeo);
 	if (rc > 0 && FD_ISSET(m_fd, &wset))
 		return true;
 
@@ -413,8 +452,11 @@ bool CUARTController::canWrite(){
 #endif
 }
 
-int CUARTController::write(const uint8_t* buffer, uint16_t length)
+int16_t CUARTController::write(const uint8_t* buffer, uint16_t length)
 {
+	assert(buffer != nullptr);
+	assert(m_fd != -1);
+
 	if (length == 0U)
 		return 0;
 
@@ -439,6 +481,8 @@ int CUARTController::write(const uint8_t* buffer, uint16_t length)
 
 void CUARTController::close()
 {
+	assert(m_fd != -1);
+
 	::close(m_fd);
 	m_fd = -1;
 }

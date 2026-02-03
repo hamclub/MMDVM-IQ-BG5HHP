@@ -79,7 +79,7 @@ CFM    fm;
 
 CCWIdTX cwIdTX;
 
-CSerialModem modem;
+CModem modem;
 CSerialPort serial;
 CIO io;
 
@@ -177,12 +177,28 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    LogInfo("Modem Connection");
-    LogInfo("\tPort: \"%s\"", conf.getModemPort().c_str());
-    LogInfo("\tSpeed: %u", conf.getModemSpeed());
-    LogInfo("\tTrace: %s", conf.getModemTrace() ? "yes" : "no");
+    std::string protocol = conf.getProtocol();
 
-    ret = modem.start(conf.getModemPort(), conf.getModemSpeed(), conf.getModemTrace());
+    LogInfo("Modem Connection");
+    LogInfo("\tProtocol: %s", protocol.c_str());
+    if (protocol == "uart") {
+        LogInfo("\tPort: \"%s\"", conf.getUARTPort().c_str());
+        LogInfo("\tSpeed: %u", conf.getUARTSpeed());
+        LogInfo("\tTrace: %s", conf.getModemTrace() ? "yes" : "no");
+        modem.setUARTConnection(conf.getUARTPort(), conf.getUARTSpeed(), conf.getModemTrace());
+    } else if (protocol == "udp") {
+        LogInfo("\tModem Address: %s", conf.getModemAddress().c_str());
+        LogInfo("\tModem Port: %u", conf.getModemPort());
+        LogInfo("\tLocal Address: %s", conf.getLocalAddress().c_str());
+        LogInfo("\tLocal Port: %u", conf.getLocalPort());
+        LogInfo("\tTrace: %s", conf.getModemTrace() ? "yes" : "no");
+        modem.setUDPConnection(conf.getModemAddress(), conf.getModemPort(), conf.getLocalAddress(), conf.getLocalPort(), conf.getModemTrace());
+    } else {
+        LogError("Unknown modem connection protocol of \"%s\" specified", protocol.c_str());
+        return 1;
+    }
+
+    ret = modem.start();
     if (!ret) {
         LogError("Unable to open the modem connection");
         return 1;

@@ -184,6 +184,8 @@
     <ClInclude Include="IOPins.h" />
     <ClInclude Include="IQSample.h" />
     <ClInclude Include="Log.h" />
+    <ClInclude Include="Modem.h" />
+    <ClInclude Include="ModemConnection.h" />
     <ClInclude Include="NXDNDefines.h" />
     <ClInclude Include="NXDNRX.h" />
     <ClInclude Include="NXDNTX.h" />
@@ -192,8 +194,6 @@
     <ClInclude Include="P25TX.h" />
     <ClInclude Include="POCSAGTX.h" />
     <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="RingBuffer.impl.h" />
-    <ClInclude Include="SerialModem.h" />
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Socket.h" />
     <ClInclude Include="StopWatch.h" />
@@ -236,12 +236,13 @@
     <ClCompile Include="IO.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MMDVM.cpp" />
+    <ClCompile Include="Modem.cpp" />
+    <ClCompile Include="ModemConnection.cpp" />
     <ClCompile Include="NXDNRX.cpp" />
     <ClCompile Include="NXDNTX.cpp" />
     <ClCompile Include="P25RX.cpp" />
     <ClCompile Include="P25TX.cpp" />
     <ClCompile Include="POCSAGTX.cpp" />
-    <ClCompile Include="SerialModem.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="StopWatch.cpp" />

@@ -16,10 +16,10 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(SERIALMODEM_H)
-#define  SERIALMODEM_H
+#if !defined(MODEM_H)
+#define  MODEM_H
 
-#include "UARTController.h"
+#include "ModemConnection.h"
 #include "RingBuffer.h"
 #include "StopWatch.h"
 #include "IQSample.h"
@@ -32,7 +32,7 @@
 
 #include <cstdint>
 
-enum class SERIALMODEM_STATE {
+enum class MODEM_STATE {
 	NONE,
 	WAIT_VERSION,
 	WAIT_FREQ_POWER,
@@ -41,7 +41,7 @@ enum class SERIALMODEM_STATE {
 	RUNNING
 };
 
-enum class SERIALMODEM_FORMAT : uint8_t {
+enum class MODEM_FORMAT : uint8_t {
 	BASEBAND = 0x00U,
 	IQ_8     = 0x01U,
 	IQ_12    = 0x02U,
@@ -49,10 +49,13 @@ enum class SERIALMODEM_FORMAT : uint8_t {
 	NONE     = 0xFFU
 };
 
-class CSerialModem {
+class CModem {
 public:
-	CSerialModem();
-	~CSerialModem();
+	CModem();
+	~CModem();
+
+	void setUARTConnection(const std::string& port, unsigned int speed, bool trace);
+	void setUDPConnection(const std::string& modemAddress, uint16_t modemPort, const std::string& localAddress, uint16_t localPort, bool trace);
 
 	void setParams(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
@@ -62,7 +65,7 @@ public:
 
 	bool canTETRA() const;
 
-	bool start(const std::string& port, unsigned int speed, bool trace);
+	bool start();
 
 	void process();
 
@@ -72,8 +75,8 @@ public:
 	bool     isTX() const;
 
 private:
-	CUARTController    m_serial;
-	SERIALMODEM_STATE  m_state;
+	CModemConnection   m_modem;
+	MODEM_STATE        m_state;
 	uint8_t*           m_txBuffer;
 	uint8_t*           m_rxBuffer;
 	uint16_t           m_rxPtr;
@@ -92,7 +95,7 @@ private:
 	bool               m_hasTX;
 	bool               m_hasRX;
 	uint8_t            m_sampleRate;
-	SERIALMODEM_FORMAT m_format;
+	MODEM_FORMAT       m_format;
 	uint16_t           m_maxTXSamples;
 
 	IFDC*              m_fdc24RX;
@@ -116,7 +119,7 @@ private:
 
 	bool               m_trace;
 
-	static CSerialModem* m_ptr;
+	static CModem*     m_ptr;
 
 	void processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 
