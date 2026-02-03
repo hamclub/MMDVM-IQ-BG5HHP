@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
@@ -51,7 +51,7 @@ const uint8_t PR_FILL[] =
 const uint8_t DMR_SYNC = 0x5FU;
 
 CDMRDMOTX::CDMRDMOTX() :
-m_fifo(),
+m_fifo(2000U, "DMRDMO TX Buffer"),
 m_modFilter(),
 m_modState(),
 m_poBuffer(),
@@ -69,15 +69,14 @@ m_txDelay(240U)       // 200ms
 
 void CDMRDMOTX::process()
 {
-  if (m_poLen == 0U && m_fifo.getData() > 0U) {
+  if (m_poLen == 0U && m_fifo.hasData()) {
     if (!m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[i] = DMR_SYNC;
 
       m_poLen = m_txDelay;
     } else {
-      for (unsigned int i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++)
-        m_fifo.get(m_poBuffer[i]);
+      m_fifo.getData(m_poBuffer, DMR_FRAME_LENGTH_BYTES);
 
       for (unsigned int i = 0U; i < 39U; i++)
         m_poBuffer[i + DMR_FRAME_LENGTH_BYTES] = PR_FILL[i];
@@ -112,12 +111,11 @@ uint8_t CDMRDMOTX::writeData(const uint8_t* data, uint16_t length)
   if (length != (DMR_FRAME_LENGTH_BYTES + 1U))
     return 4U;
 
-  uint16_t space = m_fifo.getSpace();
+  uint16_t space = m_fifo.freeSpace();
   if (space < DMR_FRAME_LENGTH_BYTES)
     return 5U;
 
-  for (uint8_t i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++)
-    m_fifo.put(data[i + 1U]);
+  m_fifo.addData(data + 1U, DMR_FRAME_LENGTH_BYTES);
 
   return 0U;
 }
@@ -153,7 +151,7 @@ void CDMRDMOTX::writeByte(uint8_t c)
 
 uint8_t CDMRDMOTX::getSpace() const
 {
-  return m_fifo.getSpace() / (DMR_FRAME_LENGTH_BYTES + 2U);
+  return m_fifo.freeSpace() / (DMR_FRAME_LENGTH_BYTES + 2U);
 }
 
 void CDMRDMOTX::setTXDelay(uint8_t delay)
@@ -165,4 +163,3 @@ void CDMRDMOTX::setTXDelay(uint8_t delay)
 }
 
 #endif
-

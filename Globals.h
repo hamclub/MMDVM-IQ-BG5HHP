@@ -37,7 +37,7 @@ enum MMDVM_STATE {
   STATE_CWID      = 97
 };
 
-#include "SerialModem.h"
+#include "Modem.h"
 #include "SerialPort.h"
 #include "DMRIdleRX.h"
 #include "DMRDMORX.h"
@@ -87,7 +87,7 @@ extern bool m_duplex;
 extern bool m_tx;
 extern bool m_dcd;
 
-extern CSerialModem modem;
+extern CModem modem;
 extern CSerialPort serial;
 extern CIO io;
 
@@ -131,4 +131,3 @@ extern CFM    fm;
 extern CCWIdTX cwIdTX;
 
 #endif
-

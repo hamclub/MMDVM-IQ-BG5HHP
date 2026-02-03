@@ -31,7 +31,7 @@ CSocket::CSocket() :
 m_address(),
 m_addressLength(0U),
 m_socket(NULL),
-m_buffer(BUFFER_LENGTH)
+m_buffer(BUFFER_LENGTH, "UDP Socket Buffer")
 {
 }
 
@@ -62,7 +62,7 @@ bool CSocket::open(const std::string& myAddress, unsigned short myPort, const st
 
 bool CSocket::available()
 {
-	uint16_t n = m_buffer.getData();
+	uint16_t n = m_buffer.dataSize();
 	if (n > 0U)
 		return true;
 
@@ -73,8 +73,7 @@ bool CSocket::available()
 	if (m <= 0)
 		return false;
 
-	for (int i = 0; i < m; i++)
-		m_buffer.put(buffer[i]);
+	m_buffer.addData(buffer, m);
 
 	return true;
 }
@@ -83,7 +82,7 @@ uint8_t CSocket::read()
 {
 	uint8_t c = 0U;
 
-	m_buffer.get(c);
+	m_buffer.getData(&c, 1U);
 
 	return c;
 }

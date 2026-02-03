@@ -191,7 +191,7 @@ const uint8_t DSTAR_DATA   = 0x01U;
 const uint8_t DSTAR_EOT    = 0x02U;
 
 CDStarTX::CDStarTX() :
-m_buffer(),
+m_buffer(2000U, "D-Star TX Buffer"),
 m_modFilter(),
 m_modState(),
 m_poBuffer(),
@@ -209,10 +209,11 @@ m_txDelay(60U)       // 100ms
 
 void CDStarTX::process()
 {
-  if (m_buffer.getData() == 0U && m_poLen == 0U)
+  if (m_buffer.isEmpty() && m_poLen == 0U)
     return;
 
-  uint8_t type = m_buffer.peek();
+  uint8_t type = 0U;
+  m_buffer.peek(&type, 1U);
 
   if (type == DSTAR_HEADER && m_poLen == 0U) {
     if (!m_tx) {
@@ -220,12 +221,11 @@ void CDStarTX::process()
         m_poBuffer[m_poLen++] = BIT_SYNC;
     } else {
       // Pop the type byte off
-      uint8_t dummy;
-      m_buffer.get(dummy);
+      uint8_t dummy = 0U;
+      m_buffer.getData(&dummy, 1U);
 
       uint8_t header[DSTAR_HEADER_LENGTH_BYTES];
-      for (uint8_t i = 0U; i < DSTAR_HEADER_LENGTH_BYTES; i++)
-        m_buffer.get(header[i]);
+      m_buffer.getData(header, DSTAR_HEADER_LENGTH_BYTES);
 
       uint8_t buffer[86U];
       txHeader(header, buffer + 2U);
@@ -243,19 +243,19 @@ void CDStarTX::process()
  
   if (type == DSTAR_DATA && m_poLen == 0U) {
     // Pop the type byte off
-    uint8_t dummy;
-    m_buffer.get(dummy);
+    uint8_t dummy = 0U;
+    m_buffer.getData(&dummy, 1U);
 
     for (uint8_t i = 0U; i < DSTAR_DATA_LENGTH_BYTES; i++)
-      m_buffer.get(m_poBuffer[m_poLen++]);
+      m_buffer.getData(&m_poBuffer[m_poLen++], 1U);
 
     m_poPtr = 0U;
   }
 
   if (type == DSTAR_EOT && m_poLen == 0U) {
     // Pop the type byte off
-    uint8_t dummy;
-    m_buffer.get(dummy);
+    uint8_t dummy = 0U;
+    m_buffer.getData(&dummy, 1U);
 
     for (uint8_t j = 0U; j < 3U; j++) {
       for (uint8_t i = 0U; i < DSTAR_END_SYNC_LENGTH_BYTES; i++)
@@ -288,16 +288,14 @@ uint8_t CDStarTX::writeHeader(const uint8_t* header, uint16_t length)
   if (length != DSTAR_HEADER_LENGTH_BYTES)
     return 4U;
 
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < (DSTAR_HEADER_LENGTH_BYTES + 1U)) {
     LogWarning("DStarTX: not enough header space available: %u", space);
     return 5U;
   }
 
-  m_buffer.put(DSTAR_HEADER);
-
-  for (uint8_t i = 0U; i < DSTAR_HEADER_LENGTH_BYTES; i++)
-    m_buffer.put(header[i]);
+  m_buffer.addData(&DSTAR_HEADER, 1U);
+  m_buffer.addData(header, DSTAR_HEADER_LENGTH_BYTES);
     
   return 0U;
 }
@@ -307,29 +305,27 @@ uint8_t CDStarTX::writeData(const uint8_t* data, uint16_t length)
   if (length != DSTAR_DATA_LENGTH_BYTES)
     return 4U;
 
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < (DSTAR_DATA_LENGTH_BYTES + 1U)) {
     LogWarning("DStarTX: not enough data space available: %u", space);
     return 5U;
   }
 
-  m_buffer.put(DSTAR_DATA);
-
-  for (uint8_t i = 0U; i < DSTAR_DATA_LENGTH_BYTES; i++)
-    m_buffer.put(data[i]);
+  m_buffer.addData(&DSTAR_DATA, 1U);
+  m_buffer.addData(data, DSTAR_DATA_LENGTH_BYTES);
     
   return 0U;
 }
 
 uint8_t CDStarTX::writeEOT()
 {
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < 1U) {
     LogWarning("DStarTX: not enough EOT space available: %u", space);
     return 5U;
   }
 
-  m_buffer.put(DSTAR_EOT);
+  m_buffer.addData(&DSTAR_EOT, 1U);
 
   return 0U;
 }
@@ -446,8 +442,7 @@ void CDStarTX::setTXDelay(uint8_t delay)
 
 uint8_t CDStarTX::getSpace() const
 {
-  return m_buffer.getSpace() / (DSTAR_DATA_LENGTH_BYTES + 1U);
+  return m_buffer.freeSpace() / (DSTAR_DATA_LENGTH_BYTES + 1U);
 }
 
 #endif
-

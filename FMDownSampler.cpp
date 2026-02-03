@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2020 by Geoffrey Merck F4FXL - KC3FRA
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 #include "FMDownSampler.h"
 
 CFMDownSampler::CFMDownSampler(uint16_t length) :
-m_ringBuffer(length),
+m_ringBuffer(length, "FM Downsampler Buffer"),
 m_samplePack(0U),
 m_samplePackPointer(NULL),
 m_sampleIndex(0U)
@@ -34,19 +34,20 @@ m_sampleIndex(0U)
 
 void CFMDownSampler::addSample(q15_t sample)
 {
-  uint32_t usample = uint32_t(int32_t(sample) + 2048);
-  //only take one of three samples
-  switch(m_sampleIndex){
-    case 0:
+  uint32_t usample = uint32_t(int32_t(sample) + 2048U);
+
+  // Only take one of three samples
+  switch (m_sampleIndex){
+    case 0U:
       m_samplePack = usample << 12;
     break;
-    case 3:{
+    case 3U:{
       m_samplePack |= usample;
       
-      //we did not use MSB; skip it
+      // We did not use MSB; skip it
       TSamplePairPack pair{m_samplePackPointer[0U], m_samplePackPointer[1U], m_samplePackPointer[2U]}; 
 
-      m_ringBuffer.put(pair);
+      m_ringBuffer.addData(&pair, 1U);
 
       m_samplePack = 0U;//reset the sample pack
     }
@@ -63,12 +64,12 @@ void CFMDownSampler::addSample(q15_t sample)
 
 bool CFMDownSampler::getPackedData(TSamplePairPack& data)
 {
-  return m_ringBuffer.get(data);
+  return m_ringBuffer.getData(&data, 1U);
 }
 
 uint16_t CFMDownSampler::getData()
 {
-  return m_ringBuffer.getData();
+  return m_ringBuffer.dataSize();
 }
 
 void CFMDownSampler::reset()
@@ -77,4 +78,3 @@ void CFMDownSampler::reset()
 }
 
 #endif
-

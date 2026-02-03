@@ -75,7 +75,7 @@ const uint16_t BOXCAR5_FILTER_LEN = 6U;
 
 CIO::CIO() :
 m_started(false),
-m_rxFSKBuffer(MAX_RX_SAMPLES),
+m_rxFSKBuffer(MAX_RX_SAMPLES, "IO RX Buffer"),
 #if defined(USE_DCBLOCKER)
 m_dcFilter(),
 m_dcState(),
@@ -196,7 +196,9 @@ void CIO::start()
 
 void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
 {
-    m_rxFSKBuffer.put(TSample(frequency, marker, cos, rssi));
+    TSample sample = TSample(frequency, marker, cos, rssi);
+
+    m_rxFSKBuffer.addData(&sample, 1U);
 }
 
 void CIO::process()
@@ -236,16 +238,16 @@ void CIO::process()
         LogMessage("TX OFF");
     }
 
-  if (m_rxFSKBuffer.getData() >= RX_BLOCK_SIZE) {
+  if (m_rxFSKBuffer.dataSize() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
     uint8_t  control[RX_BLOCK_SIZE];
     uint16_t rssi[RX_BLOCK_SIZE];
 
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       TSample sample;
-      m_rxFSKBuffer.get(sample);
+      m_rxFSKBuffer.getData(&sample, 1U);
       control[i] = sample.m_control;
-      rssi[i] = sample.m_rssi;
+      rssi[i]    = sample.m_rssi;
 
       q31_t res2 = sample.m_sample * m_rxLevel;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));

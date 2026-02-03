@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2020 by Geoffrey Merck F4FXL - KC3FRA
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,8 @@
 
 #include "RingBuffer.h"
 #include "FMSamplePairPack.h"
+
+#include "arm_math.h"
 
 class CFMDownSampler {
 public:

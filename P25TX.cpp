@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -46,7 +46,7 @@ const q15_t P25_LEVELD = -1260;
 const uint8_t P25_START_SYNC = 0x77U;
 
 CP25TX::CP25TX() :
-m_buffer(TX_BUFFER_LEN),
+m_buffer(TX_BUFFER_LEN, "P25 TX Buffer"),
 m_modFilter(),
 m_lpFilter(),
 m_modState(),
@@ -73,16 +73,16 @@ m_txCount(0U)
 
 void CP25TX::process()
 {
-  if (m_poLen == 0U && m_buffer.getData() > 0U) {
+  if (m_poLen == 0U && m_buffer.hasData()) {
     if (!m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = P25_START_SYNC;
     } else {
       uint8_t length;
-      m_buffer.get(length);
+      m_buffer.getData(&length, 1U);
       for (uint8_t i = 0U; i < length; i++) {
         uint8_t c = 0U;
-        m_buffer.get(c);
+        m_buffer.getData(&c, 1U);
         m_poBuffer[m_poLen++] = c;
       }
     }
@@ -128,13 +128,14 @@ uint8_t CP25TX::writeData(const uint8_t* data, uint16_t length)
   if (length < (P25_TERM_FRAME_LENGTH_BYTES + 1U))
     return 4U;
 
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < length)
     return 5U;
 
-  m_buffer.put(length - 1U);
-  for (uint8_t i = 0U; i < (length - 1U); i++)
-    m_buffer.put(data[i + 1U]);
+  uint8_t size = length - 1U;
+  m_buffer.addData(&size, 1U);
+
+  m_buffer.addData(data + 1U, length - 1U);
 
   return 0U;
 }
@@ -194,7 +195,7 @@ void CP25TX::setTXDelay(uint8_t delay)
 
 uint8_t CP25TX::getSpace() const
 {
-  return m_buffer.getSpace() / P25_LDU_FRAME_LENGTH_BYTES;
+  return m_buffer.freeSpace() / P25_LDU_FRAME_LENGTH_BYTES;
 }
 
 void CP25TX::setParams(uint8_t txHang)
@@ -203,4 +204,3 @@ void CP25TX::setParams(uint8_t txHang)
 }
 
 #endif
-

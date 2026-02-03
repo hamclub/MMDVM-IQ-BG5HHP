@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2018,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -47,7 +47,7 @@ const uint8_t YSF_END_SYNC   = 0xFFU;
 const uint8_t YSF_HANG       = 0x00U;
 
 CYSFTX::CYSFTX() :
-m_buffer(TX_BUFFER_LEN),
+m_buffer(TX_BUFFER_LEN, "YSF TX Buffer"),
 m_modFilter(),
 m_modState(),
 m_poBuffer(),
@@ -70,14 +70,14 @@ m_txCount(0U)
 void CYSFTX::process()
 {
   // If we have YSF data to transmit, do so.
-  if (m_poLen == 0U && m_buffer.getData() > 0U) {
+  if (m_poLen == 0U && m_buffer.hasData()) {
     if (!m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = YSF_START_SYNC;
     } else {
       for (uint8_t i = 0U; i < YSF_FRAME_LENGTH_BYTES; i++) {
         uint8_t c = 0U;
-        m_buffer.get(c);
+        m_buffer.getData(&c, 1U);
         m_poBuffer[m_poLen++] = c;
       }
     }
@@ -125,12 +125,11 @@ uint8_t CYSFTX::writeData(const uint8_t* data, uint16_t length)
   if (length != (YSF_FRAME_LENGTH_BYTES + 1U))
     return 4U;
 
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < YSF_FRAME_LENGTH_BYTES)
     return 5U;
 
-  for (uint8_t i = 0U; i < YSF_FRAME_LENGTH_BYTES; i++)
-    m_buffer.put(data[i + 1U]);
+  m_buffer.addData(data + 1U, YSF_FRAME_LENGTH_BYTES);
 
   return 0U;
 }
@@ -184,7 +183,7 @@ void CYSFTX::setTXDelay(uint8_t delay)
 
 uint8_t CYSFTX::getSpace() const
 {
-  return m_buffer.getSpace() / YSF_FRAME_LENGTH_BYTES;
+  return m_buffer.freeSpace() / YSF_FRAME_LENGTH_BYTES;
 }
 
 void CYSFTX::setParams(bool on, uint8_t txHang)

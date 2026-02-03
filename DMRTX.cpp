@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2017,2020,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017,2020,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
@@ -60,7 +60,8 @@ const uint32_t STARTUP_COUNT = 20U;
 const uint32_t ABORT_COUNT = 6U;
 
 CDMRTX::CDMRTX() :
-m_fifo(),
+m_fifo0(2000U, "DMR TX Slot 1 Buffer"),
+m_fifo1(2000U, "DMR TX Slot 2 Buffer"),
 m_modFilter(),
 m_modState(),
 m_state(DMRTXSTATE_IDLE),
@@ -148,17 +149,16 @@ uint8_t CDMRTX::writeData1(const uint8_t* data, uint16_t length)
   if (length != (DMR_FRAME_LENGTH_BYTES + 1U))
     return 4U;
 
-  uint16_t space = m_fifo[0U].getSpace();
+  uint16_t space = m_fifo0.freeSpace();
   if (space < DMR_FRAME_LENGTH_BYTES)
     return 5U;
 
   if (m_abort[0U]) {
-    m_fifo[0U].reset();
+    m_fifo0.clear();
     m_abort[0U] = false;
   }
 
-  for (uint8_t i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++)
-    m_fifo[0U].put(data[i + 1U]);
+  m_fifo0.addData(data + 1U, DMR_FRAME_LENGTH_BYTES);
 
   // Start the TX if it isn't already on
   if (!m_tx)
@@ -172,17 +172,16 @@ uint8_t CDMRTX::writeData2(const uint8_t* data, uint16_t length)
   if (length != (DMR_FRAME_LENGTH_BYTES + 1U))
     return 4U;
 
-  uint16_t space = m_fifo[1U].getSpace();
+  uint16_t space = m_fifo1.freeSpace();
   if (space < DMR_FRAME_LENGTH_BYTES)
     return 5U;
 
   if (m_abort[1U]) {
-    m_fifo[1U].reset();
+    m_fifo1.clear();
     m_abort[1U] = false;
   }
 
-  for (uint8_t i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++)
-    m_fifo[1U].put(data[i + 1U]);
+  m_fifo1.addData(data + 1U, DMR_FRAME_LENGTH_BYTES);
 
   // Start the TX if it isn't already on
   if (!m_tx)
@@ -275,19 +274,25 @@ void CDMRTX::writeByte(uint8_t c, uint8_t control)
 
 uint8_t CDMRTX::getSpace1() const
 {
-  return m_fifo[0U].getSpace() / (DMR_FRAME_LENGTH_BYTES + 2U);
+  return m_fifo0.freeSpace() / (DMR_FRAME_LENGTH_BYTES + 2U);
 }
 
 uint8_t CDMRTX::getSpace2() const
 {
-  return m_fifo[1U].getSpace() / (DMR_FRAME_LENGTH_BYTES + 2U);
+  return m_fifo1.freeSpace() / (DMR_FRAME_LENGTH_BYTES + 2U);
 }
 
 void CDMRTX::createData(uint8_t slotIndex)
 {
-  if (m_fifo[slotIndex].getData() >= DMR_FRAME_LENGTH_BYTES && m_frameCount >= STARTUP_COUNT && m_abortCount[slotIndex] >= ABORT_COUNT) {
+  CRingBuffer<uint8_t>* fifo;
+  if (slotIndex == 0U)
+    fifo = &m_fifo0;
+  else
+    fifo = &m_fifo1;
+
+  if (fifo->dataSize() >= DMR_FRAME_LENGTH_BYTES && m_frameCount >= STARTUP_COUNT && m_abortCount[slotIndex] >= ABORT_COUNT) {
     for (unsigned int i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++) {
-      m_fifo[slotIndex].get(m_poBuffer[i]);
+      fifo->getData(m_poBuffer + i, 1U);
       m_markBuffer[i] = MARK_NONE;
     }
   } else {
@@ -313,7 +318,7 @@ void CDMRTX::createCACH(uint8_t txSlotIndex, uint8_t rxSlotIndex)
     m_cachPtr = 0U;
 
   if (m_cachPtr == 0U) {
-    if (m_fifo[0U].getData() == 0U && m_fifo[1U].getData() == 0U)
+    if (m_fifo0.isEmpty() && m_fifo1.isEmpty())
       ::memcpy(m_shortLC, EMPTY_SHORT_LC, 12U);
     else
       ::memcpy(m_shortLC, m_newShortLC, 12U);
@@ -324,10 +329,16 @@ void CDMRTX::createCACH(uint8_t txSlotIndex, uint8_t rxSlotIndex)
   m_markBuffer[1U] = MARK_NONE;
   m_markBuffer[2U] = rxSlotIndex == 1U ? MARK_SLOT1 : MARK_SLOT2;
 
+  CRingBuffer<uint8_t>* fifo;
+  if (rxSlotIndex == 0U)
+    fifo = &m_fifo0;
+  else
+    fifo = &m_fifo1;
+
   bool at = false;
   if (m_frameCount >= STARTUP_COUNT)
-    at = m_fifo[rxSlotIndex].getData() > 0U;
-  bool tc = txSlotIndex == 1U;
+    at = !fifo->isEmpty();
+  bool tc  = txSlotIndex == 1U;
   bool ls0 = true;            // For 1 and 2
   bool ls1 = true;
 
@@ -364,12 +375,12 @@ void CDMRTX::setColorCode(uint8_t colorCode)
 
 void CDMRTX::resetFifo1()
 {
-  m_fifo[0U].reset();
+  m_fifo0.clear();
 }
 
 void CDMRTX::resetFifo2()
 {
-  m_fifo[1U].reset();
+  m_fifo1.clear();
 }
 
 uint32_t CDMRTX::getFrameCount()
@@ -378,4 +389,3 @@ uint32_t CDMRTX::getFrameCount()
 }
 
 #endif
-

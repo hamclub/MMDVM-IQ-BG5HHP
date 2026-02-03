@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2020 by Geoffrey Merck F4FXL - KC3FRA
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@ CFMUpSampler::CFMUpSampler() :
 m_upSampleIndex(0),
 m_pack(0U),
 m_packPointer(NULL),
-m_samples(3600U), //300ms of 12 bit 8kHz audio
+m_samples(3600U, "FM Upsampler"), // 300ms of 12 bit 8kHz audio
 m_running(false)
 {
   m_packPointer = (uint8_t*)&m_pack;
@@ -39,7 +39,7 @@ void CFMUpSampler::reset()
 {
     m_upSampleIndex = 0U;
     m_pack = 0U;
-    m_samples.reset();
+    m_samples.clear();
     m_running = false;
 }
 
@@ -47,24 +47,25 @@ void CFMUpSampler::addData(const uint8_t* data, uint16_t length)
 {
   TSamplePairPack* packPointer = (TSamplePairPack*)data;
   TSamplePairPack* packPointerEnd = packPointer + (length / 3U);
-  while(packPointer != packPointerEnd) {
-    m_samples.put(*packPointer);
+
+  while (packPointer != packPointerEnd) {
+    m_samples.addData(packPointer, 1U);
     packPointer++;
   }
-  if(!m_running)
-    m_running = m_samples.getData() > 300U;//75ms of audio
+
+  if (!m_running)
+    m_running = (m_samples.dataSize() > 300U);    // 75ms of audio
 }
 
 bool CFMUpSampler::getSample(q15_t& sample)
 {
-  if(!m_running)
+  if (!m_running)
     return false;
 
-  switch (m_upSampleIndex)
-  {
-  case 0: {
+  switch (m_upSampleIndex) {
+  case 0U: {
     TSamplePairPack pairPack;
-    if(!m_samples.get(pairPack)) {
+    if (!m_samples.getData(&pairPack, 1U)) {
       m_running = false;
       return false;
     }
@@ -79,7 +80,7 @@ bool CFMUpSampler::getSample(q15_t& sample)
     sample = q15_t(m_pack >> 12) - 2048;
     break;
   }
-  case 3:
+  case 3U:
     sample = q15_t(m_pack & FM_UPSAMPLE_MASK) - 2048;
   break;
   default:
@@ -96,9 +97,8 @@ bool CFMUpSampler::getSample(q15_t& sample)
 
 uint16_t CFMUpSampler::getSpace() const
 {
-  //return available space in bytes
-  return m_samples.getSpace() * sizeof(TSamplePairPack);
+  // Return available space in bytes
+  return m_samples.freeSpace() * sizeof(TSamplePairPack);
 }
 
 #endif
-

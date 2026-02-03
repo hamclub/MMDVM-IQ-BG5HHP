@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2018,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2017 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,7 @@ const uint8_t NXDN_PREAMBLE[] = {0x57U, 0x75U, 0xFDU};
 const uint8_t NXDN_SYNC = 0x5FU;
 
 CNXDNTX::CNXDNTX() :
-m_buffer(TX_BUFFER_LEN),
+m_buffer(TX_BUFFER_LEN, "NXDN TX Buffer"),
 m_modFilter(),
 m_sincFilter(),
 m_modState(),
@@ -75,7 +75,7 @@ m_txCount(0U)
 
 void CNXDNTX::process()
 {
-  if (m_poLen == 0U && m_buffer.getData() > 0U) {
+  if (m_poLen == 0U && m_buffer.hasData()) {
     if (!m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = NXDN_SYNC;
@@ -85,7 +85,7 @@ void CNXDNTX::process()
     } else {
       for (uint8_t i = 0U; i < NXDN_FRAME_LENGTH_BYTES; i++) {
         uint8_t c = 0U;
-        m_buffer.get(c);
+        m_buffer.getData(&c, 1U);
         m_poBuffer[m_poLen++] = c;
       }
     }
@@ -131,12 +131,11 @@ uint8_t CNXDNTX::writeData(const uint8_t* data, uint16_t length)
   if (length != (NXDN_FRAME_LENGTH_BYTES + 1U))
     return 4U;
 
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < NXDN_FRAME_LENGTH_BYTES)
     return 5U;
 
-  for (uint8_t i = 0U; i < NXDN_FRAME_LENGTH_BYTES; i++)
-    m_buffer.put(data[i + 1U]);
+  m_buffer.addData(data + 1U, NXDN_FRAME_LENGTH_BYTES);
 
   return 0U;
 }
@@ -196,7 +195,7 @@ void CNXDNTX::setTXDelay(uint8_t delay)
 
 uint8_t CNXDNTX::getSpace() const
 {
-  return m_buffer.getSpace() / NXDN_FRAME_LENGTH_BYTES;
+  return m_buffer.freeSpace() / NXDN_FRAME_LENGTH_BYTES;
 }
 
 void CNXDNTX::setParams(uint8_t txHang)
@@ -205,4 +204,3 @@ void CNXDNTX::setParams(uint8_t txHang)
 }
 
 #endif
-

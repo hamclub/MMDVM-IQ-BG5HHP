@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2025,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -60,7 +60,8 @@ public:
   void setColorCode(uint8_t colorCode);
 
 private:
-  CRingBuffer<uint8_t>             m_fifo[2U];
+  CRingBuffer<uint8_t>             m_fifo0;
+  CRingBuffer<uint8_t>             m_fifo1;
   arm_fir_interpolate_instance_q15 m_modFilter;
   q15_t                            m_modState[16U];    // blockSize + phaseLength - 1, 4 + 9 - 1 plus some spare
   DMRTXSTATE                       m_state;

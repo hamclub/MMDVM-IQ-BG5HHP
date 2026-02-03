@@ -64,8 +64,8 @@ m_extAudioBoost(1U),
 m_downSampler(400U),// 100 ms of audio
 m_extEnabled(false),
 m_rxLevel(1),
-m_inputRFRB(2401U),   // 100ms of audio + 1 sample
-m_outputRFRB(2400U),  // 100ms of audio
+m_inputRFRB(2401U, "FM Input Buffer"),   // 100ms of audio + 1 sample
+m_outputRFRB(2400U, "FM Output Buffer"),  // 100ms of audio
 m_inputExtRB(),
 m_rfSignal(false),
 m_extSignal(false)
@@ -115,8 +115,8 @@ void CFM::repeaterSamples(bool cos, q15_t* samples, uint8_t length)
           bool ctcss = m_ctcssRX.process(currentRFSample);
 
           // Delay the audio by 100ms to better match the CTCSS detector output
-          m_inputRFRB.put(currentRFSample);
-          m_inputRFRB.get(currentRFSample);
+          m_inputRFRB.addData(&currentRFSample, 1U);
+          m_inputRFRB.getData(&currentRFSample, 1U);
 
           if (!inputExt && !ctcss && m_modemState != STATE_FM) {
             // No CTCSS detected, just carry on
@@ -219,7 +219,7 @@ void CFM::repeaterSamples(bool cos, q15_t* samples, uint8_t length)
 
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
-    m_outputRFRB.put(currentSample);
+    m_outputRFRB.addData(&currentSample, 1U);
   }
 }
 
@@ -254,8 +254,8 @@ void CFM::linkSamples(bool cos, q15_t* samples, uint8_t length)
           bool ctcss = m_ctcssRX.process(currentRFSample);
 
           // Delay the audio by 100ms to better match the CTCSS detector output
-          m_inputRFRB.put(currentRFSample);
-          m_inputRFRB.get(currentRFSample);
+          m_inputRFRB.addData(&currentRFSample, 1U);
+          m_inputRFRB.getData(&currentRFSample, 1U);
 
           if (!inputExt && !ctcss && m_modemState != STATE_FM) {
             // No CTCSS detected, just carry on
@@ -321,14 +321,14 @@ void CFM::linkSamples(bool cos, q15_t* samples, uint8_t length)
 
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
-    m_outputRFRB.put(currentSample);
+    m_outputRFRB.addData(&currentSample, 1U);
   }
 }
 
 void CFM::process()
 {
-  uint16_t space = io.getSpace();
-  uint16_t length = m_outputRFRB.getData();
+  uint16_t space  = io.getSpace();
+  uint16_t length = m_outputRFRB.dataSize();
 
   if (space > 10U && length >= FM_TX_BLOCK_SIZE ) {
     space -= 2U;
@@ -341,11 +341,7 @@ void CFM::process()
 
     q15_t samples[FM_TX_BLOCK_SIZE];
 
-    for (uint16_t i = 0U; i < length; i++) {
-      q15_t sample = 0;
-      m_outputRFRB.get(sample);
-      samples[i] = sample;
-    }
+    m_outputRFRB.getData(samples, length);
 
     io.write24FSK(STATE_FM, samples, length);
   }
@@ -386,7 +382,7 @@ void CFM::reset()
   m_callsign.stop();
   m_timeoutTone.stop();
 
-  m_outputRFRB.reset();
+  m_outputRFRB.clear();
   m_inputExtRB.reset();
 
   m_downSampler.reset();
@@ -1216,17 +1212,20 @@ void CFM::insertDelay(uint16_t ms)
 {
   uint32_t nSamples = ms * 24U;
 
-  for (uint32_t i = 0U; i < nSamples; i++)
-    m_inputRFRB.put(0);
+  for (uint32_t i = 0U; i < nSamples; i++) {
+      const q15_t empty = 0;
+      m_inputRFRB.addData(&empty, 1U);
+  }
 }
 
 void CFM::insertSilence(uint16_t ms)
 {
   uint32_t nSamples = ms * 24U;
 
-  for (uint32_t i = 0U; i < nSamples; i++)
-    m_outputRFRB.put(0);
+  for (uint32_t i = 0U; i < nSamples; i++) {
+      const q15_t empty = 0;
+      m_outputRFRB.addData(&empty, 1U);
+  }
 }
 
 #endif
-

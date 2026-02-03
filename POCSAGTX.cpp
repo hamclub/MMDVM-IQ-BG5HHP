@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2018,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ const uint16_t SHAPING_FILTER_LEN = 6U;
 const uint8_t POCSAG_SYNC = 0xAAU;
 
 CPOCSAGTX::CPOCSAGTX() :
-m_buffer(4000U),
+m_buffer(4000U, "POCSAG TX Buffer"),
 m_modFilter(),
 m_modState(),
 m_poBuffer(),
@@ -55,7 +55,7 @@ m_txDelay(POCSAG_PREAMBLE_LENGTH_BYTES)
 
 void CPOCSAGTX::process()
 {
-  if (m_buffer.getData() == 0U && m_poLen == 0U)
+  if (m_buffer.isEmpty() && m_poLen == 0U)
     return;
 
   if (m_poLen == 0U) {
@@ -65,7 +65,7 @@ void CPOCSAGTX::process()
     } else {
       for (uint8_t i = 0U; i < POCSAG_FRAME_LENGTH_BYTES; i++) {
         uint8_t c = 0U;
-        m_buffer.get(c);
+        m_buffer.getData(&c, 1U);
         m_poBuffer[m_poLen++] = c;
       }
     }
@@ -93,7 +93,7 @@ void CPOCSAGTX::process()
 
 bool CPOCSAGTX::busy()
 {
-  if (m_poLen > 0U || m_buffer.getData() > 0U)
+  if (m_poLen > 0U || m_buffer.hasData())
     return true;
   else
     return false;
@@ -104,12 +104,11 @@ uint8_t CPOCSAGTX::writeData(const uint8_t* data, uint16_t length)
   if (length != POCSAG_FRAME_LENGTH_BYTES)
     return 4U;
 
-  uint16_t space = m_buffer.getSpace();
+  uint16_t space = m_buffer.freeSpace();
   if (space < POCSAG_FRAME_LENGTH_BYTES)
     return 5U;
 
-  for (uint8_t i = 0U; i < POCSAG_FRAME_LENGTH_BYTES; i++)
-    m_buffer.put(data[i]);
+  m_buffer.addData(data, POCSAG_FRAME_LENGTH_BYTES);
 
   return 0U;
 }
@@ -148,8 +147,7 @@ void CPOCSAGTX::setTXDelay(uint8_t delay)
 
 uint8_t CPOCSAGTX::getSpace() const
 {
-  return m_buffer.getSpace() / POCSAG_FRAME_LENGTH_BYTES;
+  return m_buffer.freeSpace() / POCSAG_FRAME_LENGTH_BYTES;
 }
 
 #endif
-
