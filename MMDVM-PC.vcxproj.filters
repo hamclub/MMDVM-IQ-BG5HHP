@@ -92,9 +92,6 @@
     <ClInclude Include="IO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IOPins.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NXDNDefines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -138,12 +135,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UDPSocket.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CMSIS-DSP\Arduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CMSIS-DSP\arm_math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Socket.h">
@@ -287,9 +278,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UDPSocket.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CMSIS-DSP\arm_math.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Socket.cpp">

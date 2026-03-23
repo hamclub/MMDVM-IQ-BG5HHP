@@ -147,8 +147,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CMSIS-DSP\Arduino.h" />
-    <ClInclude Include="CMSIS-DSP\arm_math.h" />
     <ClInclude Include="Complex.h" />
     <ClInclude Include="Conf.h" />
     <ClInclude Include="Config.h" />
@@ -181,7 +179,6 @@
     <ClInclude Include="FMUpSampler.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="IO.h" />
-    <ClInclude Include="IOPins.h" />
     <ClInclude Include="IQSample.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Modem.h" />
@@ -208,7 +205,6 @@
     <ClInclude Include="YSFTX.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CMSIS-DSP\arm_math.cpp" />
     <ClCompile Include="Conf.cpp" />
     <ClCompile Include="CWIdTX.cpp" />
     <ClCompile Include="DMRDMORX.cpp" />
