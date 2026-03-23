@@ -19,8 +19,6 @@
 #if !defined(UTILS_H)
 #define  UTILS_H
 
-#include <Arduino.h>
-
 #include "arm_math.h"
 
 static inline q15_t FLOAT32_TO_Q15(float32_t in)

@@ -75,6 +75,7 @@ const uint8_t MMDVM_FM_PARAMS4   = 0x63U;
 const uint8_t MMDVM_FM_DATA      = 0x65U;
 const uint8_t MMDVM_FM_STATUS    = 0x66U;
 const uint8_t MMDVM_FM_EOT       = 0x67U;
+const uint8_t MMDVM_FM_RSSI      = 0x68U;
 
 const uint8_t MMDVM_ACK          = 0x70U;
 const uint8_t MMDVM_NAK          = 0x7FU;
@@ -1568,6 +1569,28 @@ void CSerialPort::writeFMStatus(uint8_t status)
 
   if (m_trace)
       dump("Write FM Status", reply, 4U);
+}
+
+void CSerialPort::writeFMRSSI(uint16_t rssi)
+{
+  if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
+    return;
+
+  if (!m_fmEnable)
+    return;
+
+  uint8_t reply[10U];
+
+  reply[0U] = MMDVM_FRAME_START;
+  reply[1U] = 5U;
+  reply[2U] = MMDVM_FM_RSSI;
+  reply[3U] = (rssi >> 8) & 0xFFU;
+  reply[4U] = (rssi >> 0) & 0xFFU;
+
+  m_socket.write(reply, 5U);
+
+  if (m_trace)
+      dump("Write FM RSSI", reply, 5U);
 }
 
 void CSerialPort::writeFMEOT()

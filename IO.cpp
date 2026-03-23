@@ -350,9 +350,9 @@ void CIO::process()
       if (m_fmEnable) {
         bool cos = getCOSInt();
 #if defined(USE_DCBLOCKER)
-        fm.samples(cos, dcSamples, RX_BLOCK_SIZE);
+        fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-        fm.samples(cos, samples, RX_BLOCK_SIZE);
+        fm.samples(cos, samples, rssi, RX_BLOCK_SIZE);
 #endif
       }
 #endif
@@ -447,9 +447,9 @@ void CIO::process()
     else if (m_modemState == STATE_FM) {
       bool cos = getCOSInt();
 #if defined(USE_DCBLOCKER)
-      fm.samples(cos, dcSamples, RX_BLOCK_SIZE);
+      fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-      fm.samples(cos, samples, RX_BLOCK_SIZE);
+      fm.samples(cos, samples, rssi, RX_BLOCK_SIZE);
 #endif
     }
 #endif

@@ -152,13 +152,14 @@ int main(int argc, char** argv)
         return 1;
     }
 
-#if !defined(_WIN32) && !defined(_WIN64)
-    ret = ::LogInitialise(m_daemon, conf.getLogFilePath(), conf.getLogFileRoot(), conf.getLogFileLevel(), conf.getLogDisplayLevel(), conf.getLogFileRotate());
-#else
-    ret = ::LogInitialise(false, conf.getLogFilePath(), conf.getLogFileRoot(), conf.getLogFileLevel(), conf.getLogDisplayLevel(), conf.getLogFileRotate());
-#endif
+    ::LogInitialise(conf.getLogDisplayLevel(), conf.getLogMQTTLevel());
+
+    std::vector<std::pair<std::string, void (*)(const unsigned char*, unsigned int)>> subscriptions;
+    m_mqtt = new CMQTTConnection(conf.getMQTTHost(), conf.getMQTTPort(), conf.getMQTTName(), conf.getMQTTAuthEnabled(), conf.getMQTTUsername(), conf.getMQTTPassword(), subscriptions, conf.getMQTTKeepalive());
+    ret = m_mqtt->open();
     if (!ret) {
-        ::fprintf(stderr, "MMDVM-PC: unable to open the log file\n");
+        ::fprintf(stderr, "MMDVM-PC: unable to start the MQTT Publisher\n");
+        delete m_mqtt;
         return 1;
     }
 

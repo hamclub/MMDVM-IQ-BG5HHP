@@ -20,6 +20,7 @@
 #define	CONF_H
 
 #include <string>
+#include <cstdint>
 
 class CConf
 {
@@ -34,10 +35,16 @@ public:
 
 	// The Log section
 	unsigned int getLogDisplayLevel() const;
-	unsigned int getLogFileLevel() const;
-	std::string  getLogFilePath() const;
-	std::string  getLogFileRoot() const;
-	bool         getLogFileRotate() const;
+	unsigned int getLogMQTTLevel() const;
+
+    // The MQTT section
+    std::string    getMQTTHost() const;
+    unsigned short getMQTTPort() const;
+    unsigned int   getMQTTKeepalive() const;
+    std::string    getMQTTName() const;
+    bool           getMQTTAuthEnabled() const;
+    std::string    getMQTTUsername() const;
+    std::string    getMQTTPassword() const;
 
 	// The Modem section
 	std::string  getProtocol() const;
@@ -62,10 +69,15 @@ private:
 	bool         m_daemon;
 
 	unsigned int m_logDisplayLevel;
-	unsigned int m_logFileLevel;
-	std::string  m_logFilePath;
-	std::string  m_logFileRoot;
-	bool         m_logFileRotate;
+	unsigned int m_logMQTTLevel;
+
+    std::string  m_mqttHost;
+    unsigned short m_mqttPort;
+    unsigned int m_mqttKeepalive;
+    std::string  m_mqttName;
+    bool         m_mqttAuthEnabled;
+    std::string  m_mqttUsername;
+    std::string  m_mqttPassword;
 
 	std::string  m_protocol;
 	std::string  m_uartPort;

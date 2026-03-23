@@ -64,6 +64,7 @@ public:
 #if defined(MODE_FM)
   void writeFMData(const uint8_t* data, uint16_t length);
   void writeFMStatus(uint8_t status);
+  void writeFMRSSI(uint16_t rssi);
   void writeFMEOT();
 #endif
 

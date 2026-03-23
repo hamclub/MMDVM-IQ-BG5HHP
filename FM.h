@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2021,2024 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2021,2024,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ class CFM {
 public:
   CFM();
 
-  void samples(bool cos, q15_t* samples, uint8_t length);
+  void samples(bool cos, q15_t* samples, const uint16_t* rssi, uint8_t length);
 
   void process();
 
@@ -89,7 +89,6 @@ private:
   CFMTimer             m_ackMinTimer;
   CFMTimer             m_ackDelayTimer;
   CFMTimer             m_hangTimer;
-  CFMTimer             m_statusTimer;
   CFMTimer             m_reverseTimer;
   bool                 m_needReverse;
   CFMDirectFormI       m_filterStage1;
@@ -110,10 +109,12 @@ private:
   CFMUpSampler         m_inputExtRB;
   bool                 m_rfSignal;
   bool                 m_extSignal;
+  uint32_t             m_rssiAccum;
+  uint16_t             m_rssiCount;
 
   void stateMachine(bool validRFSignal, bool validExtSignal);
 
-  void repeaterSamples(bool cos, q15_t* samples, uint8_t length);
+  void repeaterSamples(bool cos, q15_t* samples, const uint16_t* rssi, uint8_t length);
   void linkSamples(bool cos, q15_t* samples, uint8_t length);
 
   void duplexStateMachine(bool validRFSignal, bool validExtSignal);

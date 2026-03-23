@@ -2,6 +2,7 @@ Debug
 Release
 x64
 *.o
+*.d
 *.opendb
 *.bak
 *.obj
@@ -14,3 +15,7 @@ x64
 *.VC.db
 .vs
 .vscode
+GitVersion.h
+CMSIS_4
+MMDVM-PC
+

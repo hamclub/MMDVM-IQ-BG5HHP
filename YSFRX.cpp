@@ -177,7 +177,7 @@ void CYSFRX::processData(q15_t sample)
 
     calculateLevels(m_startPtr, YSF_FRAME_LENGTH_SYMBOLS);
 
-    LogMessage("YSFRX: sync found pos/centre/threshold", m_syncPtr, m_centreVal, m_thresholdVal);
+    LogMessage("YSFRX: sync found pos/centre/threshold %u/%d/%d", m_syncPtr, m_centreVal, m_thresholdVal);
 
     uint8_t frame[YSF_FRAME_LENGTH_BYTES + 3U];
     samplesToBits(m_startPtr, YSF_FRAME_LENGTH_SYMBOLS, frame, 8U, m_centreVal, m_thresholdVal);
@@ -322,7 +322,7 @@ void CYSFRX::calculateLevels(uint16_t start, uint16_t count)
 
   q15_t threshold = posThresh - centre;
 
-  LogMessage("YSFRX: pos/neg/centre/threshold: %u/%u/%d/%d", posThresh, negThresh, centre, threshold);
+  LogMessage("YSFRX: pos/neg/centre/threshold: %d/%d/%d/%d", posThresh, negThresh, centre, threshold);
 
   if (m_averagePtr == NOAVEPTR) {
     for (uint8_t i = 0U; i < 16U; i++) {

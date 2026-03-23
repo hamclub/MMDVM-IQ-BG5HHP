@@ -24,6 +24,8 @@
 #if !defined(TSAMPLEPACK_H)
 #define TSAMPLEPACK_H
 
+#include <cstdint>
+
 struct TSamplePairPack {
   uint8_t byte0;
   uint8_t byte1;

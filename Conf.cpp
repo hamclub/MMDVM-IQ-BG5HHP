@@ -30,6 +30,7 @@ enum class SECTION {
 	NONE,
 	GENERAL,
 	LOG,
+	MQTT,
 	MODEM,
 	MMDVM_HOST
 };
@@ -38,10 +39,14 @@ CConf::CConf(const std::string& file) :
 m_file(file),
 m_daemon(false),
 m_logDisplayLevel(0U),
-m_logFileLevel(0U),
-m_logFilePath(),
-m_logFileRoot(),
-m_logFileRotate(true),
+m_logMQTTLevel(0U),
+m_mqttHost("127.0.0.1"),
+m_mqttPort(1883),
+m_mqttKeepalive(60U),
+m_mqttName("mmdvm"),
+m_mqttAuthEnabled(false),
+m_mqttUsername(),
+m_mqttPassword(),
 m_protocol("uart"),
 m_uartPort(),
 m_uartSpeed(460800U),
@@ -82,6 +87,8 @@ bool CConf::read()
 				section = SECTION::GENERAL;
 			else if (::strncmp(buffer, "[Log]", 5U) == 0)
 				section = SECTION::LOG;
+			else if (::strncmp(buffer, "[MQTT]", 6U) == 0)
+				section = SECTION::MQTT;
 			else if (::strncmp(buffer, "[Modem]", 7U) == 0)
 				section = SECTION::MODEM;
 			else if (::strncmp(buffer, "[MMDVM Host]", 12U) == 0)
@@ -121,16 +128,25 @@ bool CConf::read()
 			if (::strcmp(key, "Daemon") == 0)
 				m_daemon = ::atoi(value) == 1;
 		} else if (section == SECTION::LOG) {
-			if (::strcmp(key, "FilePath") == 0)
-				m_logFilePath = value;
-			else if (::strcmp(key, "FileRoot") == 0)
-				m_logFileRoot = value;
-			else if (::strcmp(key, "FileLevel") == 0)
-				m_logFileLevel = (unsigned int)::atoi(value);
+			if (::strcmp(key, "MQTTLevel") == 0)
+				m_logMQTTLevel = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "DisplayLevel") == 0)
 				m_logDisplayLevel = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "FileRotate") == 0)
-				m_logFileRotate = ::atoi(value) == 1;
+		} else if (section == SECTION::MQTT) {
+			if (::strcmp(key, "Host") == 0)
+				m_mqttHost = value;
+			else if (::strcmp(key, "Port") == 0)
+				m_mqttPort = (unsigned short)::atoi(value);
+			else if (::strcmp(key, "Keepalive") == 0)
+				m_mqttKeepalive = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "Name") == 0)
+				m_mqttName = value;
+			else if (::strcmp(key, "Auth") == 0)
+				m_mqttAuthEnabled = ::atoi(value) == 1;
+			else if (::strcmp(key, "Username") == 0)
+				m_mqttUsername = value;
+			else if (::strcmp(key, "Password") == 0)
+				m_mqttPassword = value;
 		} else if (section == SECTION::MODEM) {
 			if (::strcmp(key, "Protocol") == 0)
 				m_protocol = value;
@@ -177,24 +193,44 @@ unsigned int CConf::getLogDisplayLevel() const
 	return m_logDisplayLevel;
 }
 
-unsigned int CConf::getLogFileLevel() const
+unsigned int CConf::getLogMQTTLevel() const
 {
-	return m_logFileLevel;
+	return m_logMQTTLevel;
 }
 
-std::string CConf::getLogFilePath() const
+std::string CConf::getMQTTHost() const
 {
-	return m_logFilePath;
+	return m_mqttHost;
 }
 
-std::string CConf::getLogFileRoot() const
+unsigned short CConf::getMQTTPort() const
 {
-	return m_logFileRoot;
+	return m_mqttPort;
 }
 
-bool CConf::getLogFileRotate() const
+unsigned int CConf::getMQTTKeepalive() const
 {
-	return m_logFileRotate;
+	return m_mqttKeepalive;
+}
+
+std::string CConf::getMQTTName() const
+{
+	return m_mqttName;
+}
+
+bool CConf::getMQTTAuthEnabled() const
+{
+	return m_mqttAuthEnabled;
+}
+
+std::string CConf::getMQTTUsername() const
+{
+	return m_mqttUsername;
+}
+
+std::string CConf::getMQTTPassword() const
+{
+	return m_mqttPassword;
 }
 
 std::string CConf::getProtocol() const

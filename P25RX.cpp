@@ -455,7 +455,7 @@ void CP25RX::calculateLevels(uint16_t start, uint16_t count)
 
   q15_t threshold = posThresh - centre;
 
-  LogMessage("P25RX: pos/neg/centre/threshold: %u/%u/%d/%d", posThresh, negThresh, centre, threshold);
+  LogMessage("P25RX: pos/neg/centre/threshold: %d/%d/%d/%d", posThresh, negThresh, centre, threshold);
 
   if (m_averagePtr == NOAVEPTR) {
     for (uint8_t i = 0U; i < 16U; i++) {

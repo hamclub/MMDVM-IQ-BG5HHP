@@ -364,7 +364,7 @@ void CDStarRX::processHeader(q15_t sample)
     samplesToBits(m_headerBuffer, DSTAR_RADIO_SYMBOL_LENGTH, DSTAR_FEC_SECTION_LENGTH_SYMBOLS, buffer, DSTAR_FEC_SECTION_LENGTH_SAMPLES);
 
     // Process the scrambling, interleaving and FEC, then return true if the chcksum was correct
-    uint8_t header[DSTAR_HEADER_LENGTH_BYTES];
+    uint8_t header[DSTAR_HEADER_LENGTH_BYTES + 2U];
     bool ok = rxHeader(buffer, header);
     if (!ok) {
       // The checksum failed, return to looking for syncs

@@ -19,7 +19,7 @@
 #if !defined(GLOBALS_H)
 #define  GLOBALS_H
 
-#include <Arduino.h>
+#include <cstdint>
 
 #include <arm_math.h>
 
@@ -38,6 +38,7 @@ enum MMDVM_STATE {
 };
 
 #include "Modem.h"
+#include "MQTTConnection.h"
 #include "SerialPort.h"
 #include "DMRIdleRX.h"
 #include "DMRDMORX.h"
@@ -129,5 +130,7 @@ extern CFM    fm;
 #endif
 
 extern CCWIdTX cwIdTX;
+
+extern CMQTTConnection* m_mqtt;
 
 #endif
