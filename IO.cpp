@@ -182,6 +182,10 @@ m_lockout(false)
   initInt();
 }
 
+CIO::~CIO()
+{
+}
+
 void CIO::start()
 {
   if (m_started)
@@ -191,7 +195,7 @@ void CIO::start()
 
   m_started = true;
 
-  setMode(STATE_IDLE);
+  setMode(MMDVM_STATE::IDLE);
 }
 
 void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
@@ -207,12 +211,12 @@ void CIO::process()
     if (m_started) {
         // Two seconds timeout
         if (m_watchdog >= 48000U) {
-            if (m_modemState == STATE_DSTAR || m_modemState == STATE_DMR || m_modemState == STATE_YSF || m_modemState == STATE_P25 || m_modemState == STATE_NXDN || m_modemState == STATE_POCSAG) {
+            if (m_modemState == MMDVM_STATE::DSTAR || m_modemState == MMDVM_STATE::DMR || m_modemState == MMDVM_STATE::YSF || m_modemState == MMDVM_STATE::P25 || m_modemState == MMDVM_STATE::NXDN || m_modemState == MMDVM_STATE::POCSAG) {
 #if defined(MODE_DMR)
-                if (m_modemState == STATE_DMR && m_tx)
+                if (m_modemState == MMDVM_STATE::DMR && m_tx)
                     dmrTX.setStart(false);
 #endif
-                setMode(STATE_IDLE);
+                setMode(MMDVM_STATE::IDLE);
             }
 
             m_watchdog = 0U;
@@ -275,7 +279,7 @@ void CIO::process()
       dcSamples[i] = samples[i] - offset;
 #endif
 
-    if (m_modemState == STATE_IDLE) {
+    if (m_modemState == MMDVM_STATE::IDLE) {
 #if defined(MODE_DSTAR)
         if (m_dstarEnable) {
             q15_t GMSKVals[RX_BLOCK_SIZE];
@@ -359,7 +363,7 @@ void CIO::process()
     }
 
 #if defined(MODE_DSTAR)
-    else if (m_modemState == STATE_DSTAR) {
+    else if (m_modemState == MMDVM_STATE::DSTAR) {
       if (m_dstarEnable) {
         q15_t GMSKVals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
@@ -373,7 +377,7 @@ void CIO::process()
 #endif
 
 #if defined(MODE_DMR)
-    else if (m_modemState == STATE_DMR) {
+    else if (m_modemState == MMDVM_STATE::DMR) {
       if (m_dmrEnable) {
         q15_t DMRVals[RX_BLOCK_SIZE];
         ::arm_fir_fast_q15(&m_rrc02Filter1, samples, DMRVals, RX_BLOCK_SIZE);
@@ -392,7 +396,7 @@ void CIO::process()
 #endif
 
 #if defined(MODE_YSF)
-    else if (m_modemState == STATE_YSF) {
+    else if (m_modemState == MMDVM_STATE::YSF) {
       if (m_ysfEnable) {
         q15_t YSFVals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
@@ -406,7 +410,7 @@ void CIO::process()
 #endif
 
 #if defined(MODE_P25)
-    else if (m_modemState == STATE_P25) {
+    else if (m_modemState == MMDVM_STATE::P25) {
       if (m_p25Enable) {
         q15_t P25Vals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
@@ -420,7 +424,7 @@ void CIO::process()
 #endif
 
 #if defined(MODE_NXDN)
-    else if (m_modemState == STATE_NXDN) {
+    else if (m_modemState == MMDVM_STATE::NXDN) {
       if (m_nxdnEnable) {
         q15_t NXDNVals[RX_BLOCK_SIZE];
 #if defined(USE_NXDN_BOXCAR)
@@ -444,7 +448,7 @@ void CIO::process()
 #endif
 
 #if defined(MODE_FM)
-    else if (m_modemState == STATE_FM) {
+    else if (m_modemState == MMDVM_STATE::FM) {
       bool cos = getCOSInt();
 #if defined(USE_DCBLOCKER)
       fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
@@ -469,25 +473,25 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
 
   q15_t txLevel = 0;
   switch (mode) {
-    case STATE_DSTAR:
+    case MMDVM_STATE::DSTAR:
       txLevel = m_dstarTXLevel;
       break;
-    case STATE_DMR:
+    case MMDVM_STATE::DMR:
       txLevel = m_dmrTXLevel;
       break;
-    case STATE_YSF:
+    case MMDVM_STATE::YSF:
       txLevel = m_ysfTXLevel;
       break;
-    case STATE_P25:
+    case MMDVM_STATE::P25:
       txLevel = m_p25TXLevel;
       break;
-    case STATE_NXDN:
+    case MMDVM_STATE::NXDN:
       txLevel = m_nxdnTXLevel;
       break;
-    case STATE_POCSAG:
+    case MMDVM_STATE::POCSAG:
       txLevel = m_pocsagTXLevel;
       break;
-    case STATE_FM:
+    case MMDVM_STATE::FM:
       txLevel = m_fmTXLevel;
       break;
     default:

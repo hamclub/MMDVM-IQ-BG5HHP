@@ -53,6 +53,10 @@ m_txDelay(POCSAG_PREAMBLE_LENGTH_BYTES)
   m_modFilter.pCoeffs = SHAPING_FILTER;
 }
 
+CPOCSAGTX::~CPOCSAGTX()
+{
+}
+
 void CPOCSAGTX::process()
 {
   if (m_buffer.isEmpty() && m_poLen == 0U)
@@ -134,7 +138,7 @@ void CPOCSAGTX::writeByte(uint8_t c)
 
   ::arm_fir_fast_q15(&m_modFilter, inBuffer, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
 
-  io.write24FSK(STATE_POCSAG, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
+  io.write24FSK(MMDVM_STATE::POCSAG, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
 }
 
 void CPOCSAGTX::setTXDelay(uint8_t delay)

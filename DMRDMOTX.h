@@ -42,7 +42,7 @@ public:
   uint8_t getSpace() const;
 
 private:
-  CRingBuffer<uint8_t>                        m_fifo;
+  CRingBuffer<uint8_t>             m_fifo;
   arm_fir_interpolate_instance_q15 m_modFilter;
   q15_t                            m_modState[16U];    // blockSize + phaseLength - 1, 4 + 9 - 1 plus some spare
   uint8_t                          m_poBuffer[1200U];
@@ -56,4 +56,3 @@ private:
 #endif
 
 #endif
-

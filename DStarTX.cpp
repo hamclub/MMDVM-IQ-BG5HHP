@@ -207,6 +207,10 @@ m_txDelay(60U)       // 100ms
   m_modFilter.pState      = m_modState;
 }
 
+CDStarTX::~CDStarTX()
+{
+}
+
 void CDStarTX::process()
 {
   if (m_buffer.isEmpty() && m_poLen == 0U)
@@ -429,7 +433,7 @@ void CDStarTX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 8U);
   
-  io.write24FSK(STATE_DSTAR, outBuffer, DSTAR_RADIO_SYMBOL_LENGTH * 8U);
+  io.write24FSK(MMDVM_STATE::DSTAR, outBuffer, DSTAR_RADIO_SYMBOL_LENGTH * 8U);
 }
 
 void CDStarTX::setTXDelay(uint8_t delay)

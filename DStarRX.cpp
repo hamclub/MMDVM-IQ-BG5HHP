@@ -237,7 +237,7 @@ const uint16_t CCITT_TABLE[] = {
 const uint16_t NOENDPTR = 9999U;
 
 CDStarRX::CDStarRX() :
-m_rxState(DSRXS_NONE),
+m_rxState(DSRX_STATE::NONE),
 m_bitBuffer(),
 m_headerBuffer(),
 m_dataBuffer(),
@@ -264,9 +264,13 @@ m_rssiCount(0U)
 {
 }
 
+CDStarRX::~CDStarRX()
+{
+}
+
 void CDStarRX::reset()
 {
-  m_rxState      = DSRXS_NONE;
+  m_rxState      = DSRX_STATE::NONE;
   m_headerPtr    = 0U;
   m_dataPtr      = 0U;
   m_bitPtr       = 0U;
@@ -297,10 +301,10 @@ void CDStarRX::samples(const q15_t* samples, const uint16_t* rssi, uint8_t lengt
     m_dataBuffer[m_dataPtr] = sample;
 
     switch (m_rxState) {
-      case DSRXS_HEADER:
+      case DSRX_STATE::HEADER:
         processHeader(sample);
         break;
-      case DSRXS_DATA:
+      case DSRX_STATE::DATA:
         processData();
         break;
       default:
@@ -331,7 +335,7 @@ void CDStarRX::processNone(q15_t sample)
     m_rssiAccum = 0U;
     m_rssiCount = 0U;
 
-    m_rxState = DSRXS_HEADER;
+    m_rxState = DSRX_STATE::HEADER;
 
     return;
   }
@@ -344,7 +348,7 @@ void CDStarRX::processNone(q15_t sample)
     io.setDecode(true);
     io.setADCDetection(true);
 
-    m_rxState = DSRXS_DATA;
+    m_rxState = DSRX_STATE::DATA;
   }
 }
 
@@ -368,7 +372,7 @@ void CDStarRX::processHeader(q15_t sample)
     bool ok = rxHeader(buffer, header);
     if (!ok) {
       // The checksum failed, return to looking for syncs
-      m_rxState = DSRXS_NONE;
+      m_rxState = DSRX_STATE::NONE;
       m_maxFrameCorr = 0;
       m_maxDataCorr  = 0;
     } else {
@@ -391,7 +395,7 @@ void CDStarRX::processHeader(q15_t sample)
 
     LogMessage("DStarRX: calc start/sync/max/min: %u/%u/%u/%u", m_startPtr, m_syncPtr, m_maxSyncPtr, m_minSyncPtr);
 
-    m_rxState = DSRXS_DATA;
+    m_rxState = DSRX_STATE::DATA;
   }
 }
 
@@ -409,7 +413,7 @@ void CDStarRX::processData()
     m_maxFrameCorr = 0;
     m_maxDataCorr  = 0;
 
-    m_rxState = DSRXS_NONE;
+    m_rxState = DSRX_STATE::NONE;
     return;
   }
 
@@ -434,7 +438,7 @@ void CDStarRX::processData()
     m_maxFrameCorr = 0;
     m_maxDataCorr  = 0;
 
-    m_rxState = DSRXS_NONE;
+    m_rxState = DSRX_STATE::NONE;
     return;
   }
 
@@ -532,7 +536,7 @@ bool CDStarRX::correlateFrameSync()
 bool CDStarRX::correlateDataSync()
 {
   uint8_t maxErrs = 0U;
-  if (m_rxState == DSRXS_DATA)
+  if (m_rxState == DSRX_STATE::DATA)
     maxErrs = DATA_SYNC_ERRS;
 
   if (countBits64((m_bitBuffer[m_bitPtr] & DSTAR_DATA_SYNC_MASK) ^ DSTAR_DATA_SYNC_DATA) <= maxErrs) {
@@ -813,4 +817,3 @@ bool CDStarRX::checksum(const uint8_t* header) const
 }
 
 #endif
-

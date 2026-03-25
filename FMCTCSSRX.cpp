@@ -94,6 +94,10 @@ m_state(false)
 {
 }
 
+CFMCTCSSRX::~CFMCTCSSRX()
+{
+}
+
 uint8_t CFMCTCSSRX::setParams(uint8_t frequency, uint8_t highThreshold, uint8_t lowThreshold)
 {
   m_coeffDivTwo = 0;
@@ -178,4 +182,3 @@ void CFMCTCSSRX::reset()
 }
 
 #endif
-

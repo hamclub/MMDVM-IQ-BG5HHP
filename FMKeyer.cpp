@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -91,6 +91,10 @@ m_audioLen(0U),
 m_audioPos(0U),
 m_highLevel(0U),
 m_lowLevel(0)
+{
+}
+
+CFMKeyer::~CFMKeyer()
 {
 }
 

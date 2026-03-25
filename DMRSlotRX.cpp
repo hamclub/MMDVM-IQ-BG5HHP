@@ -63,10 +63,14 @@ m_control(CONTROL_NONE),
 m_syncCount(0U),
 m_colorCode(0U),
 m_delay(0U),
-m_state(DMRRXS_NONE),
+m_state(DMRRX_STATE::NONE),
 m_n(0U),
 m_type(0U),
 m_rssi()
+{
+}
+
+CDMRSlotRX::~CDMRSlotRX()
 {
 }
 
@@ -88,7 +92,7 @@ void CDMRSlotRX::reset()
   m_maxCorr   = 0;
   m_control   = CONTROL_NONE;
   m_syncCount = 0U;
-  m_state     = DMRRXS_NONE;
+  m_state     = DMRRX_STATE::NONE;
   m_startPtr  = 0U;
   m_endPtr    = NOENDPTR;
 }
@@ -97,11 +101,11 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
 {
   m_delayPtr++;
   if (m_delayPtr < m_delay)
-    return m_state != DMRRXS_NONE;
+    return m_state != DMRRX_STATE::NONE;
 
   // Ensure that the buffer doesn't overflow
   if (m_dataPtr > m_endPtr || m_dataPtr >= 900U)
-    return m_state != DMRRXS_NONE;
+    return m_state != DMRRX_STATE::NONE;
 
   m_buffer[m_dataPtr] = sample;
   m_rssi[m_dataPtr] = rssi;
@@ -110,7 +114,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
   if (sample < 0)
     m_bitBuffer[m_bitPtr] |= 0x01U;
 
-  if (m_state == DMRRXS_NONE) {
+  if (m_state == DMRRX_STATE::NONE) {
     if (m_dataPtr >= SCAN_START && m_dataPtr <= SCAN_END)
       correlateSync(true);
   } else {
@@ -149,13 +153,13 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
           case DT_DATA_HEADER:
             LogMessage("DMRSlotRX: data header found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
             writeRSSIData(frame);
-            m_state = DMRRXS_DATA;
+            m_state = DMRRX_STATE::DATA;
             m_type  = 0x00U;
             break;
           case DT_RATE_12_DATA:
           case DT_RATE_34_DATA:
           case DT_RATE_1_DATA:
-            if (m_state == DMRRXS_DATA) {
+            if (m_state == DMRRX_STATE::DATA) {
               LogMessage("DMRSlotRX: data payload found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
               writeRSSIData(frame);
               m_type = dataType;
@@ -164,27 +168,27 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
           case DT_VOICE_LC_HEADER:
             LogMessage("DMRSlotRX: voice header found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
             writeRSSIData(frame);
-            m_state = DMRRXS_VOICE;
+            m_state = DMRRX_STATE::VOICE;
             break;
           case DT_VOICE_PI_HEADER:
-            if (m_state == DMRRXS_VOICE) {
+            if (m_state == DMRRX_STATE::VOICE) {
               LogMessage("DMRSlotRX: voice pi header found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
               writeRSSIData(frame);
             }
-            m_state = DMRRXS_VOICE;
+            m_state = DMRRX_STATE::VOICE;
             break;
           case DT_TERMINATOR_WITH_LC:
-            if (m_state == DMRRXS_VOICE) {
+            if (m_state == DMRRX_STATE::VOICE) {
               LogMessage("DMRSlotRX: voice terminator found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
               writeRSSIData(frame);
-              m_state  = DMRRXS_NONE;
+              m_state  = DMRRX_STATE::NONE;
               m_endPtr = NOENDPTR;
             }
             break;
           default:    // DT_CSBK
             LogMessage("DMRSlotRX: csbk found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
             writeRSSIData(frame);
-            m_state  = DMRRXS_NONE;
+            m_state  = DMRRX_STATE::NONE;
             m_endPtr = NOENDPTR;
             break;
         }
@@ -193,20 +197,20 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
       // Voice sync
       LogMessage("DMRSlotRX: voice sync found slot/pos/centre/threshold: %u/%u/%d/%d", m_slot ? 2U : 1U, m_syncPtr, centre, threshold);
       writeRSSIData(frame);
-      m_state     = DMRRXS_VOICE;
+      m_state     = DMRRX_STATE::VOICE;
       m_syncCount = 0U;
       m_n         = 0U;
     } else {
-      if (m_state != DMRRXS_NONE) {
+      if (m_state != DMRRX_STATE::NONE) {
         m_syncCount++;
         if (m_syncCount >= MAX_SYNC_LOST_FRAMES) {
           serial.writeDMRLost(m_slot);
-          m_state  = DMRRXS_NONE;
+          m_state  = DMRRX_STATE::NONE;
           m_endPtr = NOENDPTR;
         }
       }
 
-      if (m_state == DMRRXS_VOICE) {
+      if (m_state == DMRRX_STATE::VOICE) {
         if (m_n >= 5U) {
           frame[0U] = CONTROL_VOICE;
           m_n = 0U;
@@ -215,7 +219,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
         }
 
         serial.writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 1U);
-      } else if (m_state == DMRRXS_DATA) {
+      } else if (m_state == DMRRX_STATE::DATA) {
         if (m_type != 0x00U) {
           frame[0U] = CONTROL_DATA | m_type;
           writeRSSIData(frame);
@@ -230,7 +234,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
   if (m_bitPtr >= DMR_RADIO_SYMBOL_LENGTH)
     m_bitPtr = 0U;
 
-  return m_state != DMRRXS_NONE;
+  return m_state != DMRRX_STATE::NONE;
 }
 
 void CDMRSlotRX::correlateSync(bool first)
@@ -401,4 +405,3 @@ void CDMRSlotRX::writeRSSIData(uint8_t* frame)
 }
 
 #endif
-

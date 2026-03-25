@@ -64,7 +64,7 @@ m_fifo0(2000U, "DMR TX Slot 1 Buffer"),
 m_fifo1(2000U, "DMR TX Slot 2 Buffer"),
 m_modFilter(),
 m_modState(),
-m_state(DMRTXSTATE_IDLE),
+m_state(DMRTXSTATE::IDLE),
 m_idle(),
 m_cachPtr(0U),
 m_shortLC(),
@@ -94,31 +94,35 @@ m_abort()
   m_abortCount[1U] = 0U;
 }
 
+CDMRTX::~CDMRTX()
+{
+}
+
 void CDMRTX::process()
 {
-  if (m_state == DMRTXSTATE_IDLE)
+  if (m_state == DMRTXSTATE::IDLE)
     return;
 
   if (m_poLen == 0U) {
     switch (m_state) {
-      case DMRTXSTATE_SLOT1:
+      case DMRTXSTATE::SLOT1:
         createData(0U);
-        m_state = DMRTXSTATE_CACH2;
+        m_state = DMRTXSTATE::CACH2;
         break;
 
-      case DMRTXSTATE_CACH2:
+      case DMRTXSTATE::CACH2:
         createCACH(1U, 0U);
-        m_state = DMRTXSTATE_SLOT2;
+        m_state = DMRTXSTATE::SLOT2;
         break;
 
-      case DMRTXSTATE_SLOT2:
+      case DMRTXSTATE::SLOT2:
         createData(1U);
-        m_state = DMRTXSTATE_CACH1;
+        m_state = DMRTXSTATE::CACH1;
         break;
 
       default:
         createCACH(0U, 1U);
-        m_state = DMRTXSTATE_SLOT1;
+        m_state = DMRTXSTATE::SLOT1;
         break;
     }
   }
@@ -162,7 +166,7 @@ uint8_t CDMRTX::writeData1(const uint8_t* data, uint16_t length)
 
   // Start the TX if it isn't already on
   if (!m_tx)
-    m_state = DMRTXSTATE_SLOT1;
+    m_state = DMRTXSTATE::SLOT1;
 
   return 0U;
 }
@@ -185,7 +189,7 @@ uint8_t CDMRTX::writeData2(const uint8_t* data, uint16_t length)
 
   // Start the TX if it isn't already on
   if (!m_tx)
-    m_state = DMRTXSTATE_SLOT1;
+    m_state = DMRTXSTATE::SLOT1;
 
   return 0U;
 }
@@ -229,7 +233,7 @@ uint8_t CDMRTX::writeAbort(const uint8_t* data, uint16_t length)
 
 void CDMRTX::setStart(bool start)
 {
-  m_state = start ? DMRTXSTATE_SLOT1 : DMRTXSTATE_IDLE;
+  m_state = start ? DMRTXSTATE::SLOT1 : DMRTXSTATE::IDLE;
 
   m_frameCount = 0U;
   m_abortCount[0U] = 0U;
@@ -269,7 +273,7 @@ void CDMRTX::writeByte(uint8_t c, uint8_t control)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write24FSK(STATE_DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U, controlBuffer);
+  io.write24FSK(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U, controlBuffer);
 }
 
 uint8_t CDMRTX::getSpace1() const

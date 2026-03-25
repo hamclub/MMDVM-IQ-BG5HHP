@@ -35,7 +35,7 @@
 #include "FMUpSampler.h"
 #include "FMNoiseSquelch.h"
 
-enum class FM_STATE {
+enum class FM_STATE : uint8_t {
   LISTENING,
   KERCHUNK_RF,
   RELAYING_RF,

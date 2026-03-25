@@ -35,6 +35,10 @@ m_running(false)
   m_packPointer = (uint8_t*)&m_pack;
 }
 
+CFMUpSampler::~CFMUpSampler()
+{
+}
+
 void CFMUpSampler::reset()
 {
     m_upSampleIndex = 0U;

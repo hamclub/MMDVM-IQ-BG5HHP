@@ -66,6 +66,9 @@ m_txCount(0U)
   m_modFilter.pState      = m_modState;
 }
 
+CYSFTX::~CYSFTX()
+{
+}
 
 void CYSFTX::process()
 {
@@ -160,7 +163,7 @@ void CYSFTX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write24FSK(STATE_YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
+  io.write24FSK(MMDVM_STATE::YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CYSFTX::writeSilence()
@@ -170,7 +173,7 @@ void CYSFTX::writeSilence()
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write24FSK(STATE_YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
+  io.write24FSK(MMDVM_STATE::YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CYSFTX::setTXDelay(uint8_t delay)
@@ -193,4 +196,3 @@ void CYSFTX::setParams(bool on, uint8_t txHang)
 }
 
 #endif
-

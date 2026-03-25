@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009,2010,2015,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009,2010,2015,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -26,6 +26,10 @@
 CFMTimer::CFMTimer() :
 m_timeout(0U),
 m_timer(0U)
+{
+}
+
+CFMTimer::~CFMTimer()
 {
 }
 
@@ -73,4 +77,3 @@ bool CFMTimer::hasExpired() const
 }
 
 #endif
-

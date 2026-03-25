@@ -45,7 +45,7 @@ const uint16_t NOENDPTR = 9999U;
 const unsigned int MAX_SYNC_FRAMES = 4U + 1U;
 
 CP25RX::CP25RX() :
-m_state(P25RXS_NONE),
+m_state(P25RX_STATE::NONE),
 m_bitBuffer(),
 m_buffer(),
 m_bitPtr(0U),
@@ -71,9 +71,13 @@ m_duid(0U)
 {
 }
 
+CP25RX::~CP25RX()
+{
+}
+
 void CP25RX::reset()
 {
-  m_state         = P25RXS_NONE;
+  m_state         = P25RX_STATE::NONE;
   m_dataPtr       = 0U;
   m_bitPtr        = 0U;
   m_maxCorr       = 0;
@@ -109,10 +113,10 @@ void CP25RX::samples(const q15_t* samples, uint16_t* rssi, uint8_t length)
     m_buffer[m_dataPtr] = sample;
 
     switch (m_state) {
-    case P25RXS_HDR:
+    case P25RX_STATE::HDR:
       processHdr(sample);
       break;
-    case P25RXS_LDU:
+    case P25RX_STATE::LDU:
       processLdu(sample);
       break;
     default:
@@ -163,7 +167,7 @@ void CP25RX::processNone(q15_t sample)
       if (m_maxSyncPtr >= P25_LDU_FRAME_LENGTH_SAMPLES)
         m_maxSyncPtr -= P25_LDU_FRAME_LENGTH_SAMPLES;
 
-      m_state     = P25RXS_HDR;
+      m_state     = P25RX_STATE::HDR;
       m_countdown = 0U;
   }
 }
@@ -262,7 +266,7 @@ void CP25RX::processHdr(q15_t sample)
     if (m_maxSyncPtr >= P25_LDU_FRAME_LENGTH_SAMPLES)
       m_maxSyncPtr -= P25_LDU_FRAME_LENGTH_SAMPLES;
 
-    m_state   = P25RXS_LDU;
+    m_state   = P25RX_STATE::LDU;
     m_maxCorr = 0;
   }
 }
@@ -306,7 +310,7 @@ void CP25RX::processLdu(q15_t sample)
 
       serial.writeP25Lost();
 
-      m_state      = P25RXS_NONE;
+      m_state      = P25RX_STATE::NONE;
       m_lduEndPtr  = NOENDPTR;
       m_averagePtr = NOAVEPTR;
       m_countdown  = 0U;
@@ -375,7 +379,7 @@ bool CP25RX::correlateSync()
       samplesToBits(startPtr, P25_SYNC_LENGTH_SYMBOLS, sync, 0U, m_centreVal, m_thresholdVal);
 
       uint8_t maxErrs;
-      if (m_state == P25RXS_NONE)
+      if (m_state == P25RX_STATE::NONE)
         maxErrs = MAX_SYNC_BIT_START_ERRS;
       else
         maxErrs = MAX_SYNC_BIT_RUN_ERRS;
@@ -397,7 +401,7 @@ bool CP25RX::correlateSync()
         if (m_lduEndPtr >= P25_LDU_FRAME_LENGTH_SAMPLES)
           m_lduEndPtr -= P25_LDU_FRAME_LENGTH_SAMPLES;
 
-        if (m_state == P25RXS_NONE) {
+        if (m_state == P25RX_STATE::NONE) {
           m_hdrSyncPtr = m_dataPtr;
 
           // This is the position of the start of a HDR

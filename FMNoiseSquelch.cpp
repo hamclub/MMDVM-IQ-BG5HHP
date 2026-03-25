@@ -39,7 +39,10 @@ m_state(false),
 m_validCount(0U),
 m_invalidCount(0U)
 {
+}
 
+CFMNoiseSquelch::~CFMNoiseSquelch()
+{
 }
 
 void CFMNoiseSquelch::setParams(uint8_t highThreshold, uint8_t lowThreshold)

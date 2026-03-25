@@ -42,7 +42,7 @@ const uint16_t NOENDPTR = 9999U;
 const unsigned int MAX_FSW_FRAMES = 5U + 1U;
 
 CNXDNRX::CNXDNRX() :
-m_state(NXDNRXS_NONE),
+m_state(NXDNRX_STATE::NONE),
 m_bitBuffer(),
 m_buffer(),
 m_bitPtr(0U),
@@ -65,9 +65,13 @@ m_rssiCount(0U)
 {
 }
 
+CNXDNRX::~CNXDNRX()
+{
+}
+
 void CNXDNRX::reset()
 {
-  m_state        = NXDNRXS_NONE;
+  m_state        = NXDNRX_STATE::NONE;
   m_dataPtr      = 0U;
   m_bitPtr       = 0U;
   m_maxCorr      = 0;
@@ -100,7 +104,7 @@ void CNXDNRX::samples(const q15_t* samples, uint16_t* rssi, uint8_t length)
     m_buffer[m_dataPtr] = sample;
 
     switch (m_state) {
-    case NXDNRXS_DATA:
+    case NXDNRX_STATE::DATA:
       processData(sample);
       break;
     default:
@@ -148,7 +152,7 @@ void CNXDNRX::processNone(q15_t sample)
     if (m_maxFSWPtr >= NXDN_FRAME_LENGTH_SAMPLES)
       m_maxFSWPtr -= NXDN_FRAME_LENGTH_SAMPLES;
 
-    m_state      = NXDNRXS_DATA;
+    m_state      = NXDNRX_STATE::DATA;
     m_countdown  = 0U;
   }
 }
@@ -192,7 +196,7 @@ void CNXDNRX::processData(q15_t sample)
 
       serial.writeNXDNLost();
 
-      m_state      = NXDNRXS_NONE;
+      m_state      = NXDNRX_STATE::NONE;
       m_endPtr     = NOENDPTR;
       m_averagePtr = NOAVEPTR;
       m_countdown  = 0U;
@@ -260,7 +264,7 @@ bool CNXDNRX::correlateFSW()
       samplesToBits(startPtr, NXDN_FSW_LENGTH_SYMBOLS, sync, 0U, m_centreVal, m_thresholdVal);
 
       uint8_t maxErrs;
-      if (m_state == NXDNRXS_NONE)
+      if (m_state == NXDNRX_STATE::NONE)
         maxErrs = MAX_FSW_BIT_START_ERRS;
       else
         maxErrs = MAX_FSW_BIT_RUN_ERRS;
@@ -403,4 +407,3 @@ void CNXDNRX::writeRSSIData(uint8_t* data)
 }
 
 #endif
-

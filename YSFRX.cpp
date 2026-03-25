@@ -42,7 +42,7 @@ const uint16_t NOENDPTR = 9999U;
 const unsigned int MAX_SYNC_FRAMES = 4U + 1U;
 
 CYSFRX::CYSFRX() :
-m_state(YSFRXS_NONE),
+m_state(YSFRX_STATE::NONE),
 m_bitBuffer(),
 m_buffer(),
 m_bitPtr(0U),
@@ -65,9 +65,13 @@ m_rssiCount(0U)
 {
 }
 
+CYSFRX::~CYSFRX()
+{
+}
+
 void CYSFRX::reset()
 {
-  m_state        = YSFRXS_NONE;
+  m_state        = YSFRX_STATE::NONE;
   m_dataPtr      = 0U;
   m_bitPtr       = 0U;
   m_maxCorr      = 0;
@@ -100,7 +104,7 @@ void CYSFRX::samples(const q15_t* samples, uint16_t* rssi, uint8_t length)
     m_buffer[m_dataPtr] = sample;
 
     switch (m_state) {
-    case YSFRXS_DATA:
+    case YSFRX_STATE::DATA:
       processData(sample);
       break;
     default:
@@ -148,7 +152,7 @@ void CYSFRX::processNone(q15_t sample)
     if (m_maxSyncPtr >= YSF_FRAME_LENGTH_SAMPLES)
       m_maxSyncPtr -= YSF_FRAME_LENGTH_SAMPLES;
 
-    m_state      = YSFRXS_DATA;
+    m_state      = YSFRX_STATE::DATA;
     m_countdown  = 0U;
   }
 }
@@ -192,7 +196,7 @@ void CYSFRX::processData(q15_t sample)
 
       serial.writeYSFLost();
 
-      m_state      = YSFRXS_NONE;
+      m_state      = YSFRX_STATE::NONE;
       m_endPtr     = NOENDPTR;
       m_averagePtr = NOAVEPTR;
       m_countdown  = 0U;
@@ -260,7 +264,7 @@ bool CYSFRX::correlateSync()
       samplesToBits(startPtr, YSF_SYNC_LENGTH_SYMBOLS, sync, 0U, m_centreVal, m_thresholdVal);
 
       uint8_t maxErrs;
-      if (m_state == YSFRXS_NONE)
+      if (m_state == YSFRX_STATE::NONE)
         maxErrs = MAX_SYNC_BIT_START_ERRS;
       else
         maxErrs = MAX_SYNC_BIT_RUN_ERRS;
@@ -403,4 +407,3 @@ void CYSFRX::writeRSSIData(uint8_t* data)
 }
 
 #endif
-

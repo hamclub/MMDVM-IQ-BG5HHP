@@ -118,6 +118,10 @@ m_trace(false)
 {
 }
 
+CSerialPort::~CSerialPort()
+{
+}
+
 void CSerialPort::sendACK(uint8_t type)
 {
   uint8_t reply[4U];
@@ -390,62 +394,62 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 
   MMDVM_STATE modemState = MMDVM_STATE(data[4U]);
 
-  if (modemState != STATE_IDLE && modemState != STATE_DSTAR && modemState != STATE_DMR && modemState != STATE_YSF && modemState != STATE_P25 && modemState != STATE_NXDN && modemState != STATE_POCSAG && modemState != STATE_FM)
+  if (modemState != MMDVM_STATE::IDLE && modemState != MMDVM_STATE::DSTAR && modemState != MMDVM_STATE::DMR && modemState != MMDVM_STATE::YSF && modemState != MMDVM_STATE::P25 && modemState != MMDVM_STATE::NXDN && modemState != MMDVM_STATE::POCSAG && modemState != MMDVM_STATE::FM)
     return 4U;
 
 #if defined(MODE_DSTAR)
-  if (modemState == STATE_DSTAR && !dstarEnable)
+  if (modemState == MMDVM_STATE::DSTAR && !dstarEnable)
     return 4U;
 #else
-  if (modemState == STATE_DSTAR)
+  if (modemState == MMDVM_STATE::DSTAR)
     return 4U;
 #endif
 
 #if defined(MODE_DMR)
-  if (modemState == STATE_DMR && !dmrEnable)
+  if (modemState == MMDVM_STATE::DMR && !dmrEnable)
     return 4U;
 #else
-  if (modemState == STATE_DMR)
+  if (modemState == MMDVM_STATE::DMR)
     return 4U;
 #endif
 
 #if defined(MODE_YSF)
-  if (modemState == STATE_YSF && !ysfEnable)
+  if (modemState == MMDVM_STATE::YSF && !ysfEnable)
     return 4U;
 #else
-  if (modemState == STATE_YSF)
+  if (modemState == MMDVM_STATE::YSF)
     return 4U;
 #endif
 
 #if defined(MODE_P25)
-  if (modemState == STATE_P25 && !p25Enable)
+  if (modemState == MMDVM_STATE::P25 && !p25Enable)
     return 4U;
 #else
-  if (modemState == STATE_P25)
+  if (modemState == MMDVM_STATE::P25)
     return 4U;
 #endif
 
 #if defined(MODE_NXDN)
-  if (modemState == STATE_NXDN && !nxdnEnable)
+  if (modemState == MMDVM_STATE::NXDN && !nxdnEnable)
     return 4U;
 #else
-  if (modemState == STATE_NXDN)
+  if (modemState == MMDVM_STATE::NXDN)
     return 4U;
 #endif
 
 #if defined(MODE_POCSAG)
-  if (modemState == STATE_POCSAG && !pocsagEnable)
+  if (modemState == MMDVM_STATE::POCSAG && !pocsagEnable)
     return 4U;
 #else
-  if (modemState == STATE_POCSAG)
+  if (modemState == MMDVM_STATE::POCSAG)
     return 4U;
 #endif
 
 #if defined(MODE_FM)
-  if (modemState == STATE_FM && !fmEnable)
+  if (modemState == MMDVM_STATE::FM && !fmEnable)
     return 4U;
 #else
-  if (modemState == STATE_FM)
+  if (modemState == MMDVM_STATE::FM)
     return 4U;
 #endif
 
@@ -641,62 +645,62 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
   if (modemState == m_modemState)
     return 0U;
 
-  if (modemState != STATE_IDLE && modemState != STATE_DSTAR && modemState != STATE_DMR && modemState != STATE_YSF && modemState != STATE_P25 && modemState != STATE_NXDN && modemState != STATE_POCSAG && modemState != STATE_FM)
+  if (modemState != MMDVM_STATE::IDLE && modemState != MMDVM_STATE::DSTAR && modemState != MMDVM_STATE::DMR && modemState != MMDVM_STATE::YSF && modemState != MMDVM_STATE::P25 && modemState != MMDVM_STATE::NXDN && modemState != MMDVM_STATE::POCSAG && modemState != MMDVM_STATE::FM)
     return 4U;
 
 #if defined(MODE_DSTAR)
-  if (modemState == STATE_DSTAR && !m_dstarEnable)
+  if (modemState == MMDVM_STATE::DSTAR && !m_dstarEnable)
     return 4U;
 #else
-  if (modemState == STATE_DSTAR)
+  if (modemState == MMDVM_STATE::DSTAR)
     return 4U;
 #endif
 
 #if defined(MODE_DMR)
-  if (modemState == STATE_DMR && !m_dmrEnable)
+  if (modemState == MMDVM_STATE::DMR && !m_dmrEnable)
     return 4U;
 #else
-  if (modemState == STATE_DMR)
+  if (modemState == MMDVM_STATE::DMR)
     return 4U;
 #endif
 
 #if defined(MODE_YSF)
-  if (modemState == STATE_YSF && !m_ysfEnable)
+  if (modemState == MMDVM_STATE::YSF && !m_ysfEnable)
     return 4U;
 #else
-  if (modemState == STATE_YSF)
+  if (modemState == MMDVM_STATE::YSF)
     return 4U;
 #endif
 
 #if defined(MODE_P25)
-  if (modemState == STATE_P25 && !m_p25Enable)
+  if (modemState == MMDVM_STATE::P25 && !m_p25Enable)
     return 4U;
 #else
-  if (modemState == STATE_P25)
+  if (modemState == MMDVM_STATE::P25)
     return 4U;
 #endif
 
 #if defined(MODE_NXDN)
-  if (modemState == STATE_NXDN && !m_nxdnEnable)
+  if (modemState == MMDVM_STATE::NXDN && !m_nxdnEnable)
     return 4U;
 #else
-  if (modemState == STATE_NXDN)
+  if (modemState == MMDVM_STATE::NXDN)
     return 4U;
 #endif
 
 #if defined(MODE_POCSAG)
-  if (modemState == STATE_POCSAG && !m_pocsagEnable)
+  if (modemState == MMDVM_STATE::POCSAG && !m_pocsagEnable)
     return 4U;
 #else
-  if (modemState == STATE_POCSAG)
+  if (modemState == MMDVM_STATE::POCSAG)
     return 4U;
 #endif
 
 #if defined(MODE_FM)
-  if (modemState == STATE_FM && !m_fmEnable)
+  if (modemState == MMDVM_STATE::FM && !m_fmEnable)
     return 4U;
 #else
-  if (modemState == STATE_FM)
+  if (modemState == MMDVM_STATE::FM)
     return 4U;
 #endif
 
@@ -715,39 +719,39 @@ uint8_t CSerialPort::setStart()
 void CSerialPort::setMode(MMDVM_STATE modemState)
 {
   switch (modemState) {
-    case STATE_DSTAR:
+    case MMDVM_STATE::DSTAR:
       LogMessage("Mode set to D-Star");
       break;
-    case STATE_DMR:
+    case MMDVM_STATE::DMR:
       LogMessage("Mode set to DMR");
       break;
-    case STATE_YSF:
+    case MMDVM_STATE::YSF:
       LogMessage("Mode set to System Fusion");
       break;
-    case STATE_P25:
+    case MMDVM_STATE::P25:
       LogMessage("Mode set to P25");
       break;
-    case STATE_NXDN:
+    case MMDVM_STATE::NXDN:
       LogMessage("Mode set to NXDN");
       break;
-    case STATE_POCSAG:
+    case MMDVM_STATE::POCSAG:
       LogMessage("Mode set to POCSAG");
       break;
-    case STATE_FM:
+    case MMDVM_STATE::FM:
       LogMessage("Mode set to FM");
       break;
-    default:        // STATE_IDLE
+    default:        // MMDVM_STATE::IDLE
       LogMessage("Mode set to Idle");
       break;
   }
 
 #if defined(MODE_DSTAR)
-  if (modemState != STATE_DSTAR)
+  if (modemState != MMDVM_STATE::DSTAR)
     dstarRX.reset();
 #endif
 
 #if defined(MODE_DMR)
-  if (modemState != STATE_DMR) {
+  if (modemState != MMDVM_STATE::DMR) {
     dmrIdleRX.reset();
     dmrDMORX.reset();
     dmrRX.reset();
@@ -755,22 +759,22 @@ void CSerialPort::setMode(MMDVM_STATE modemState)
 #endif
 
 #if defined(MODE_YSF)
-  if (modemState != STATE_YSF)
+  if (modemState != MMDVM_STATE::YSF)
     ysfRX.reset();
 #endif
 
 #if defined(MODE_P25)
-  if (modemState != STATE_P25)
+  if (modemState != MMDVM_STATE::P25)
     p25RX.reset();
 #endif
 
 #if defined(MODE_NXDN)
-  if (modemState != STATE_NXDN)
+  if (modemState != MMDVM_STATE::NXDN)
     nxdnRX.reset();
 #endif
 
 #if defined(MODE_FM)
-  if (modemState != STATE_FM)
+  if (modemState != MMDVM_STATE::FM)
     fm.reset();
 #endif
 
@@ -940,7 +944,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_SEND_CWID:
       err = 5U;
-      if (m_modemState == STATE_IDLE)
+      if (m_modemState == MMDVM_STATE::IDLE)
         err = cwIdTX.write(buffer, length);
       if (err != 0U) {
         LogWarning("Invalid CW Id data, err=%u", err);
@@ -951,12 +955,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_DSTAR)
     case MMDVM_DSTAR_HEADER:
       if (m_dstarEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_DSTAR)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DSTAR)
           err = dstarTX.writeHeader(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_DSTAR);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::DSTAR);
       } else {
         LogWarning("Received invalid D-Star header, err=%u", err);
         sendNAK(type, err);
@@ -965,12 +969,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_DSTAR_DATA:
       if (m_dstarEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_DSTAR)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DSTAR)
           err = dstarTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_DSTAR);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::DSTAR);
       } else {
         LogWarning("Received invalid D-Star data, err=%u", err);
         sendNAK(type, err);
@@ -979,12 +983,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_DSTAR_EOT:
       if (m_dstarEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_DSTAR)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DSTAR)
           err = dstarTX.writeEOT();
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_DSTAR);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::DSTAR);
       } else {
         LogWarning("Received invalid D-Star EOT, err=%u", err);
         sendNAK(type, err);
@@ -995,14 +999,14 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_DMR)
     case MMDVM_DMR_DATA1:
       if (m_dmrEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_DMR) {
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DMR) {
           if (m_duplex)
             err = dmrTX.writeData1(buffer, length);
         }
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_DMR);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::DMR);
       } else {
         LogWarning("Received invalid DMR data, err=%u", err);
         sendNAK(type, err);
@@ -1011,7 +1015,7 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_DMR_DATA2:
       if (m_dmrEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_DMR) {
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DMR) {
           if (m_duplex)
             err = dmrTX.writeData2(buffer, length);
           else
@@ -1019,8 +1023,8 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
         }
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_DMR);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::DMR);
       } else {
         LogWarning("Received invalid DMR data, err=%u", err);
         sendNAK(type, err);
@@ -1031,11 +1035,11 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       if (m_dmrEnable) {
         err = 4U;
         if (length == 1U) {
-          if (buffer[0U] == 0x01U && m_modemState == STATE_DMR) {
+          if (buffer[0U] == 0x01U && m_modemState == MMDVM_STATE::DMR) {
             if (!m_tx)
               dmrTX.setStart(true);
             err = 0U;
-          } else if (buffer[0U] == 0x00U && m_modemState == STATE_DMR) {
+          } else if (buffer[0U] == 0x00U && m_modemState == MMDVM_STATE::DMR) {
             if (m_tx)
               dmrTX.setStart(false);
             err = 0U;
@@ -1070,12 +1074,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_YSF)
     case MMDVM_YSF_DATA:
       if (m_ysfEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_YSF)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::YSF)
           err = ysfTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_YSF);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::YSF);
       } else {
         LogWarning("Received invalid System Fusion data, err=%u", err);
         sendNAK(type, err);
@@ -1086,12 +1090,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_P25)
     case MMDVM_P25_HDR:
       if (m_p25Enable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_P25)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::P25)
           err = p25TX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_P25);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::P25);
       } else {
         LogWarning("Received invalid P25 header, err=%u", err);
         sendNAK(type, err);
@@ -1100,12 +1104,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_P25_LDU:
       if (m_p25Enable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_P25)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::P25)
           err = p25TX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_P25);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::P25);
       } else {
         LogWarning("Received invalid P25 LDU, err=%u", err);
         sendNAK(type, err);
@@ -1116,12 +1120,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_NXDN)
     case MMDVM_NXDN_DATA:
       if (m_nxdnEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_NXDN)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::NXDN)
           err = nxdnTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_NXDN);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::NXDN);
       } else {
         LogWarning("Received invalid NXDN data, err=%u", err);
         sendNAK(type, err);
@@ -1132,12 +1136,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_POCSAG)
     case MMDVM_POCSAG_DATA:
       if (m_pocsagEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_POCSAG)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::POCSAG)
           err = pocsagTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_POCSAG);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::POCSAG);
       } else {
         LogWarning("Received invalid POCSAG data, err=%u", err);
         sendNAK(type, err);
@@ -1148,12 +1152,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 #if defined(MODE_FM)
     case MMDVM_FM_DATA:
       if (m_fmEnable) {
-        if (m_modemState == STATE_IDLE || m_modemState == STATE_FM)
+        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::FM)
           err = fm.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == STATE_IDLE)
-          setMode(STATE_FM);
+        if (m_modemState == MMDVM_STATE::IDLE)
+          setMode(MMDVM_STATE::FM);
       } else {
         LogWarning("Received invalid FM data, err=%u", err);
         sendNAK(type, err);
@@ -1182,7 +1186,7 @@ void CSerialPort::writeDStarHeader(const uint8_t* header, uint8_t length)
     assert(header != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_dstarEnable)
@@ -1210,7 +1214,7 @@ void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_dstarEnable)
@@ -1236,7 +1240,7 @@ void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeDStarLost()
 {
-  if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_dstarEnable)
@@ -1256,7 +1260,7 @@ void CSerialPort::writeDStarLost()
 
 void CSerialPort::writeDStarEOT()
 {
-  if (m_modemState != STATE_DSTAR && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_dstarEnable)
@@ -1281,7 +1285,7 @@ void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_DMR && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::DMR && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_dmrEnable)
@@ -1307,7 +1311,7 @@ void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeDMRLost(bool slot)
 {
-  if (m_modemState != STATE_DMR && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::DMR && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_dmrEnable)
@@ -1332,7 +1336,7 @@ void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_YSF && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::YSF && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_ysfEnable)
@@ -1358,7 +1362,7 @@ void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeYSFLost()
 {
-  if (m_modemState != STATE_YSF && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::YSF && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_ysfEnable)
@@ -1383,7 +1387,7 @@ void CSerialPort::writeP25Hdr(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::P25 && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_p25Enable)
@@ -1412,7 +1416,7 @@ void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::P25 && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_p25Enable)
@@ -1438,7 +1442,7 @@ void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeP25Lost()
 {
-  if (m_modemState != STATE_P25 && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::P25 && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_p25Enable)
@@ -1463,7 +1467,7 @@ void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_NXDN && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::NXDN && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_nxdnEnable)
@@ -1489,7 +1493,7 @@ void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeNXDNLost()
 {
-  if (m_modemState != STATE_NXDN && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::NXDN && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_nxdnEnable)
@@ -1514,7 +1518,7 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
+    if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_fmEnable)
@@ -1552,7 +1556,7 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
 
 void CSerialPort::writeFMStatus(uint8_t status)
 {
-  if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_fmEnable)
@@ -1573,7 +1577,7 @@ void CSerialPort::writeFMStatus(uint8_t status)
 
 void CSerialPort::writeFMRSSI(uint16_t rssi)
 {
-  if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_fmEnable)
@@ -1595,7 +1599,7 @@ void CSerialPort::writeFMRSSI(uint16_t rssi)
 
 void CSerialPort::writeFMEOT()
 {
-  if (m_modemState != STATE_FM && m_modemState != STATE_IDLE)
+  if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
     return;
 
   if (!m_fmEnable)

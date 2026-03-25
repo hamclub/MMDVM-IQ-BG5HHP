@@ -57,10 +57,14 @@ m_averagePtr(0U),
 m_control(CONTROL_NONE),
 m_syncCount(0U),
 m_colorCode(0U),
-m_state(DMORXS_NONE),
+m_state(DMORX_STATE::NONE),
 m_n(0U),
 m_type(0U),
 m_rssi()
+{
+}
+
+CDMRDMORX::~CDMRDMORX()
 {
 }
 
@@ -70,7 +74,7 @@ void CDMRDMORX::reset()
   m_maxCorr   = 0;
   m_control   = CONTROL_NONE;
   m_syncCount = 0U;
-  m_state     = DMORXS_NONE;
+  m_state     = DMORX_STATE::NONE;
   m_startPtr  = 0U;
   m_endPtr    = NOENDPTR;
 }
@@ -94,7 +98,7 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
   if (sample < 0)
     m_bitBuffer[m_bitPtr] |= 0x01U;
 
-  if (m_state == DMORXS_NONE) {
+  if (m_state == DMORX_STATE::NONE) {
     correlateSync(true);
   } else {
 
@@ -146,13 +150,13 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
           case DT_DATA_HEADER:
             LogMessage("DMRDMORX: data header found pos/centre/threshold: %u/%d/%d", m_syncPtr, centre, threshold);
             writeRSSIData(frame);
-            m_state = DMORXS_DATA;
+            m_state = DMORX_STATE::DATA;
             m_type  = 0x00U;
             break;
           case DT_RATE_12_DATA:
           case DT_RATE_34_DATA:
           case DT_RATE_1_DATA:
-            if (m_state == DMORXS_DATA) {
+            if (m_state == DMORX_STATE::DATA) {
               LogMessage("DMRDMORX: data payload found pos/centre/threshold: %u/%d/%d", m_syncPtr, centre, threshold);
               writeRSSIData(frame);
               m_type = dataType;
@@ -161,17 +165,17 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
           case DT_VOICE_LC_HEADER:
             LogMessage("DMRDMORX: voice header found pos/centre/threshold: %u/%d/%d", m_syncPtr, centre, threshold);
             writeRSSIData(frame);
-            m_state = DMORXS_VOICE;
+            m_state = DMORX_STATE::VOICE;
             break;
           case DT_VOICE_PI_HEADER:
-            if (m_state == DMORXS_VOICE) {
+            if (m_state == DMORX_STATE::VOICE) {
               LogMessage("DMRDMORX: voice pi header found pos/centre/threshold: %u/%d/%d", m_syncPtr, centre, threshold);
               writeRSSIData(frame);
             }
-            m_state = DMORXS_VOICE;
+            m_state = DMORX_STATE::VOICE;
             break;
           case DT_TERMINATOR_WITH_LC:
-            if (m_state == DMORXS_VOICE) {
+            if (m_state == DMORX_STATE::VOICE) {
               LogMessage("DMRDMORX: voice terminator found pos/centre/threshold: %u/%d/%d", m_syncPtr, centre, threshold);
               writeRSSIData(frame);
               reset();
@@ -190,11 +194,11 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
 
       writeRSSIData(frame);
 
-      m_state     = DMORXS_VOICE;
+      m_state     = DMORX_STATE::VOICE;
       m_syncCount = 0U;
       m_n         = 0U;
     } else {
-      if (m_state != DMORXS_NONE) {
+      if (m_state != DMORX_STATE::NONE) {
         m_syncCount++;
         if (m_syncCount >= MAX_SYNC_LOST_FRAMES) {
           serial.writeDMRLost(true);
@@ -202,7 +206,7 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
         }
       }
 
-      if (m_state == DMORXS_VOICE) {
+      if (m_state == DMORX_STATE::VOICE) {
         if (m_n >= 5U) {
           frame[0U] = CONTROL_VOICE;
           m_n = 0U;
@@ -211,7 +215,7 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
         }
 
         serial.writeDMRData(true, frame, DMR_FRAME_LENGTH_BYTES + 1U);
-      } else if (m_state == DMORXS_DATA) {
+      } else if (m_state == DMORX_STATE::DATA) {
         if (m_type != 0x00U) {
           frame[0U] = CONTROL_DATA | m_type;
           writeRSSIData(frame);
@@ -232,7 +236,7 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
   if (m_bitPtr >= DMR_RADIO_SYMBOL_LENGTH)
     m_bitPtr = 0U;
 
-  return m_state != DMORXS_NONE;
+  return m_state != DMORX_STATE::NONE;
 }
 
 void CDMRDMORX::correlateSync(bool first)
@@ -426,4 +430,3 @@ void CDMRDMORX::writeRSSIData(uint8_t* frame)
 }
 
 #endif
-

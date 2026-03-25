@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -213,6 +213,10 @@ const uint32_t DECODING_TABLE_1987[] =
 #define GENPOL          0x00000c75   /* generator polinomial, g(x) */
 
 CDMRSlotType::CDMRSlotType()
+{
+}
+
+CDMRSlotType::~CDMRSlotType()
 {
 }
 

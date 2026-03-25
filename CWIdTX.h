@@ -25,7 +25,7 @@
 class CCWIdTX {
 public:
   CCWIdTX();
-  ~CCWIdTC();
+  ~CCWIdTX();
 
   void process();
 

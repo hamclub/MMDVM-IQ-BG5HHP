@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -88,6 +88,10 @@ m_n(0U)
 {
 }
 
+CFMCTCSSTX::~CFMCTCSSTX()
+{
+}
+
 uint8_t CFMCTCSSTX::setParams(uint8_t frequency, uint8_t level)
 {
   const TX_CTCSS_TABLE* entry = NULL;
@@ -131,4 +135,3 @@ q15_t CFMCTCSSTX::getAudio(bool reverse)
 }
 
 #endif
-

@@ -26,8 +26,16 @@
 #include "Log.h"
 #include "GitVersion.h"
 
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <pwd.h>
+#endif
+
 // Global variables
-MMDVM_STATE m_modemState = STATE_IDLE;
+MMDVM_STATE m_modemState = MMDVM_STATE::IDLE;
 
 bool m_dstarEnable  = true;
 bool m_dmrEnable    = true;
@@ -277,12 +285,12 @@ int CMMDVM::run()
 
         // The following is for transmitting
 #if defined(MODE_DSTAR)
-        if (m_dstarEnable && m_modemState == STATE_DSTAR)
+        if (m_dstarEnable && m_modemState == MMDVM_STATE::DSTAR)
             dstarTX.process();
 #endif
 
 #if defined(MODE_DMR)
-        if (m_dmrEnable && m_modemState == STATE_DMR) {
+        if (m_dmrEnable && m_modemState == MMDVM_STATE::DMR) {
             if (m_duplex)
                 dmrTX.process();
             else
@@ -291,31 +299,31 @@ int CMMDVM::run()
 #endif
 
 #if defined(MODE_YSF)
-        if (m_ysfEnable && m_modemState == STATE_YSF)
+        if (m_ysfEnable && m_modemState == MMDVM_STATE::YSF)
             ysfTX.process();
 #endif
 
 #if defined(MODE_P25)
-        if (m_p25Enable && m_modemState == STATE_P25)
+        if (m_p25Enable && m_modemState == MMDVM_STATE::P25)
             p25TX.process();
 #endif
 
 #if defined(MODE_NXDN)
-        if (m_nxdnEnable && m_modemState == STATE_NXDN)
+        if (m_nxdnEnable && m_modemState == MMDVM_STATE::NXDN)
            nxdnTX.process();
 #endif
 
 #if defined(MODE_POCSAG)
-        if (m_pocsagEnable && (m_modemState == STATE_POCSAG || pocsagTX.busy()))
+        if (m_pocsagEnable && (m_modemState == MMDVM_STATE::POCSAG || pocsagTX.busy()))
            pocsagTX.process();
 #endif
 
 #if defined(MODE_FM)
-        if (m_fmEnable && m_modemState == STATE_FM)
+        if (m_fmEnable && m_modemState == MMDVM_STATE::FM)
            fm.process();
 #endif
 
-        if (m_modemState == STATE_IDLE)
+        if (m_modemState == MMDVM_STATE::IDLE)
             cwIdTX.process();
     }
 

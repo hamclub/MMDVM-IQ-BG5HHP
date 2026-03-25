@@ -52,6 +52,10 @@ m_colorCode(0U)
 {
 }
 
+CDMRIdleRX::~CDMRIdleRX()
+{
+}
+
 void CDMRIdleRX::reset()
 {
   m_dataPtr   = 0U;

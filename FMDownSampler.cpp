@@ -32,6 +32,10 @@ m_sampleIndex(0U)
   m_samplePackPointer = (uint8_t*)&m_samplePack;
 }
 
+CFMDownSampler::~CFMDownSampler()
+{
+}
+
 void CFMDownSampler::addSample(q15_t sample)
 {
   uint32_t usample = uint32_t(int32_t(sample) + 2048U);
