@@ -23,18 +23,18 @@
 
 #include <arm_math.h>
 
-enum MMDVM_STATE {
-  STATE_IDLE      = 0,
-  STATE_DSTAR     = 1,
-  STATE_DMR       = 2,
-  STATE_YSF       = 3,
-  STATE_P25       = 4,
-  STATE_NXDN      = 5,
-  STATE_POCSAG    = 6,
-  STATE_FM        = 10,
+enum class MMDVM_STATE : uint8_t {
+  IDLE   = 0U,
+  DSTAR  = 1U,
+  DMR    = 2U,
+  YSF    = 3U,
+  P25    = 4U,
+  NXDN   = 5U,
+  POCSAG = 6U,
+  FM     = 10U,
 
   // Dummy states start at 90
-  STATE_CWID      = 97
+  CWID   = 97U
 };
 
 #include "Modem.h"

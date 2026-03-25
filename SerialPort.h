@@ -28,10 +28,13 @@
 class CSerialPort {
 public:
   CSerialPort();
+  ~CSerialPort();
 
   bool start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort, bool debug);
 
   void process();
+
+  void stop();
 
 #if defined(MODE_DSTAR)
   void writeDStarHeader(const uint8_t* header, uint8_t length);

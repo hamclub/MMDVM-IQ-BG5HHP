@@ -50,6 +50,7 @@ public:
 class CIO {
 public:
   CIO();
+  ~CIO();
 
   void start();
 

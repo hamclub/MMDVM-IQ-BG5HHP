@@ -110,4 +110,3 @@ private:
 #endif /* DIRECTFORMI_H */
 
 #endif
-

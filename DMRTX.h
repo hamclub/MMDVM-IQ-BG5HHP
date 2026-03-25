@@ -28,17 +28,18 @@
 
 #include "RingBuffer.h"
 
-enum DMRTXSTATE {
-  DMRTXSTATE_IDLE,
-  DMRTXSTATE_SLOT1,
-  DMRTXSTATE_CACH1,
-  DMRTXSTATE_SLOT2,
-  DMRTXSTATE_CACH2
+enum class DMRTXSTATE {
+  IDLE,
+  SLOT1,
+  CACH1,
+  SLOT2,
+  CACH2
 };
 
 class CDMRTX {
 public:
   CDMRTX();
+  ~CDMRTX();
 
   uint8_t writeData1(const uint8_t* data, uint16_t length);
   uint8_t writeData2(const uint8_t* data, uint16_t length);

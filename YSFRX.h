@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,14 +25,15 @@
 
 #include "YSFDefines.h"
 
-enum YSFRX_STATE {
-  YSFRXS_NONE,
-  YSFRXS_DATA
+enum class YSFRX_STATE {
+  NONE,
+  DATA
 };
 
 class CYSFRX {
 public:
   CYSFRX();
+  ~CYSFRX();
 
   void samples(const q15_t* samples, uint16_t* rssi, uint8_t length);
 

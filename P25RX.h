@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -26,15 +26,16 @@
 
 #include "P25Defines.h"
 
-enum P25RX_STATE {
-  P25RXS_NONE,
-  P25RXS_HDR,
-  P25RXS_LDU
+enum class P25RX_STATE {
+  NONE,
+  HDR,
+  LDU
 };
 
 class CP25RX {
 public:
   CP25RX();
+  ~CP25RX();
 
   void samples(const q15_t* samples, uint16_t* rssi, uint8_t length);
 

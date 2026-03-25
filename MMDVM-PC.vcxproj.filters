@@ -179,6 +179,12 @@
     <ClInclude Include="Modem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MMDVM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GitVersion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CWIdTX.cpp">

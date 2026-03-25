@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -31,6 +31,7 @@
 class CDMRDMOTX {
 public:
   CDMRDMOTX();
+  ~CDMRDMOTX();
 
   uint8_t writeData(const uint8_t* data, uint16_t length);
 

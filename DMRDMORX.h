@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -27,15 +27,16 @@
 
 const uint16_t DMO_BUFFER_LENGTH_SAMPLES = 1440U;   // 60ms at 24 kHz
 
-enum DMORX_STATE {
-  DMORXS_NONE,
-  DMORXS_VOICE,
-  DMORXS_DATA
+enum class DMORX_STATE {
+  NONE,
+  VOICE,
+  DATA
 };
 
 class CDMRDMORX {
 public:
   CDMRDMORX();
+  ~CDMRDMORX();
 
   void samples(const q15_t* samples, const uint16_t* rssi, uint8_t length);
 

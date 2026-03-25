@@ -177,10 +177,12 @@
     <ClInclude Include="FMTimeout.h" />
     <ClInclude Include="FMTimer.h" />
     <ClInclude Include="FMUpSampler.h" />
+    <ClInclude Include="GitVersion.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="IO.h" />
     <ClInclude Include="IQSample.h" />
     <ClInclude Include="Log.h" />
+    <ClInclude Include="MMDVM.h" />
     <ClInclude Include="Modem.h" />
     <ClInclude Include="ModemConnection.h" />
     <ClInclude Include="NXDNDefines.h" />

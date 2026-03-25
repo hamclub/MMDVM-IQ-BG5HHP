@@ -18,11 +18,13 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "Conf.h"
+#include "MMDVM.h"
 #include "Config.h"
 #include "Globals.h"
 #include "Thread.h"
+#include "Version.h"
 #include "Log.h"
+#include "GitVersion.h"
 
 // Global variables
 MMDVM_STATE m_modemState = STATE_IDLE;
@@ -83,79 +85,163 @@ CModem modem;
 CSerialPort serial;
 CIO io;
 
-void loop()
+#if defined(_WIN32) || defined(_WIN64)
+const char* DEFAULT_INI_FILE = "MMDVM.ini";
+#else
+const char* DEFAULT_INI_FILE = "/etc/MMDVM.ini";
+#endif
+
+static bool m_killed = false;
+static int  m_signal = 0;
+static bool m_reload = false;
+
+#if !defined(_WIN32) && !defined(_WIN64)
+static void sigHandler1(int signum)
 {
-  CThread::sleep(1U);
-
-  serial.process();
-  
-  io.process();
-
-  modem.process();
-
-  // The following is for transmitting
-#if defined(MODE_DSTAR)
-  if (m_dstarEnable && m_modemState == STATE_DSTAR)
-    dstarTX.process();
-#endif
-
-#if defined(MODE_DMR)
-  if (m_dmrEnable && m_modemState == STATE_DMR) {
-    if (m_duplex)
-      dmrTX.process();
-    else
-      dmrDMOTX.process();
-  }
-#endif
-
-#if defined(MODE_YSF)
-  if (m_ysfEnable && m_modemState == STATE_YSF)
-    ysfTX.process();
-#endif
-
-#if defined(MODE_P25)
-  if (m_p25Enable && m_modemState == STATE_P25)
-    p25TX.process();
-#endif
-
-#if defined(MODE_NXDN)
-  if (m_nxdnEnable && m_modemState == STATE_NXDN)
-    nxdnTX.process();
-#endif
-
-#if defined(MODE_POCSAG)
-  if (m_pocsagEnable && (m_modemState == STATE_POCSAG || pocsagTX.busy()))
-    pocsagTX.process();
-#endif
-
-#if defined(MODE_FM)
-  if (m_fmEnable && m_modemState == STATE_FM)
-    fm.process();
-#endif
-
-  if (m_modemState == STATE_IDLE)
-    cwIdTX.process();
+    m_killed = true;
+    m_signal = signum;
 }
+
+static void sigHandler2(int signum)
+{
+    m_reload = true;
+}
+#endif
 
 int main(int argc, char** argv)
 {
-    const char* file = "MMDVM-PC.ini";
+    const char* iniFile = DEFAULT_INI_FILE;
+    if (argc > 1) {
+        for (int currentArg = 1; currentArg < argc; ++currentArg) {
+            std::string arg = argv[currentArg];
+            if ((arg == "-v") || (arg == "--version")) {
+                ::fprintf(stdout, "MMDVM-PC version %s git #%.7s\n", VERSION, gitversion);
+                return 0;
+            } else if (arg.substr(0, 1) == "-") {
+                ::fprintf(stderr, "Usage: MMDVM-PC [-v|--version] [filename]\n");
+                return 1;
+            } else {
+                iniFile = argv[currentArg];
+            }
+        }
+    }
 
-    if (argc > 1)
-        file = argv[1];
+#if !defined(_WIN32) && !defined(_WIN64)
+    ::signal(SIGINT, sigHandler1);
+    ::signal(SIGTERM, sigHandler1);
+    ::signal(SIGHUP, sigHandler1);
+    ::signal(SIGUSR1, sigHandler2);
+#endif
 
-    CConf conf(file);
+    int ret = 0;
 
-    bool ret = conf.read();
+    do {
+        m_signal = 0;
+
+        CMMDVM* mmdvm = new CMMDVM(std::string(iniFile));
+        ret = mmdvm->run();
+        delete mmdvm;
+
+        switch (m_signal) {
+        case 2:
+            ::LogInfo("MMDVM-PC-%s exited on receipt of SIGINT", VERSION);
+            break;
+        case 15:
+            ::LogInfo("MMDVM-PC-%s exited on receipt of SIGTERM", VERSION);
+            break;
+        case 1:
+            ::LogInfo("MMDVM-PC-%s exited on receipt of SIGHUP", VERSION);
+            break;
+        case 10:
+            ::LogInfo("MMDVM-PC-%s is restarting on receipt of SIGUSR1", VERSION);
+            break;
+        default:
+            ::LogInfo("MMDVM-PC-%s exited on receipt of an unknown signal", VERSION);
+            break;
+        }
+    } while (m_signal == 10);
+
+    ::LogFinalise();
+
+    return ret;
+}
+
+CMMDVM::CMMDVM(const std::string& filename) :
+m_conf(filename)
+{
+}
+
+CMMDVM::~CMMDVM()
+{
+}
+
+int CMMDVM::run()
+{
+    bool ret = m_conf.read();
     if (!ret) {
         ::fprintf(stderr, "MMDVM-PC: cannot read the .ini file\n");
         return 1;
     }
 
-    ::LogInitialise(conf.getLogDisplayLevel(), conf.getLogMQTTLevel());
+#if !defined(_WIN32) && !defined(_WIN64)
+    bool m_daemon = m_conf.getDaemon();
+    if (m_daemon) {
+        // Create new process
+        pid_t pid = ::fork();
+        if (pid == -1) {
+            ::fprintf(stderr, "Couldn't fork() , exiting\n");
+            return -1;
+        }
+        else if (pid != 0) {
+            exit(EXIT_SUCCESS);
+        }
+
+        // Create new session and process group
+        if (::setsid() == -1) {
+            ::fprintf(stderr, "Couldn't setsid(), exiting\n");
+            return -1;
+        }
+
+        // Set the working directory to the root directory
+        if (::chdir("/") == -1) {
+            ::fprintf(stderr, "Couldn't cd /, exiting\n");
+            return -1;
+        }
+
+        // If we are currently root...
+        if (getuid() == 0) {
+            struct passwd* user = ::getpwnam("mmdvm");
+            if (user == nullptr) {
+                ::fprintf(stderr, "Could not get the mmdvm user, exiting\n");
+                return -1;
+            }
+
+            uid_t mmdvm_uid = user->pw_uid;
+            gid_t mmdvm_gid = user->pw_gid;
+
+            // Set user and group ID's to mmdvm:mmdvm
+            if (::setgid(mmdvm_gid) != 0) {
+                ::fprintf(stderr, "Could not set mmdvm GID, exiting\n");
+                return -1;
+            }
+
+            if (::setuid(mmdvm_uid) != 0) {
+                ::fprintf(stderr, "Could not set mmdvm UID, exiting\n");
+                return -1;
+            }
+
+            // Double check it worked (AKA Paranoia)
+            if (::setuid(0) != -1) {
+                ::fprintf(stderr, "It's possible to regain root - something is wrong!, exiting\n");
+                return -1;
+            }
+        }
+    }
+#endif
+    ::LogInitialise(m_conf.getLogDisplayLevel(), m_conf.getLogMQTTLevel());
 
     std::vector<std::pair<std::string, void (*)(const unsigned char*, unsigned int)>> subscriptions;
-    m_mqtt = new CMQTTConnection(conf.getMQTTHost(), conf.getMQTTPort(), conf.getMQTTName(), conf.getMQTTAuthEnabled(), conf.getMQTTUsername(), conf.getMQTTPassword(), subscriptions, conf.getMQTTKeepalive());
+    m_mqtt = new CMQTTConnection(m_conf.getMQTTHost(), m_conf.getMQTTPort(), m_conf.getMQTTName(), m_conf.getMQTTAuthEnabled(), m_conf.getMQTTUsername(), m_conf.getMQTTPassword(), subscriptions, m_conf.getMQTTKeepalive());
     ret = m_mqtt->open();
     if (!ret) {
         ::fprintf(stderr, "MMDVM-PC: unable to start the MQTT Publisher\n");
@@ -163,39 +249,11 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    LogInfo("Host Connection");
-    LogInfo("\tLocal Address: \"%s\"", conf.getNetworkLocalAddress().c_str());
-    LogInfo("\tLocal Port: %u", conf.getNetworkLocalPort());
-    LogInfo("\tHost Address: \"%s\"", conf.getNetworkHostAddress().c_str());
-    LogInfo("\tHost Port: %u", conf.getNetworkHostPort());
-    LogInfo("\tTrace: %s", conf.getNetworkTrace() ? "yes" : "no");
-
-    ret = serial.start(conf.getNetworkLocalAddress(), conf.getNetworkLocalPort(),
-                            conf.getNetworkHostAddress(),  conf.getNetworkHostPort(),
-                            conf.getNetworkTrace());
+    ret = serial.start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
+                            m_conf.getNetworkHostAddress(), m_conf.getNetworkHostPort(),
+                            m_conf.getNetworkTrace());
     if (!ret) {
         LogError("Unable to open the host network connection");
-        return 1;
-    }
-
-    std::string protocol = conf.getProtocol();
-
-    LogInfo("Modem Connection");
-    LogInfo("\tProtocol: %s", protocol.c_str());
-    if (protocol == "uart") {
-        LogInfo("\tPort: \"%s\"", conf.getUARTPort().c_str());
-        LogInfo("\tSpeed: %u", conf.getUARTSpeed());
-        LogInfo("\tTrace: %s", conf.getModemTrace() ? "yes" : "no");
-        modem.setUARTConnection(conf.getUARTPort(), conf.getUARTSpeed(), conf.getModemTrace());
-    } else if (protocol == "udp") {
-        LogInfo("\tModem Address: %s", conf.getModemAddress().c_str());
-        LogInfo("\tModem Port: %u", conf.getModemPort());
-        LogInfo("\tLocal Address: %s", conf.getLocalAddress().c_str());
-        LogInfo("\tLocal Port: %u", conf.getLocalPort());
-        LogInfo("\tTrace: %s", conf.getModemTrace() ? "yes" : "no");
-        modem.setUDPConnection(conf.getModemAddress(), conf.getModemPort(), conf.getLocalAddress(), conf.getLocalPort(), conf.getModemTrace());
-    } else {
-        LogError("Unknown modem connection protocol of \"%s\" specified", protocol.c_str());
         return 1;
     }
 
@@ -205,6 +263,66 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    for (;;)
-        loop();
+    LogInfo("MMDVM-PC-%s is starting", VERSION);
+    LogInfo("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
+
+    while (!m_killed) {
+        CThread::sleep(1U);
+
+        serial.process();
+
+        io.process();
+
+        modem.process();
+
+        // The following is for transmitting
+#if defined(MODE_DSTAR)
+        if (m_dstarEnable && m_modemState == STATE_DSTAR)
+            dstarTX.process();
+#endif
+
+#if defined(MODE_DMR)
+        if (m_dmrEnable && m_modemState == STATE_DMR) {
+            if (m_duplex)
+                dmrTX.process();
+            else
+                dmrDMOTX.process();
+        }
+#endif
+
+#if defined(MODE_YSF)
+        if (m_ysfEnable && m_modemState == STATE_YSF)
+            ysfTX.process();
+#endif
+
+#if defined(MODE_P25)
+        if (m_p25Enable && m_modemState == STATE_P25)
+            p25TX.process();
+#endif
+
+#if defined(MODE_NXDN)
+        if (m_nxdnEnable && m_modemState == STATE_NXDN)
+           nxdnTX.process();
+#endif
+
+#if defined(MODE_POCSAG)
+        if (m_pocsagEnable && (m_modemState == STATE_POCSAG || pocsagTX.busy()))
+           pocsagTX.process();
+#endif
+
+#if defined(MODE_FM)
+        if (m_fmEnable && m_modemState == STATE_FM)
+           fm.process();
+#endif
+
+        if (m_modemState == STATE_IDLE)
+            cwIdTX.process();
+    }
+
+    LogInfo("MMDVM-PC is stopping");
+
+    modem.stop();
+    serial.stop();
+
+    return 0;
 }

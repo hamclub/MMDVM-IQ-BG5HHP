@@ -35,25 +35,26 @@
 #include "FMUpSampler.h"
 #include "FMNoiseSquelch.h"
 
-enum FM_STATE {
-  FS_LISTENING,
-  FS_KERCHUNK_RF,
-  FS_RELAYING_RF,
-  FS_RELAYING_WAIT_RF,
-  FS_TIMEOUT_RF,
-  FS_TIMEOUT_WAIT_RF,
-  FS_KERCHUNK_EXT,
-  FS_RELAYING_EXT,
-  FS_RELAYING_WAIT_EXT,
-  FS_TIMEOUT_EXT,
-  FS_TIMEOUT_WAIT_EXT,
-  FS_HANG
+enum class FM_STATE {
+  LISTENING,
+  KERCHUNK_RF,
+  RELAYING_RF,
+  RELAYING_WAIT_RF,
+  TIMEOUT_RF,
+  TIMEOUT_WAIT_RF,
+  KERCHUNK_EXT,
+  RELAYING_EXT,
+  RELAYING_WAIT_EXT,
+  TIMEOUT_EXT,
+  TIMEOUT_WAIT_EXT,
+  HANG
 };
 
 
 class CFM {
 public:
   CFM();
+  ~CFM();
 
   void samples(bool cos, q15_t* samples, const uint16_t* rssi, uint8_t length);
 

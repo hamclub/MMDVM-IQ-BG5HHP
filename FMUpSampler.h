@@ -33,6 +33,7 @@
 class CFMUpSampler {
 public:
   CFMUpSampler();
+  ~CFMUpSampler();
 
   void reset();
 

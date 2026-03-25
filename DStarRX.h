@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,15 +25,16 @@
 
 #include "DStarDefines.h"
 
-enum DSRX_STATE {
-  DSRXS_NONE,
-  DSRXS_HEADER,
-  DSRXS_DATA
+enum class DSRX_STATE {
+  NONE,
+  HEADER,
+  DATA
 };
 
 class CDStarRX {
 public:
   CDStarRX();
+  ~CDStarRX();
 
   void samples(const q15_t* samples, const uint16_t* rssi, uint8_t length);
 

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 class CDMRSlotType {
 public:
   CDMRSlotType();
+  ~CDMRSlotType();
 
   void decode(const uint8_t* frame, uint8_t& colorCode, uint8_t& dataType) const;
 

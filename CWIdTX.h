@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2015 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2015,2026 by Jonathan Naylor G4KLX
  *   Copyright (C) 2016,2020 by Colin Durbridge G4EML
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,7 @@
 class CCWIdTX {
 public:
   CCWIdTX();
+  ~CCWIdTC();
 
   void process();
 

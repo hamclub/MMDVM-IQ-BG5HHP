@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,14 +25,15 @@
 
 #include "NXDNDefines.h"
 
-enum NXDNRX_STATE {
-  NXDNRXS_NONE,
-  NXDNRXS_DATA
+enum class NXDNRX_STATE {
+  NONE,
+  DATA
 };
 
 class CNXDNRX {
 public:
   CNXDNRX();
+  ~CNXDNRX();
 
   void samples(const q15_t* samples, uint16_t* rssi, uint8_t length);
 

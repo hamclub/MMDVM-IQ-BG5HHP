@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,45 +16,22 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "Config.h"
+#if !defined(MMDVM_H)
+#define	MMDVM_H
 
-#if defined(MODE_FM)
+#include "Conf.h"
 
-#if !defined(FMKeyer_H)
-#define  FMKeyer_H
+#include <string>
 
-class CFMKeyer {
+class CMMDVM {
 public:
-  CFMKeyer();
-  ~CFMKeyer();
+	CMMDVM(const std::string& filename);
+	~CMMDVM();
 
-  uint8_t setParams(const char* text, uint8_t speed, uint16_t frequency, uint8_t highLevel, uint8_t lowLevel);
-
-  q15_t getHighAudio();
-  q15_t getLowAudio();
-
-  void start();
-  void stop();
-
-  bool isRunning() const;
-
-  bool isWanted() const;
+	int run();
 
 private:
-  bool     m_wanted;
-  uint8_t  m_poBuffer[1000U];
-  uint16_t m_poLen;
-  uint16_t m_poPos;
-  uint16_t m_dotLen;
-  uint16_t m_dotPos;
-  bool*    m_audio;
-  uint16_t m_audioLen;
-  uint16_t m_audioPos;
-  q15_t    m_highLevel;
-  q15_t    m_lowLevel;
+	CConf m_conf;
 };
 
 #endif
-
-#endif
-

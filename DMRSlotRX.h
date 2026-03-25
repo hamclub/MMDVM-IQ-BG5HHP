@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,15 +25,16 @@
 
 #include "DMRDefines.h"
 
-enum DMRRX_STATE {
-  DMRRXS_NONE,
-  DMRRXS_VOICE,
-  DMRRXS_DATA
+enum class DMRRX_STATE {
+  NONE,
+  VOICE,
+  DATA
 };
 
 class CDMRSlotRX {
 public:
   CDMRSlotRX(bool slot);
+  ~CDMRSlotRX();
 
   void start();
 

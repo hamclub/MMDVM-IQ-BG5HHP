@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2020,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 class CDMRRX {
 public:
   CDMRRX();
+  ~CDMRRX();
 
   void samples(const q15_t* samples, const uint16_t* rssi, const uint8_t* control, uint8_t length);
 

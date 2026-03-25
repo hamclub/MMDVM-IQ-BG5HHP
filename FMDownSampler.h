@@ -32,6 +32,7 @@
 class CFMDownSampler {
 public:
   CFMDownSampler(uint16_t length);
+  ~CFMDownSampler();
 
   void addSample(q15_t sample);
 

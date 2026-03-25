@@ -67,6 +67,8 @@ public:
 
 	bool start();
 
+	void stop();
+
 	void process();
 
 	bool writeSampleFSK24(uint8_t marker, q15_t frequency, uint8_t amplitude = 255U);
