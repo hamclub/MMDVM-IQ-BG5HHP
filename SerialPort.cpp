@@ -314,9 +314,9 @@ void CSerialPort::getVersion()
 
 uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 9U)
+  if (length < 9U)
     return 4U;
 
   uint32_t rxFreq = 0U;
@@ -345,9 +345,7 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
     pocsagFreq |= (data[13U] << 24) & 0xFF000000U;
   }
 
-  io.setFrequency(power, txFreq, rxFreq, pocsagFreq);
-
-  return 0U;
+  return io.setFrequency(power, txFreq, rxFreq, pocsagFreq);
 }
 
 uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
@@ -522,9 +520,7 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
   m_fmEnable     = fmEnable;
 #endif
 
-  io.setParameters(rxInvert, txInvert, pttInvert, rxLevel, cwIdTXLevel, dstarTXLevel, dmrTXLevel, ysfTXLevel, p25TXLevel, nxdnTXLevel, pocsagTXLevel, fmTXLevel);
-
-  return 0U;
+  return io.setParameters(rxInvert, txInvert, pttInvert, rxLevel, cwIdTXLevel, dstarTXLevel, dmrTXLevel, ysfTXLevel, p25TXLevel, nxdnTXLevel, pocsagTXLevel, fmTXLevel);
 }
 
 #if defined(MODE_FM)

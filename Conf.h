@@ -47,13 +47,7 @@ public:
     std::string    getMQTTPassword() const;
 
 	// The Modem section
-	std::string  getProtocol() const;
-	std::string  getUARTPort() const;
-	unsigned int getUARTSpeed() const;
-	std::string  getModemAddress() const;
-	uint16_t     getModemPort() const;
-	std::string  getLocalAddress() const;
-	uint16_t     getLocalPort() const;
+	std::string  getModemType() const;
 	bool         getModemTrace() const;
 
 	// The MMDVMHost section
@@ -79,13 +73,7 @@ private:
     std::string  m_mqttUsername;
     std::string  m_mqttPassword;
 
-	std::string  m_protocol;
-	std::string  m_uartPort;
-	unsigned int m_uartSpeed;
-	std::string  m_modemAddress;
-	uint16_t     m_modemPort; 
-	std::string  m_localAddress;
-	uint16_t     m_localPort;
+	std::string  m_modemType;
 	bool         m_modemTrace;
 
 	std::string  m_networkHostAddress;

@@ -74,6 +74,8 @@ const uint16_t BOXCAR5_FILTER_LEN = 6U;
 
 
 CIO::CIO() :
+m_type(),
+m_trace(false),
 m_started(false),
 m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
 m_txBuffer(TX_RINGBUFFER_SIZE, "IO TX Buffer"),
@@ -117,11 +119,17 @@ m_p25TXLevel(128 * 128),
 m_nxdnTXLevel(128 * 128),
 m_pocsagTXLevel(128 * 128),
 m_fmTXLevel(128 * 128),
-m_ledCount(0U),
-m_ledValue(true),
 m_detect(false),
 m_watchdog(0U),
-m_lockout(false)
+m_lockout(false),
+m_power(0U),
+m_txFreq(0U),
+m_rxFreq(0U),
+m_pocsagFreq(0U),
+m_fdudc(nullptr),
+m_device(nullptr),
+m_rxStream(nullptr),
+m_txStream(nullptr)
 {
 #if defined(USE_DCBLOCKER)
   ::memset(m_dcState, 0x00U, 4U * sizeof(q31_t));
@@ -178,20 +186,19 @@ m_lockout(false)
   m_nxdnISincFilter.pCoeffs = NXDN_ISINC_FILTER;
 #endif
 #endif
-
-  initInt();
 }
 
 CIO::~CIO()
 {
 }
 
-bool CIO::start()
+bool CIO::start(const std::string& type, bool trace)
 {
   if (m_started)
-    return;
+    return true;
 
-  startInt();
+  m_type  = type;
+  m_trace = trace;
 
   m_started = true;
 
@@ -202,6 +209,13 @@ bool CIO::start()
 
 void CIO::stop()
 {
+  delete m_fdudc;
+  m_fdudc = nullptr;
+
+  if (m_device != nullptr)
+    SoapySDR::Device::unmake(m_device);
+
+  m_device = nullptr;
 }
 
 void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
@@ -213,41 +227,29 @@ void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
 
 void CIO::process()
 {
-    m_ledCount++;
-    if (m_started) {
-        // Two seconds timeout
-        if (m_watchdog >= 48000U) {
-            if (m_modemState == MMDVM_STATE::DSTAR || m_modemState == MMDVM_STATE::DMR || m_modemState == MMDVM_STATE::YSF || m_modemState == MMDVM_STATE::P25 || m_modemState == MMDVM_STATE::NXDN || m_modemState == MMDVM_STATE::POCSAG) {
+  if (!m_started)
+    return;
+
+  if (m_started) {
+    // Two seconds timeout
+    if (m_watchdog >= 48000U) {
+      if (m_modemState == MMDVM_STATE::DSTAR || m_modemState == MMDVM_STATE::DMR || m_modemState == MMDVM_STATE::YSF || m_modemState == MMDVM_STATE::P25 || m_modemState == MMDVM_STATE::NXDN || m_modemState == MMDVM_STATE::POCSAG) {
 #if defined(MODE_DMR)
-                if (m_modemState == MMDVM_STATE::DMR && m_tx)
-                    dmrTX.setStart(false);
+        if (m_modemState == MMDVM_STATE::DMR && m_tx)
+          dmrTX.setStart(false);
 #endif
-                setMode(MMDVM_STATE::IDLE);
-            }
-
-            m_watchdog = 0U;
+          setMode(MMDVM_STATE::IDLE);
         }
 
-        if (m_ledCount >= 24000U) {
-            m_ledCount = 0U;
-            m_ledValue = !m_ledValue;
-            setLEDInt(m_ledValue);
-        }
-    } else {
-        if (m_ledCount >= 240000U) {
-            m_ledCount = 0U;
-            m_ledValue = !m_ledValue;
-            setLEDInt(m_ledValue);
-        }
-        return;
+        m_watchdog = 0U;
+      }
     }
 
-    // if (!modem.isTX() && m_tx) {
-    if (m_tx) {
-        m_tx = false;
-        setPTTInt(false);
-        LogMessage("TX OFF");
-    }
+  // if (!modem.isTX() && m_tx) {
+  if (m_tx) {
+      m_tx = false;
+      LogMessage("TX OFF");
+  }
 
   if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
@@ -359,7 +361,7 @@ void CIO::process()
 
 #if defined(MODE_FM)
       if (m_fmEnable) {
-        bool cos = getCOSInt();
+        bool cos = false;   // XXX FIXME
 #if defined(USE_DCBLOCKER)
         fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
 #else
@@ -456,7 +458,7 @@ void CIO::process()
 
 #if defined(MODE_FM)
     else if (m_modemState == MMDVM_STATE::FM) {
-      bool cos = getCOSInt();
+      bool cos = false;   // XXX FIXME
 #if defined(USE_DCBLOCKER)
       fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
 #else
@@ -508,7 +510,6 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
 
   if (!m_tx) {
       m_tx = true;
-      setPTTInt(true);
       LogMessage("TX ON");
   }
 
@@ -546,7 +547,7 @@ void CIO::setMode(MMDVM_STATE state)
   m_modemState = state;
 }
 
-void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel)
+uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel)
 {
   m_rxLevel       = q15_t(rxLevel * 128);
   m_cwIdTXLevel   = q15_t(cwIdTXLevel * 128);
@@ -569,10 +570,91 @@ void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rx
     m_nxdnTXLevel   = -m_nxdnTXLevel;
     m_pocsagTXLevel = -m_pocsagTXLevel;
   }
+
+  SoapySDR::Kwargs devArgs;
+  SoapySDR::Kwargs rxArgs;
+  SoapySDR::Kwargs txArgs;
+
+  const unsigned resampLen = 11U;
+  unsigned resampNum = 1U, resampDen = 1U;
+  const unsigned rxIfNum = 1U, rxIfDen = 12U;
+  const unsigned txIfNum = 1U, txIfDen = 12U;
+
+  if (m_type == "SX1255") {
+    devArgs["driver"] = "sx";
+    rxArgs["link"] = "1";
+    txArgs["link"] = "1";
+    resampNum = 4U;
+    resampDen = 25U;
+    // blockSize = 512U;
+    // iqHwDelay = 10U;
+    // m_timestamped = false;
+  } else if (m_type == "LimeSDR") {
+    devArgs["driver"] = "lime";
+    rxArgs["latency"] = "0";
+    txArgs["latency"] = "0";
+    resampNum = 2U;
+    resampDen = 25U;
+    // blockSize = 1024U;
+    // iqHwDelay = 100U; // TODO
+    // m_timestamped = true;
+  } else {
+    return 4U;
+  }
+
+  m_fdudc = new CFDUDC(resampNum, resampDen, rxIfNum, rxIfDen, txIfNum, txIfDen, resampLen, 0.5F);
+
+  double samplerate = 24000.0 * double(resampDen) / double(resampNum);
+
+  const size_t rx_channel = 0, tx_channel = 0;
+
+  try {
+    m_device = SoapySDR::Device::make(devArgs);
+
+    m_device->setSampleRate(SOAPY_SDR_RX, rx_channel, samplerate);
+    m_device->setSampleRate(SOAPY_SDR_TX, tx_channel, samplerate);
+
+    m_device->setFrequency(SOAPY_SDR_RX, rx_channel, double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen));
+    m_device->setFrequency(SOAPY_SDR_TX, tx_channel, double(m_txFreq) - samplerate * double(txIfNum) / double(txIfDen));
+
+    if (m_type == "SX1255") {
+      m_device->setAntenna(SOAPY_SDR_RX, rx_channel, "LNAL");
+      m_device->setAntenna(SOAPY_SDR_TX, tx_channel, "BAND1");
+    }
+
+    m_device->setGain(SOAPY_SDR_RX, rx_channel, 50.0);
+    m_device->setGain(SOAPY_SDR_TX, tx_channel, 30.0);
+
+    m_rxStream = m_device->setupStream(SOAPY_SDR_RX, "CF32", {rx_channel}, rxArgs);
+    m_txStream = m_device->setupStream(SOAPY_SDR_TX, "CF32", {tx_channel}, txArgs);
+
+    LogMessage("SoapySDR device setup done");
+  } catch (std::runtime_error &e) {
+    LogError("Error setting up SoapySDR device: %s", e.what());
+    return 4U;
+  }
+
+  return 0U;
 }
 
-void CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
+uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
+  // XXX FIXME change the return value for a bad frequency
+  if ((txFreq < MIN_RF_FREQUENCY) || (txFreq > MAX_RF_FREQUENCY))
+    return 10U;
+
+  if ((rxFreq < MIN_RF_FREQUENCY) || (rxFreq > MAX_RF_FREQUENCY))
+    return 10U;
+
+  if ((pocsagFreq < MIN_RF_FREQUENCY) || (pocsagFreq > MAX_RF_FREQUENCY))
+    return 10U;
+
+  m_power      = power;
+  m_txFreq     = txFreq;
+  m_rxFreq     = rxFreq;
+  m_pocsagFreq = pocsagFreq;
+
+  return 0U;
 }
 
 void CIO::resetWatchdog()
@@ -593,32 +675,4 @@ bool CIO::hasLockout() const
 uint8_t CIO::getCPU() const
 {
     return 99U;
-}
-
-void CIO::initInt()
-{
-}
-
-void CIO::startInt()
-{
-}
-
-bool CIO::getCOSInt()
-{
-    return false;
-}
-
-void CIO::setPTTInt(bool on)
-{
-    printf("PTT: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setLEDInt(bool on)
-{
-    // printf("LED: %s\n", on ? "On" : "Off");
-}
-
-void CIO::setCOSInt(bool on)
-{
-    printf("COS: %s\n", on ? "On" : "Off");
 }

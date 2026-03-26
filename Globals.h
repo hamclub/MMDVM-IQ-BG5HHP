@@ -58,6 +58,9 @@ enum class MMDVM_STATE : uint8_t {
 #include "IO.h"
 #include "FM.h"
 
+const uint32_t MIN_RF_FREQUENCY = 420000000U;
+const uint32_t MAX_RF_FREQUENCY = 450000000U;
+
 const uint8_t  MARK_SLOT1 = 0x08U;
 const uint8_t  MARK_SLOT2 = 0x04U;
 const uint8_t  MARK_NONE  = 0x00U;

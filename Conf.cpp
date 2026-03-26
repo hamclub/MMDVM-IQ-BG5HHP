@@ -47,13 +47,7 @@ m_mqttName("mmdvm"),
 m_mqttAuthEnabled(false),
 m_mqttUsername(),
 m_mqttPassword(),
-m_protocol("uart"),
-m_uartPort(),
-m_uartSpeed(460800U),
-m_modemAddress(),
-m_modemPort(0U),
-m_localAddress(),
-m_localPort(0U),
+m_modemType("SX1255"),
 m_modemTrace(false),
 m_networkHostAddress("127.0.0.1"),
 m_networkHostPort(3335U),
@@ -148,20 +142,8 @@ bool CConf::read()
 			else if (::strcmp(key, "Password") == 0)
 				m_mqttPassword = value;
 		} else if (section == SECTION::MODEM) {
-			if (::strcmp(key, "Protocol") == 0)
-				m_protocol = value;
-			else if (::strcmp(key, "UARTPort") == 0)
-				m_uartPort = value;
-			else if (::strcmp(key, "UARTSpeed") == 0)
-				m_uartSpeed = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "RemoteAddress") == 0)
-				m_modemAddress = value;
-			else if (::strcmp(key, "RemotePort") == 0)
-				m_modemPort = uint16_t(::atoi(value));
-			else if (::strcmp(key, "LocalAddress") == 0)
-				m_localAddress = value;
-			else if (::strcmp(key, "LocalPort") == 0)
-				m_localPort = uint16_t(::atoi(value));
+			if (::strcmp(key, "Type") == 0)
+				m_modemType = value;
 			else if (::strcmp(key, "Trace") == 0)
 				m_modemTrace = ::atoi(value) == 1;
 		} else if (section == SECTION::MMDVM_HOST) {
@@ -233,39 +215,9 @@ std::string CConf::getMQTTPassword() const
 	return m_mqttPassword;
 }
 
-std::string CConf::getProtocol() const
+std::string CConf::getModemType() const
 {
-	return m_protocol;
-}
-
-std::string CConf::getUARTPort() const
-{
-	return m_uartPort;
-}
-
-uint32_t CConf::getUARTSpeed() const
-{
-	return m_uartSpeed;
-}
-
-std::string CConf::getModemAddress() const
-{
-	return m_modemAddress;
-}
-
-uint16_t CConf::getModemPort() const
-{
-	return m_modemPort;
-}
-
-std::string CConf::getLocalAddress() const
-{
-	return m_localAddress;
-}
-
-uint16_t CConf::getLocalPort() const
-{
-	return m_localPort;
+	return m_modemType;
 }
 
 bool CConf::getModemTrace() const

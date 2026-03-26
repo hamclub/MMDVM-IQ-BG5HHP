@@ -20,8 +20,10 @@
 #define  IO_H
 
 #include "Globals.h"
-
 #include "RingBuffer.h"
+#include "FDUDC.h"
+
+#include <SoapySDR/Device.hpp>
 
 class TSample {
 public:
@@ -46,7 +48,7 @@ public:
   CIO();
   ~CIO();
 
-  bool start();
+  bool start(const std::string& type, bool trace);
 
   void process();
 
@@ -62,8 +64,8 @@ public:
   void setADCDetection(bool detect);
   void setMode(MMDVM_STATE state);
   
-  void setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel);
-  void setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
+  uint8_t setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel);
+  uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
 
   bool hasLockout() const;
 
@@ -73,6 +75,9 @@ public:
   uint8_t getCPU() const;
 
 private:
+  std::string           m_type;
+  bool                  m_trace;
+
   bool                  m_started;
   CRingBuffer<TSample>  m_rxBuffer;
   CRingBuffer<TSample>  m_txBuffer;
@@ -124,24 +129,22 @@ private:
   q15_t                m_pocsagTXLevel;
   q15_t                m_fmTXLevel;
 
-  uint32_t             m_ledCount;
-  bool                 m_ledValue;
-
   bool                 m_detect;
 
   volatile uint32_t    m_watchdog;
 
   bool                 m_lockout;
 
-  // Hardware specific routines
-  void initInt();
-  void startInt();
+  uint8_t              m_power;
+  uint32_t             m_txFreq;
+  uint32_t             m_rxFreq;
+  uint32_t             m_pocsagFreq;
 
-  bool getCOSInt();
+  CFDUDC*              m_fdudc;
 
-  void setLEDInt(bool on);
-  void setPTTInt(bool on);
-  void setCOSInt(bool on);
+  SoapySDR::Device*    m_device;
+  SoapySDR::Stream*    m_rxStream;
+  SoapySDR::Stream*    m_txStream;
 };
 
 #endif
