@@ -147,7 +147,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Complex.h" />
     <ClInclude Include="Conf.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CWIdTX.h" />
@@ -162,9 +161,6 @@
     <ClInclude Include="DStarDefines.h" />
     <ClInclude Include="DStarRX.h" />
     <ClInclude Include="DStarTX.h" />
-    <ClInclude Include="FDC.h" />
-    <ClInclude Include="FDDC.h" />
-    <ClInclude Include="FDUC.h" />
     <ClInclude Include="FM.h" />
     <ClInclude Include="FMBlanking.h" />
     <ClInclude Include="FMCTCSSRX.h" />
@@ -180,11 +176,8 @@
     <ClInclude Include="GitVersion.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="IO.h" />
-    <ClInclude Include="IQSample.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="MMDVM.h" />
-    <ClInclude Include="Modem.h" />
-    <ClInclude Include="ModemConnection.h" />
     <ClInclude Include="NXDNDefines.h" />
     <ClInclude Include="NXDNRX.h" />
     <ClInclude Include="NXDNTX.h" />
@@ -198,7 +191,6 @@
     <ClInclude Include="StopWatch.h" />
     <ClInclude Include="Thread.h" />
     <ClInclude Include="Timer.h" />
-    <ClInclude Include="UARTController.h" />
     <ClInclude Include="UDPSocket.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Version.h" />
@@ -218,9 +210,6 @@
     <ClCompile Include="DMRTX.cpp" />
     <ClCompile Include="DStarRX.cpp" />
     <ClCompile Include="DStarTX.cpp" />
-    <ClCompile Include="FDC.cpp" />
-    <ClCompile Include="FDDC.cpp" />
-    <ClCompile Include="FDUC.cpp" />
     <ClCompile Include="FM.cpp" />
     <ClCompile Include="FMBlanking.cpp" />
     <ClCompile Include="FMCTCSSRX.cpp" />
@@ -234,8 +223,6 @@
     <ClCompile Include="IO.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MMDVM.cpp" />
-    <ClCompile Include="Modem.cpp" />
-    <ClCompile Include="ModemConnection.cpp" />
     <ClCompile Include="NXDNRX.cpp" />
     <ClCompile Include="NXDNTX.cpp" />
     <ClCompile Include="P25RX.cpp" />
@@ -246,7 +233,6 @@
     <ClCompile Include="StopWatch.cpp" />
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="Timer.cpp" />
-    <ClCompile Include="UARTController.cpp" />
     <ClCompile Include="UDPSocket.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="YSFRX.cpp" />
