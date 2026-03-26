@@ -85,7 +85,6 @@ private:
   uint8_t setFrequency(const uint8_t* data, uint16_t length);
   uint8_t setConfig(const uint8_t* data, uint16_t length);
   uint8_t setMode(const uint8_t* data, uint16_t length);
-  uint8_t setStart();
   void    setMode(MMDVM_STATE modemState);
   void    processMessage(uint8_t type, const uint8_t* data, uint16_t length);
 

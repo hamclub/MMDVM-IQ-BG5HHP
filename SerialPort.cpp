@@ -36,7 +36,6 @@ const uint8_t MMDVM_GET_STATUS   = 0x01U;
 const uint8_t MMDVM_SET_CONFIG   = 0x02U;
 const uint8_t MMDVM_SET_MODE     = 0x03U;
 const uint8_t MMDVM_SET_FREQ     = 0x04U;
-const uint8_t MMDVM_START        = 0x05U;
 
 const uint8_t MMDVM_CAL_DATA     = 0x08U;
 const uint8_t MMDVM_RSSI_DATA    = 0x09U;
@@ -709,13 +708,6 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
   return 0U;
 }
 
-uint8_t CSerialPort::setStart()
-{
-    io.start();
-
-    return 0U;
-}
-
 void CSerialPort::setMode(MMDVM_STATE modemState)
 {
   switch (modemState) {
@@ -790,6 +782,10 @@ bool CSerialPort::start(const std::string& myAddress, unsigned short myPort, con
     m_trace = debug;
 
     return m_socket.open(myAddress, myPort, hostAddress, hostPort);
+}
+
+void CSerialPort::stop()
+{
 }
 
 void CSerialPort::process()
@@ -879,14 +875,6 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_SET_FREQ:
       err = setFrequency(buffer, length);
-      if (err == 0U)
-          sendACK(type);
-      else
-          sendNAK(type, err);
-      break;
-
-    case MMDVM_START:
-      err = setStart();
       if (err == 0U)
           sendACK(type);
       else

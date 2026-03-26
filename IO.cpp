@@ -75,7 +75,8 @@ const uint16_t BOXCAR5_FILTER_LEN = 6U;
 
 CIO::CIO() :
 m_started(false),
-m_rxFSKBuffer(MAX_RX_SAMPLES, "IO RX Buffer"),
+m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
+m_txBuffer(TX_RINGBUFFER_SIZE, "IO TX Buffer"),
 #if defined(USE_DCBLOCKER)
 m_dcFilter(),
 m_dcState(),
@@ -107,7 +108,6 @@ m_nxdnState(),
 m_nxdnISincState(),
 #endif
 #endif
-m_pttInvert(false),
 m_rxLevel(128 * 128),
 m_cwIdTXLevel(128 * 128),
 m_dstarTXLevel(128 * 128),
@@ -186,7 +186,7 @@ CIO::~CIO()
 {
 }
 
-void CIO::start()
+bool CIO::start()
 {
   if (m_started)
     return;
@@ -196,13 +196,19 @@ void CIO::start()
   m_started = true;
 
   setMode(MMDVM_STATE::IDLE);
+
+  return true;
+}
+
+void CIO::stop()
+{
 }
 
 void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
 {
-    TSample sample = TSample(frequency, marker, cos, rssi);
+  TSample sample = TSample(frequency, rssi, marker);
 
-    m_rxFSKBuffer.addData(&sample, 1U);
+  m_rxBuffer.addData(&sample, 1U);
 }
 
 void CIO::process()
@@ -236,20 +242,21 @@ void CIO::process()
         return;
     }
 
-    if (!modem.isTX() && m_tx) {
+    // if (!modem.isTX() && m_tx) {
+    if (m_tx) {
         m_tx = false;
-        setPTTInt(m_pttInvert ? true : false);
+        setPTTInt(false);
         LogMessage("TX OFF");
     }
 
-  if (m_rxFSKBuffer.dataSize() >= RX_BLOCK_SIZE) {
+  if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
     uint8_t  control[RX_BLOCK_SIZE];
     uint16_t rssi[RX_BLOCK_SIZE];
 
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       TSample sample;
-      m_rxFSKBuffer.getData(&sample, 1U);
+      m_rxBuffer.getData(&sample, 1U);
       control[i] = sample.m_control;
       rssi[i]    = sample.m_rssi;
 
@@ -462,11 +469,11 @@ void CIO::process()
 
 void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
-    assert(samples != nullptr);
-    assert(length > 0U);
+  assert(samples != nullptr);
+  assert(length > 0U);
 
-    if (!m_started)
-        return;
+  if (!m_started)
+    return;
 
   if (m_lockout)
     return;
@@ -501,7 +508,7 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
 
   if (!m_tx) {
       m_tx = true;
-      setPTTInt(m_pttInvert ? false : true);
+      setPTTInt(true);
       LogMessage("TX ON");
   }
 
@@ -509,22 +516,22 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
     q31_t res1 = samples[i] * txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
-    if (control == NULL)
-        modem.writeSampleFSK24(MARK_NONE, res2);
-    else
-        modem.writeSampleFSK24(control[i], res2);
+    // if (control == NULL)
+    //     modem.writeSampleFSK24(MARK_NONE, res2);
+    // else
+    //     modem.writeSampleFSK24(control[i], res2);
   }
 }
 
 uint16_t CIO::getSpace() const
 {
-  return modem.getTXSpace();
+  // return modem.getTXSpace();
 }
 
 void CIO::setDecode(bool dcd)
 {
-  if (dcd != m_dcd)
-    setCOSInt(dcd);
+  // if (dcd != m_dcd)
+    // setCOSInt(dcd);
 
   m_dcd = dcd;
 }
@@ -541,8 +548,6 @@ void CIO::setMode(MMDVM_STATE state)
 
 void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel)
 {
-  m_pttInvert = pttInvert;
-
   m_rxLevel       = q15_t(rxLevel * 128);
   m_cwIdTXLevel   = q15_t(cwIdTXLevel * 128);
   m_dstarTXLevel  = q15_t(dstarTXLevel * 128);
@@ -568,7 +573,6 @@ void CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rx
 
 void CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-  modem.setParams(power, txFreq, rxFreq, pocsagFreq);
 }
 
 void CIO::resetWatchdog()

@@ -25,26 +25,20 @@
 
 class TSample {
 public:
-	TSample(q15_t sample, uint8_t control, bool cos, uint16_t rssi) :
-	m_sample(sample),
-	m_control(control),
-	m_cos(cos),
-	m_rssi(rssi)
-	{
-	}
+  TSample(uint16_t sample = 0U, uint16_t rssi = 0U, uint8_t control = 0U) :
+  m_sample(sample),
+  m_rssi(rssi),
+  m_control(control)
+  {
+  }
 
-	TSample() :
-	m_sample(0),
-	m_control(0U),
-	m_cos(false),
-	m_rssi(0U)
-	{
-	}
-
-	q15_t    m_sample;
-	uint8_t  m_control;
-	bool     m_cos;
-	uint16_t m_rssi;
+  ~TSample()
+  {
+  }
+  
+  volatile uint16_t m_sample;
+  volatile uint16_t m_rssi;
+  volatile uint8_t  m_control;
 };
 
 class CIO {
@@ -52,9 +46,11 @@ public:
   CIO();
   ~CIO();
 
-  void start();
+  bool start();
 
   void process();
+
+  void stop();
 
   void read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi);
 
@@ -78,7 +74,8 @@ public:
 
 private:
   bool                  m_started;
-  CRingBuffer<TSample>  m_rxFSKBuffer;
+  CRingBuffer<TSample>  m_rxBuffer;
+  CRingBuffer<TSample>  m_txBuffer;
 
 #if defined(USE_DCBLOCKER)
   arm_biquad_casd_df1_inst_q31 m_dcFilter;
@@ -117,7 +114,6 @@ private:
 #endif
 #endif
 
-  bool                 m_pttInvert;
   q15_t                m_rxLevel;
   q15_t                m_cwIdTXLevel;
   q15_t                m_dstarTXLevel;

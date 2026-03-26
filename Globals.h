@@ -37,7 +37,6 @@ enum class MMDVM_STATE : uint8_t {
   CWID   = 97U
 };
 
-#include "Modem.h"
 #include "MQTTConnection.h"
 #include "SerialPort.h"
 #include "DMRIdleRX.h"
@@ -65,13 +64,10 @@ const uint8_t  MARK_NONE  = 0x00U;
 
 const uint16_t RX_BLOCK_SIZE = 2U;
 
-const uint16_t MAX_RX_SAMPLES = 4000U;
+const uint16_t RX_RINGBUFFER_SIZE = 600U;
+const uint16_t TX_RINGBUFFER_SIZE = 240U;
 
-#if defined(__MK20DX256__)
-const uint16_t TX_BUFFER_LEN = 2000U;
-#else
 const uint16_t TX_BUFFER_LEN = 4000U;
-#endif
 
 extern MMDVM_STATE m_modemState;
 
@@ -88,7 +84,6 @@ extern bool m_duplex;
 extern bool m_tx;
 extern bool m_dcd;
 
-extern CModem modem;
 extern CSerialPort serial;
 extern CIO io;
 

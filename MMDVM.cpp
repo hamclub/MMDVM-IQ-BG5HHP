@@ -89,7 +89,6 @@ CFM    fm;
 
 CCWIdTX cwIdTX;
 
-CModem modem;
 CSerialPort serial;
 CIO io;
 
@@ -265,9 +264,9 @@ int CMMDVM::run()
         return 1;
     }
 
-    ret = modem.start();
+    ret = io.start();
     if (!ret) {
-        LogError("Unable to open the modem connection");
+        LogError("Unable to open the IO subsystem");
         return 1;
     }
 
@@ -281,9 +280,7 @@ int CMMDVM::run()
 
         io.process();
 
-        modem.process();
-
-        // The following is for transmitting
+        // The following are for transmitting
 #if defined(MODE_DSTAR)
         if (m_dstarEnable && m_modemState == MMDVM_STATE::DSTAR)
             dstarTX.process();
@@ -329,7 +326,7 @@ int CMMDVM::run()
 
     LogInfo("MMDVM-PC is stopping");
 
-    modem.stop();
+    io.stop();
     serial.stop();
 
     return 0;
