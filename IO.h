@@ -23,11 +23,13 @@
 #include "RingBuffer.h"
 #include "FDUDC.h"
 
+#include <vector>
+
 #include <SoapySDR/Device.hpp>
 
 class TSample {
 public:
-  TSample(uint16_t sample = 0U, uint16_t rssi = 0U, uint8_t control = 0U) :
+  TSample(q15_t sample = 0, uint16_t rssi = 0U, uint8_t control = 0U) :
   m_sample(sample),
   m_rssi(rssi),
   m_control(control)
@@ -38,7 +40,7 @@ public:
   {
   }
   
-  volatile uint16_t m_sample;
+  volatile q15_t    m_sample;
   volatile uint16_t m_rssi;
   volatile uint8_t  m_control;
 };
@@ -48,7 +50,7 @@ public:
   CIO();
   ~CIO();
 
-  bool start(const std::string& type, bool trace);
+  bool start(bool trace);
 
   void process();
 
@@ -75,7 +77,6 @@ public:
   uint8_t getCPU() const;
 
 private:
-  std::string           m_type;
   bool                  m_trace;
 
   bool                  m_started;
@@ -139,6 +140,12 @@ private:
   uint32_t             m_txFreq;
   uint32_t             m_rxFreq;
   uint32_t             m_pocsagFreq;
+
+  // Frequencies as used by SoapySDR
+  double               m_soapyTXFreq;
+  double               m_soapyPocsagFreq;
+
+  std::vector<std::complex<float>> m_buffer;
 
   CFDUDC*              m_fdudc;
 

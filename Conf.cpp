@@ -47,7 +47,6 @@ m_mqttName("mmdvm"),
 m_mqttAuthEnabled(false),
 m_mqttUsername(),
 m_mqttPassword(),
-m_modemType("SX1255"),
 m_modemTrace(false),
 m_networkHostAddress("127.0.0.1"),
 m_networkHostPort(3335U),
@@ -142,9 +141,7 @@ bool CConf::read()
 			else if (::strcmp(key, "Password") == 0)
 				m_mqttPassword = value;
 		} else if (section == SECTION::MODEM) {
-			if (::strcmp(key, "Type") == 0)
-				m_modemType = value;
-			else if (::strcmp(key, "Trace") == 0)
+			if (::strcmp(key, "Trace") == 0)
 				m_modemTrace = ::atoi(value) == 1;
 		} else if (section == SECTION::MMDVM_HOST) {
 			if (::strcmp(key, "HostAddress") == 0)
@@ -213,11 +210,6 @@ std::string CConf::getMQTTUsername() const
 std::string CConf::getMQTTPassword() const
 {
 	return m_mqttPassword;
-}
-
-std::string CConf::getModemType() const
-{
-	return m_modemType;
 }
 
 bool CConf::getModemTrace() const

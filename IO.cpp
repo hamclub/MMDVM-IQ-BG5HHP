@@ -72,9 +72,12 @@ static q15_t   BOXCAR5_FILTER[] = {12000, 12000, 12000, 12000, 12000, 0};
 const uint16_t BOXCAR5_FILTER_LEN = 6U;
 #endif
 
+const size_t RX_CHANNEL = 0;
+const size_t TX_CHANNEL = 0;
+
+const size_t LATENCY_BLOCKS = 3;
 
 CIO::CIO() :
-m_type(),
 m_trace(false),
 m_started(false),
 m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
@@ -126,6 +129,9 @@ m_power(0U),
 m_txFreq(0U),
 m_rxFreq(0U),
 m_pocsagFreq(0U),
+m_soapyTXFreq(0.0),
+m_soapyPocsagFreq(0.0),
+m_buffer(),
 m_fdudc(nullptr),
 m_device(nullptr),
 m_rxStream(nullptr),
@@ -192,12 +198,11 @@ CIO::~CIO()
 {
 }
 
-bool CIO::start(const std::string& type, bool trace)
+bool CIO::start(bool trace)
 {
   if (m_started)
     return true;
 
-  m_type  = type;
   m_trace = trace;
 
   m_started = true;
@@ -212,10 +217,19 @@ void CIO::stop()
   delete m_fdudc;
   m_fdudc = nullptr;
 
-  if (m_device != nullptr)
-    SoapySDR::Device::unmake(m_device);
+  if (m_device != nullptr) {
+    m_device->deactivateStream(m_rxStream, 0, 0);
+    m_device->deactivateStream(m_txStream, 0, 0);
 
-  m_device = nullptr;
+    m_device->closeStream(m_rxStream);
+    m_device->closeStream(m_txStream);
+
+    SoapySDR::Device::unmake(m_device);
+  }
+
+  m_rxStream = nullptr;
+  m_txStream = nullptr;
+  m_device   = nullptr;
 }
 
 void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
@@ -544,6 +558,15 @@ void CIO::setADCDetection(bool detect)
 
 void CIO::setMode(MMDVM_STATE state)
 {
+  // Do we need to stop or pause the transmit stream to do this?
+  if (m_txStream != nullptr) {
+    if ((state == MMDVM_STATE::POCSAG) && (m_modemState != MMDVM_STATE::POCSAG))
+      m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyPocsagFreq);
+
+    if ((m_modemState == MMDVM_STATE::POCSAG) && (state != MMDVM_STATE::POCSAG))
+      m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
+  }
+
   m_modemState = state;
 }
 
@@ -576,57 +599,63 @@ uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t
   SoapySDR::Kwargs txArgs;
 
   const unsigned resampLen = 11U;
-  unsigned resampNum = 1U, resampDen = 1U;
+  const unsigned resampNum = 4U, resampDen = 25U;
   const unsigned rxIfNum = 1U, rxIfDen = 12U;
   const unsigned txIfNum = 1U, txIfDen = 12U;
 
-  if (m_type == "SX1255") {
-    devArgs["driver"] = "sx";
-    rxArgs["link"] = "1";
-    txArgs["link"] = "1";
-    resampNum = 4U;
-    resampDen = 25U;
-    // blockSize = 512U;
-    // iqHwDelay = 10U;
-    // m_timestamped = false;
-  } else if (m_type == "LimeSDR") {
-    devArgs["driver"] = "lime";
-    rxArgs["latency"] = "0";
-    txArgs["latency"] = "0";
-    resampNum = 2U;
-    resampDen = 25U;
-    // blockSize = 1024U;
-    // iqHwDelay = 100U; // TODO
-    // m_timestamped = true;
-  } else {
-    return 4U;
-  }
+  devArgs["driver"] = "sx";
+  rxArgs["link"]    = "1";
+  txArgs["link"]    = "1";
+
+  const unsigned blockSize = 512U;
+
+  m_buffer.resize(blockSize);
+
+  // iqHwDelay = 10U;
 
   m_fdudc = new CFDUDC(resampNum, resampDen, rxIfNum, rxIfDen, txIfNum, txIfDen, resampLen, 0.5F);
 
-  double samplerate = 24000.0 * double(resampDen) / double(resampNum);
+  const double samplerate = 24000.0 * double(resampDen) / double(resampNum);
 
-  const size_t rx_channel = 0, tx_channel = 0;
+  m_soapyTXFreq     = double(m_txFreq)     - samplerate * double(txIfNum) / double(txIfDen);
+  m_soapyPocsagFreq = double(m_pocsagFreq) - samplerate * double(txIfNum) / double(txIfDen);
+
+  double soapyRXFreq = double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen);
 
   try {
     m_device = SoapySDR::Device::make(devArgs);
 
-    m_device->setSampleRate(SOAPY_SDR_RX, rx_channel, samplerate);
-    m_device->setSampleRate(SOAPY_SDR_TX, tx_channel, samplerate);
+    m_device->setSampleRate(SOAPY_SDR_RX, RX_CHANNEL, samplerate);
+    m_device->setSampleRate(SOAPY_SDR_TX, TX_CHANNEL, samplerate);
 
-    m_device->setFrequency(SOAPY_SDR_RX, rx_channel, double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen));
-    m_device->setFrequency(SOAPY_SDR_TX, tx_channel, double(m_txFreq) - samplerate * double(txIfNum) / double(txIfDen));
+    m_device->setFrequency(SOAPY_SDR_RX, RX_CHANNEL, soapyRXFreq);
+    m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
 
-    if (m_type == "SX1255") {
-      m_device->setAntenna(SOAPY_SDR_RX, rx_channel, "LNAL");
-      m_device->setAntenna(SOAPY_SDR_TX, tx_channel, "BAND1");
+    m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAL");
+    m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
+
+    m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
+    m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
+
+    m_rxStream = m_device->setupStream(SOAPY_SDR_RX, "CF32", {RX_CHANNEL}, rxArgs);
+    m_txStream = m_device->setupStream(SOAPY_SDR_TX, "CF32", {TX_CHANNEL}, txArgs);
+
+    m_device->activateStream(m_rxStream);
+    m_device->activateStream(m_txStream);
+
+    // Write initial zeros to transmit buffer to start streams
+    for (size_t i = 0; i < m_buffer.size(); i++)
+      m_buffer[i] = {0.0F, 0.0F};
+    
+    for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
+      void *buffs[1] = {(void*)m_buffer.data()};
+      int flags = 0;
+      int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
+      if (ret <= 0) {
+        LogError("TX stream start error: %d", ret);
+        return 4U;
+      }
     }
-
-    m_device->setGain(SOAPY_SDR_RX, rx_channel, 50.0);
-    m_device->setGain(SOAPY_SDR_TX, tx_channel, 30.0);
-
-    m_rxStream = m_device->setupStream(SOAPY_SDR_RX, "CF32", {rx_channel}, rxArgs);
-    m_txStream = m_device->setupStream(SOAPY_SDR_TX, "CF32", {tx_channel}, txArgs);
 
     LogMessage("SoapySDR device setup done");
   } catch (std::runtime_error &e) {

@@ -264,7 +264,7 @@ int CMMDVM::run()
         return 1;
     }
 
-    ret = io.start(m_conf.getModemType(), m_conf.getModemTrace());
+    ret = io.start(m_conf.getModemTrace());
     if (!ret) {
         LogError("Unable to open the modem");
         return 1;
