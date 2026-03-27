@@ -145,9 +145,6 @@ void CP25RX::processNone(q15_t sample)
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
 
-      io.setDecode(true);
-      io.setADCDetection(true);
-
       m_averagePtr = NOAVEPTR;
 
       m_countdown = CORRELATION_COUNTDOWN;
@@ -304,9 +301,6 @@ void CP25RX::processLdu(q15_t sample)
     m_lostCount--;
     if (m_lostCount == 0U) {
       LogMessage("P25RX: sync timed out, lost lock");
-
-      io.setDecode(false);
-      io.setADCDetection(false);
 
       serial.writeP25Lost();
 
@@ -540,4 +534,3 @@ void CP25RX::writeRSSILdu(uint8_t* ldu)
 }
 
 #endif
-

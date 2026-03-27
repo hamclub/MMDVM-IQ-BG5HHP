@@ -345,9 +345,6 @@ void CDStarRX::processNone(q15_t sample)
   if (ret) {
     LogMessage("DStarRX: found data sync in None");
 
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     m_rxState = DSRX_STATE::DATA;
   }
 }
@@ -376,9 +373,6 @@ void CDStarRX::processHeader(q15_t sample)
       m_maxFrameCorr = 0;
       m_maxDataCorr  = 0;
     } else {
-      io.setDecode(true);
-      io.setADCDetection(true);
-
       writeRSSIHeader(header);
     }
   }
@@ -405,9 +399,6 @@ void CDStarRX::processData()
   if (countBits64((m_bitBuffer[m_bitPtr] & DSTAR_END_SYNC_MASK) ^ DSTAR_END_SYNC_DATA) <= END_SYNC_ERRS) {
     LogMessage("DStarRX: Found end sync in Data");
 
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     serial.writeDStarEOT();
 
     m_maxFrameCorr = 0;
@@ -429,9 +420,6 @@ void CDStarRX::processData()
   // We've not seen a data sync for too long, signal RXLOST and change to RX_NONE
   if (m_frameCount >= MAX_FRAMES) {
     LogMessage("DStarRX: data sync timed out, lost lock");
-
-    io.setDecode(false);
-    io.setADCDetection(false);
 
     serial.writeDStarLost();
 

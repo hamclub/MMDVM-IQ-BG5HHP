@@ -122,9 +122,6 @@ m_p25TXLevel(128 * 128),
 m_nxdnTXLevel(128 * 128),
 m_pocsagTXLevel(128 * 128),
 m_fmTXLevel(128 * 128),
-m_detect(false),
-m_watchdog(0U),
-m_lockout(false),
 m_power(0U),
 m_txFreq(0U),
 m_rxFreq(0U),
@@ -244,21 +241,6 @@ void CIO::process()
   if (!m_started)
     return;
 
-  if (m_started) {
-    // Two seconds timeout
-    if (m_watchdog >= 48000U) {
-      if (m_modemState == MMDVM_STATE::DSTAR || m_modemState == MMDVM_STATE::DMR || m_modemState == MMDVM_STATE::YSF || m_modemState == MMDVM_STATE::P25 || m_modemState == MMDVM_STATE::NXDN || m_modemState == MMDVM_STATE::POCSAG) {
-#if defined(MODE_DMR)
-        if (m_modemState == MMDVM_STATE::DMR && m_tx)
-          dmrTX.setStart(false);
-#endif
-          setMode(MMDVM_STATE::IDLE);
-        }
-
-        m_watchdog = 0U;
-      }
-    }
-
   // if (!modem.isTX() && m_tx) {
   if (m_tx) {
       m_tx = false;
@@ -279,9 +261,6 @@ void CIO::process()
       q31_t res2 = sample.m_sample * m_rxLevel;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
     }
-
-    if (m_lockout)
-      return;
 
 #if defined(USE_DCBLOCKER)
     q31_t q31Samples[RX_BLOCK_SIZE];
@@ -491,9 +470,6 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
   if (!m_started)
     return;
 
-  if (m_lockout)
-    return;
-
   q15_t txLevel = 0;
   switch (mode) {
     case MMDVM_STATE::DSTAR:
@@ -541,19 +517,6 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
 uint16_t CIO::getSpace() const
 {
   // return modem.getTXSpace();
-}
-
-void CIO::setDecode(bool dcd)
-{
-  // if (dcd != m_dcd)
-    // setCOSInt(dcd);
-
-  m_dcd = dcd;
-}
-
-void CIO::setADCDetection(bool detect)
-{
-  m_detect = detect;
 }
 
 void CIO::setMode(MMDVM_STATE state)
@@ -684,24 +647,4 @@ uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint3
   m_pocsagFreq = pocsagFreq;
 
   return 0U;
-}
-
-void CIO::resetWatchdog()
-{
-  m_watchdog = 0U;
-}
-
-uint32_t CIO::getWatchdog()
-{
-  return m_watchdog;
-}
-
-bool CIO::hasLockout() const
-{
-  return m_lockout;
-}
-
-uint8_t CIO::getCPU() const
-{
-    return 99U;
 }

@@ -620,9 +620,6 @@ void CFM::listeningStateDuplex(bool validRFSignal, bool validExtSignal)
 
       m_callsignTimer.start();
       m_reverseTimer.stop();
-
-      io.setDecode(true);
-      io.setADCDetection(true);
     }
   } else if (validExtSignal) {
     if (m_kerchunkTimer.getTimeout() > 0U) {
@@ -660,9 +657,6 @@ void CFM::listeningStateSimplex(bool validRFSignal, bool validExtSignal)
     m_state = FM_STATE::RELAYING_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
 
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     m_timeoutTimer.start();
     m_reverseTimer.stop();
   } else if (validExtSignal) {
@@ -695,9 +689,6 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
       }
     }
   } else {
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     LogMessage("FM: state to LISTENING");
     m_state = FM_STATE::LISTENING;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -736,9 +727,6 @@ void CFM::relayingRFStateDuplex(bool validSignal)
         serial.writeFMEOT();
     }
   } else {
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     LogMessage("FM: state to RELAYING_WAIT_RF");
     m_state = FM_STATE::RELAYING_WAIT_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -769,9 +757,6 @@ void CFM::relayingRFStateSimplex(bool validSignal)
         serial.writeFMEOT();
     }
   } else {
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     LogMessage("FM: state to RELAYING_WAIT_RF");
     m_state = FM_STATE::RELAYING_WAIT_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -786,9 +771,6 @@ void CFM::relayingRFStateSimplex(bool validSignal)
 void CFM::relayingRFWaitStateDuplex(bool validSignal)
 {
   if (validSignal) {
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -830,9 +812,6 @@ void CFM::relayingRFWaitStateDuplex(bool validSignal)
 void CFM::relayingRFWaitStateSimplex(bool validSignal)
 {
   if (validSignal) {
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -984,9 +963,6 @@ void CFM::relayingExtWaitStateSimplex(bool validSignal)
 void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
 {
   if (validRFSignal) {
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -1032,9 +1008,6 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
 void CFM::timeoutRFStateDuplex(bool validSignal)
 {
   if (!validSignal) {
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     LogMessage("FM: state to TIMEOUT_WAIT_RF");
     m_state = FM_STATE::TIMEOUT_WAIT_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -1054,9 +1027,6 @@ void CFM::timeoutRFStateDuplex(bool validSignal)
 void CFM::timeoutRFStateSimplex(bool validSignal)
 {
   if (!validSignal) {
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     LogMessage("FM: state to TIMEOUT_WAIT_RF");
     m_state = FM_STATE::TIMEOUT_WAIT_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -1068,9 +1038,6 @@ void CFM::timeoutRFStateSimplex(bool validSignal)
 void CFM::timeoutRFWaitStateDuplex(bool validSignal)
 {
   if (validSignal) {
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     LogMessage("FM: state to TIMEOUT_RF");
     m_state = FM_STATE::TIMEOUT_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -1101,9 +1068,6 @@ void CFM::timeoutRFWaitStateDuplex(bool validSignal)
 void CFM::timeoutRFWaitStateSimplex(bool validSignal)
 {
   if (validSignal) {
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     LogMessage("FM: state to TIMEOUT_RF");
     m_state = FM_STATE::TIMEOUT_RF;
     serial.writeFMStatus(static_cast<uint8_t>(m_state));
@@ -1202,9 +1166,6 @@ void CFM::timeoutExtWaitStateSimplex(bool validSignal)
 void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
 {
   if (validRFSignal && !m_rfSignal) {
-    io.setDecode(true);
-    io.setADCDetection(true);
-
     if (!m_extSignal) {
       LogMessage("FM: state to RELAYING_RF");
       m_state = FM_STATE::RELAYING_RF;
@@ -1227,9 +1188,6 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
   }
 
   if (!validRFSignal && m_rfSignal) {
-    io.setDecode(false);
-    io.setADCDetection(false);
-
     if (!m_extSignal) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;

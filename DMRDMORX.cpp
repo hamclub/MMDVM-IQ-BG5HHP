@@ -81,12 +81,8 @@ void CDMRDMORX::reset()
 
 void CDMRDMORX::samples(const q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
-  bool dcd = false;
-
   for (uint8_t i = 0U; i < length; i++)
-    dcd = processSample(samples[i], rssi[i]);
-
-  io.setDecode(dcd);
+    processSample(samples[i], rssi[i]);
 }
 
 bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)

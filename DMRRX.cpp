@@ -35,9 +35,6 @@ CDMRRX::~CDMRRX()
 
 void CDMRRX::samples(const q15_t* samples, const uint16_t* rssi, const uint8_t* control, uint8_t length)
 {
-  bool dcd1 = false;
-  bool dcd2 = false;
-
   for (uint16_t i = 0U; i < length; i++) {
     switch (control[i]) {
       case MARK_SLOT1:
@@ -50,11 +47,9 @@ void CDMRRX::samples(const q15_t* samples, const uint16_t* rssi, const uint8_t* 
         break;
     }
 
-    dcd1 = m_slot1RX.processSample(samples[i], rssi[i]);
-    dcd2 = m_slot2RX.processSample(samples[i], rssi[i]);
+    m_slot1RX.processSample(samples[i], rssi[i]);
+    m_slot2RX.processSample(samples[i], rssi[i]);
   }
-
-  io.setDecode(dcd1 || dcd2);
 }
 
 void CDMRRX::setColorCode(uint8_t colorCode)
@@ -76,4 +71,3 @@ void CDMRRX::reset()
 }
 
 #endif
-

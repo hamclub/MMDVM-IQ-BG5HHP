@@ -62,19 +62,10 @@ public:
 
   uint16_t getSpace() const;
 
-  void setDecode(bool dcd);
-  void setADCDetection(bool detect);
   void setMode(MMDVM_STATE state);
   
   uint8_t setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel);
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
-
-  bool hasLockout() const;
-
-  void resetWatchdog();
-  uint32_t getWatchdog();
-  
-  uint8_t getCPU() const;
 
 private:
   bool                  m_trace;
@@ -129,12 +120,6 @@ private:
   q15_t                m_nxdnTXLevel;
   q15_t                m_pocsagTXLevel;
   q15_t                m_fmTXLevel;
-
-  bool                 m_detect;
-
-  volatile uint32_t    m_watchdog;
-
-  bool                 m_lockout;
 
   uint8_t              m_power;
   uint32_t             m_txFreq;

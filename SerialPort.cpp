@@ -154,8 +154,6 @@ void CSerialPort::sendNAK(uint8_t type, uint8_t err)
 
 void CSerialPort::getStatus()
 {
-  io.resetWatchdog();
-
   uint8_t reply[30U];
 
   // Send all sorts of interesting internal values
@@ -166,9 +164,6 @@ void CSerialPort::getStatus()
   reply[3U]  = uint8_t(m_modemState);
 
   reply[4U]  = m_tx ? 0x01U : 0x00U;
-
-  if (io.hasLockout())
-    reply[4U] |= 0x10U;
 
   reply[4U] |= m_dcd ? 0x40U : 0x00U;
 
@@ -298,7 +293,7 @@ void CSerialPort::getVersion()
 #endif
 
   // CPU type/manufacturer. 0=Atmel ARM, 1=NXP ARM, 2=St-Micro ARM, 99=Unknown
-  reply[6U] = io.getCPU();
+  reply[6U] = 99U;
 
   uint8_t count = 7U;
   for (uint8_t i = 0U; HARDWARE[i] != 0x00U; i++, count++)
@@ -830,11 +825,6 @@ void CSerialPort::process()
             processMessage(m_buffer[2U], m_buffer + 3U, m_len - 3U);
       }
     }
-  }
-
-  if (io.getWatchdog() >= 48000U) {
-    m_ptr = 0U;
-    m_len = 0U;
   }
 }
 
