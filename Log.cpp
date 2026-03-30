@@ -93,15 +93,3 @@ void Log(unsigned int level, const char* fmt, ...)
 	if (level == 6U)		// Fatal
 		exit(1);
 }
-
-void WriteJSON(const std::string& topLevel, nlohmann::json& json)
-{
-	if (m_mqtt != nullptr) {
-		nlohmann::json top;
-
-		top[topLevel] = json;
-
-		m_mqtt->publish("json", top.dump());
-	}
-}
-

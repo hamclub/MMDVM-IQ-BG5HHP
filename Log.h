@@ -21,8 +21,6 @@
 
 #include <string>
 
-#include <nlohmann/json.hpp>
-
 #define	LogDebug(fmt, ...)	Log(1U, fmt, ##__VA_ARGS__)
 #define	LogMessage(fmt, ...)	Log(2U, fmt, ##__VA_ARGS__)
 #define	LogInfo(fmt, ...)	Log(3U, fmt, ##__VA_ARGS__)
@@ -34,7 +32,5 @@ extern void Log(unsigned int level, const char* fmt, ...);
 
 extern void LogInitialise(unsigned int displayLevel, unsigned int mqttLevel);
 extern void LogFinalise();
-
-extern void WriteJSON(const std::string& topLevel, nlohmann::json& json);
 
 #endif
