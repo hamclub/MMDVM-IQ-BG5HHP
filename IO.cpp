@@ -261,11 +261,11 @@ void CIO::process()
   if (ret <= 0)
     LogError("TX stream error: %d", ret);
 
-  // if (!modem.isTX() && m_tx) {
-  // if (m_tx) {
-  //     m_tx = false;
-  //     LogMessage("TX OFF");
-  // }
+  // Switch off the transmitter if needed
+  if (!m_txBuffer.hasData() && m_tx) {
+    m_tx = false;
+    LogMessage("TX OFF");
+  }
 
   while (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
@@ -482,6 +482,8 @@ void CIO::process()
 
 void CIO::processIQBlock()
 {
+  // Insert a channel filter here
+  
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
     std::complex<float> txIQSample = {0.0F, 0.0F};
     TXSample txSample = {0, MARK_NONE};
@@ -492,7 +494,7 @@ void CIO::processIQBlock()
       txIQSample = std::polar(m_power, ph);
     }
 
-    auto d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
+    float d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
     m_prevRXIQSample = rxIQSample;
  
     // Scale -pi...pi to -2048...2048
@@ -501,7 +503,7 @@ void CIO::processIQBlock()
     txSample = m_delayedTXBuffer->process(txSample);
 
     RXSample rxSample = {
-      .m_sample  = q15_t(d),
+      .m_sample  = q15_t(d + 0.5F),
       .m_rssi    = uint16_t(std::abs(rxIQSample)),
       .m_control = txSample.m_control
     };
