@@ -18,8 +18,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "Config.h"
 #include "Globals.h"
+#include "Config.h"
 #include "Thread.h"
 #include "IO.h"
 
@@ -77,6 +77,8 @@ const size_t TX_CHANNEL = 0;
 
 const size_t LATENCY_BLOCKS = 3;
 
+const int32_t FM_DEVIATION = 550000;
+
 CIO::CIO() :
 m_trace(false),
 m_started(false),
@@ -128,6 +130,9 @@ m_rxFreq(0U),
 m_pocsagFreq(0U),
 m_soapyTXFreq(0.0),
 m_soapyPocsagFreq(0.0),
+m_phase(0U),
+m_prevRXIQSample({0.0F, 0.0F}),
+m_delayedTXBuffer(nullptr),
 m_buffer(),
 m_fdudc(nullptr),
 m_device(nullptr),
@@ -214,6 +219,9 @@ void CIO::stop()
   delete m_fdudc;
   m_fdudc = nullptr;
 
+  delete m_delayedTXBuffer;
+  m_delayedTXBuffer = nullptr;
+
   if (m_device != nullptr) {
     m_device->deactivateStream(m_rxStream, 0, 0);
     m_device->deactivateStream(m_txStream, 0, 0);
@@ -229,31 +237,43 @@ void CIO::stop()
   m_device   = nullptr;
 }
 
-void CIO::read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi)
-{
-  TSample sample = TSample(frequency, rssi, marker);
-
-  m_rxBuffer.addData(&sample, 1U);
-}
-
 void CIO::process()
 {
   if (!m_started)
     return;
 
-  // if (!modem.isTX() && m_tx) {
-  if (m_tx) {
-      m_tx = false;
-      LogMessage("TX OFF");
-  }
+  if (m_device == nullptr)
+    return;
 
-  if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
+  void *buffs[1] = {(void*)m_buffer.data()};
+  long long timeNs = 0LL;
+  int flags = 0;
+  
+  // Handle the receive stream
+  int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
+  if (ret > 0)
+    processIQBlock();
+  else
+    LogError("RX stream error: %d", ret);
+
+  flags = 0;
+  ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNs);
+  if (ret <= 0)
+    LogError("TX stream error: %d", ret);
+
+  // if (!modem.isTX() && m_tx) {
+  // if (m_tx) {
+  //     m_tx = false;
+  //     LogMessage("TX OFF");
+  // }
+
+  while (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     q15_t    samples[RX_BLOCK_SIZE];
     uint8_t  control[RX_BLOCK_SIZE];
     uint16_t rssi[RX_BLOCK_SIZE];
 
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
-      TSample sample;
+      RXSample sample;
       m_rxBuffer.getData(&sample, 1U);
       control[i] = sample.m_control;
       rssi[i]    = sample.m_rssi;
@@ -462,6 +482,40 @@ void CIO::process()
   }
 }
 
+void CIO::processIQBlock()
+{
+  m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
+    const float tx_amplitude = 0.7f;
+
+    std::complex<float> txIQSample = {0.0F, 0.0F};
+    TXSample txSample = {0, MARK_NONE};
+    if (m_txBuffer.getData(&txSample, 1U)) {
+      // Modulate TX
+      m_phase += txSample.m_sample * FM_DEVIATION;
+      float ph = m_phase * float(M_PI / 0x80000000UL);
+      txIQSample = std::polar(tx_amplitude, ph);
+    }
+
+    auto d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
+    m_prevRXIQSample = rxIQSample;
+ 
+    // Scale -pi...pi to -2048...2048
+    d *= 2048.0F / M_PI;
+
+    txSample = m_delayedTXBuffer->process(txSample);
+
+    RXSample rxSample = {
+      .m_sample  = q15_t(d),
+      .m_rssi    = uint16_t(std::abs(rxIQSample)),
+      .m_control = txSample.m_control
+    };
+
+    m_rxBuffer.addData(rxSample);
+
+    return txIQSample;
+  });
+}
+
 void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
   assert(samples != nullptr);
@@ -507,22 +561,22 @@ void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
     q31_t res1 = samples[i] * txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
-    // if (control == NULL)
-    //     modem.writeSampleFSK24(MARK_NONE, res2);
-    // else
-    //     modem.writeSampleFSK24(control[i], res2);
+    if (control == nullptr)
+      m_txBuffer.addData({res2, MARK_NONE});
+    else
+      m_txBuffer.addData({res2, control[i]});
   }
 }
 
 uint16_t CIO::getSpace() const
 {
-  // return modem.getTXSpace();
+  return m_txBuffer.freeSpace();
 }
 
 void CIO::setMode(MMDVM_STATE state)
 {
   // Do we need to stop or pause the transmit stream to do this?
-  if (m_txStream != nullptr) {
+  if (m_device != nullptr) {
     if ((state == MMDVM_STATE::POCSAG) && (m_modemState != MMDVM_STATE::POCSAG))
       m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyPocsagFreq);
 
@@ -574,7 +628,11 @@ uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t
 
   m_buffer.resize(blockSize);
 
-  // iqHwDelay = 10U;
+  const size_t iqHWDelay = 10U;
+
+  size_t latencySamples = (blockSize * LATENCY_BLOCKS + iqHWDelay) * resampNum / resampDen + resampLen;
+
+  m_delayedTXBuffer = new CDelayBuffer<TXSample>(latencySamples, {0, 0U});
 
   m_fdudc = new CFDUDC(resampNum, resampDen, rxIfNum, rxIfDen, txIfNum, txIfDen, resampLen, 0.5F);
 

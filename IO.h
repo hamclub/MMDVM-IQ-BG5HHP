@@ -19,7 +19,7 @@
 #if !defined(IO_H)
 #define  IO_H
 
-#include "Globals.h"
+#include "DelayBuffer.h"
 #include "RingBuffer.h"
 #include "FDUDC.h"
 
@@ -27,19 +27,12 @@
 
 #include <SoapySDR/Device.hpp>
 
-class TSample {
-public:
-  TSample(q15_t sample = 0, uint16_t rssi = 0U, uint8_t control = 0U) :
-  m_sample(sample),
-  m_rssi(rssi),
-  m_control(control)
-  {
-  }
+struct TXSample {
+  volatile q15_t   m_sample;
+  volatile uint8_t m_control;
+};
 
-  ~TSample()
-  {
-  }
-  
+struct RXSample {
   volatile q15_t    m_sample;
   volatile uint16_t m_rssi;
   volatile uint8_t  m_control;
@@ -56,8 +49,6 @@ public:
 
   void stop();
 
-  void read24FSK(uint8_t marker, q15_t frequency, bool cos, uint16_t rssi);
-
   void write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
 
   uint16_t getSpace() const;
@@ -71,8 +62,8 @@ private:
   bool                  m_trace;
 
   bool                  m_started;
-  CRingBuffer<TSample>  m_rxBuffer;
-  CRingBuffer<TSample>  m_txBuffer;
+  CRingBuffer<RXSample> m_rxBuffer;
+  CRingBuffer<TXSample> m_txBuffer;
 
 #if defined(USE_DCBLOCKER)
   arm_biquad_casd_df1_inst_q31 m_dcFilter;
@@ -130,6 +121,10 @@ private:
   double               m_soapyTXFreq;
   double               m_soapyPocsagFreq;
 
+  uint32_t             m_phase;
+  std::complex<float>  m_prevRXIQSample;
+  CDelayBuffer<TXSample>* m_delayedTXBuffer;
+
   std::vector<std::complex<float>> m_buffer;
 
   CFDUDC*              m_fdudc;
@@ -137,6 +132,8 @@ private:
   SoapySDR::Device*    m_device;
   SoapySDR::Stream*    m_rxStream;
   SoapySDR::Stream*    m_txStream;
+
+  void processIQBlock();
 };
 
 #endif

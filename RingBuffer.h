@@ -47,6 +47,22 @@ public:
 		delete[] m_buffer;
 	}
 
+	bool addData(const T& buffer)
+	{
+		if (1U >= freeSpace()) {
+			LogError("%s buffer overflow, clearing the buffer. (1 >= %u)", m_name, freeSpace());
+			clear();
+			return false;
+		}
+
+		m_buffer[m_iPtr++] = buffer;
+
+		if (m_iPtr == m_length)
+			m_iPtr = 0U;
+
+		return true;
+	}
+
 	bool addData(const T* buffer, unsigned int nSamples)
 	{
 		if (nSamples >= freeSpace()) {
