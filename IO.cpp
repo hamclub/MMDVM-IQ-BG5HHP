@@ -374,11 +374,10 @@ void CIO::process()
 
 #if defined(MODE_FM)
       if (m_fmEnable) {
-        bool cos = false;   // XXX FIXME
 #if defined(USE_DCBLOCKER)
-        fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
+        fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-        fm.samples(cos, samples, rssi, RX_BLOCK_SIZE);
+        fm.samples(samples, rssi, RX_BLOCK_SIZE);
 #endif
       }
 #endif
@@ -471,11 +470,10 @@ void CIO::process()
 
 #if defined(MODE_FM)
     else if (m_modemState == MMDVM_STATE::FM) {
-      bool cos = false;   // XXX FIXME
 #if defined(USE_DCBLOCKER)
-      fm.samples(cos, dcSamples, rssi, RX_BLOCK_SIZE);
+      fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-      fm.samples(cos, samples, rssi, RX_BLOCK_SIZE);
+      fm.samples(samples, rssi, RX_BLOCK_SIZE);
 #endif
     }
 #endif

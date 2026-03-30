@@ -56,7 +56,6 @@ m_filterStage3(32768, -65536, 32768, 32768, -64075, 31460),
 m_blanking(),
 m_accessMode(1U),
 m_linkMode(false),
-m_cosInvert(false),
 m_noiseSquelch(false),
 m_rfAudioBoost(1U),
 m_extAudioBoost(1U),
@@ -80,18 +79,17 @@ CFM::~CFM()
 {
 }
 
-void CFM::samples(bool cos, q15_t* samples, const uint16_t* rssi, uint8_t length)
+void CFM::samples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
   if (m_linkMode)
-    linkSamples(cos, samples, length);
+    linkSamples(samples, length);
   else
-    repeaterSamples(cos, samples, rssi, length);
+    repeaterSamples(samples, rssi, length);
 }
 
-void CFM::repeaterSamples(bool cos, q15_t* samples, const uint16_t* rssi, uint8_t length)
+void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
-  if (m_cosInvert)
-    cos = !cos;
+  bool cos = false;   // XXX FIXME
 
   clock(length);
 
@@ -232,10 +230,9 @@ void CFM::repeaterSamples(bool cos, q15_t* samples, const uint16_t* rssi, uint8_
   }
 }
 
-void CFM::linkSamples(bool cos, q15_t* samples, uint8_t length)
+void CFM::linkSamples(q15_t* samples, uint8_t length)
 {
-  if (m_cosInvert)
-    cos = !cos;
+  bool cos = false;   // XXX FIXME
 
   clock(length);
 
@@ -429,11 +426,10 @@ uint8_t CFM::setAck(const char* rfAck, uint8_t speed, uint16_t frequency, uint8_
   return m_rfAck.setParams(rfAck, speed, frequency, level, level);
 }
 
-uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, bool cosInvert, bool noiseSquelch, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
+uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, bool noiseSquelch, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
 {
   m_accessMode   = accessMode;
   m_linkMode     = linkMode;
-  m_cosInvert    = cosInvert;
   m_noiseSquelch = noiseSquelch;
 
   m_rfAudioBoost = q15_t(rfAudioBoost);
