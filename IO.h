@@ -112,7 +112,7 @@ private:
   q15_t                m_pocsagTXLevel;
   q15_t                m_fmTXLevel;
 
-  uint8_t              m_power;
+  float                m_power;
   uint32_t             m_txFreq;
   uint32_t             m_rxFreq;
   uint32_t             m_pocsagFreq;

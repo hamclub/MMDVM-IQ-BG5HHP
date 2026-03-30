@@ -124,7 +124,7 @@ m_p25TXLevel(128 * 128),
 m_nxdnTXLevel(128 * 128),
 m_pocsagTXLevel(128 * 128),
 m_fmTXLevel(128 * 128),
-m_power(0U),
+m_power(0.0F),
 m_txFreq(0U),
 m_rxFreq(0U),
 m_pocsagFreq(0U),
@@ -485,15 +485,13 @@ void CIO::process()
 void CIO::processIQBlock()
 {
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
-    const float tx_amplitude = 0.7f;
-
     std::complex<float> txIQSample = {0.0F, 0.0F};
     TXSample txSample = {0, MARK_NONE};
     if (m_txBuffer.getData(&txSample, 1U)) {
       // Modulate TX
       m_phase += txSample.m_sample * FM_DEVIATION;
       float ph = m_phase * float(M_PI / 0x80000000UL);
-      txIQSample = std::polar(tx_amplitude, ph);
+      txIQSample = std::polar(m_power, ph);
     }
 
     auto d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
@@ -699,7 +697,7 @@ uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint3
   if ((pocsagFreq < MIN_RF_FREQUENCY) || (pocsagFreq > MAX_RF_FREQUENCY))
     return 10U;
 
-  m_power      = power;
+  m_power      = float(power) / 255.0F;
   m_txFreq     = txFreq;
   m_rxFreq     = rxFreq;
   m_pocsagFreq = pocsagFreq;
