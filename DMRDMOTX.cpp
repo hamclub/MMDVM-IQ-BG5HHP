@@ -150,7 +150,7 @@ void CDMRDMOTX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write24FSK(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U);
+  io.write(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 uint8_t CDMRDMOTX::getSpace() const

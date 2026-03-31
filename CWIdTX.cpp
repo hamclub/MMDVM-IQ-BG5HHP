@@ -109,9 +109,9 @@ void CCWIdTX::process()
   while (space > CYCLE_LENGTH) {
     bool b = READ_BIT1(m_poBuffer, m_poPtr);
     if (b)
-      io.write24FSK(MMDVM_STATE::CWID, TONE, CYCLE_LENGTH);
+      io.write(MMDVM_STATE::CWID, TONE, CYCLE_LENGTH);
     else
-      io.write24FSK(MMDVM_STATE::CWID, SILENCE, CYCLE_LENGTH);
+      io.write(MMDVM_STATE::CWID, SILENCE, CYCLE_LENGTH);
 
     space -= CYCLE_LENGTH;
 

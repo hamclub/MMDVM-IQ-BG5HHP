@@ -349,7 +349,7 @@ void CFM::process()
 
     m_outputRFRB.getData(samples, length);
 
-    io.write24FSK(MMDVM_STATE::FM, samples, length);
+    io.write(MMDVM_STATE::FM, samples, length);
   }
 
   if (m_extEnabled) {

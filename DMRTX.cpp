@@ -273,7 +273,7 @@ void CDMRTX::writeByte(uint8_t c, uint8_t control)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write24FSK(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U, controlBuffer);
+  io.write(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U, controlBuffer);
 }
 
 uint8_t CDMRTX::getSpace1() const

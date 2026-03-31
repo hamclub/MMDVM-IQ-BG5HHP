@@ -223,6 +223,9 @@ void CIO::stop()
   m_delayedTXBuffer = nullptr;
 
   if (m_device != nullptr) {
+    assert(m_rxStream != nullptr);
+    assert(m_txStream != nullptr);
+
     m_device->deactivateStream(m_rxStream, 0, 0);
     m_device->deactivateStream(m_txStream, 0, 0);
 
@@ -482,6 +485,9 @@ void CIO::process()
 
 void CIO::processIQBlock()
 {
+  assert(m_fdudc != nullptr);
+  assert(m_delayedTXBuffer != nullptr);
+
   // Insert a channel filter here
   
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
@@ -514,7 +520,7 @@ void CIO::processIQBlock()
   });
 }
 
-void CIO::write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
+void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
   assert(samples != nullptr);
   assert(length > 0U);
@@ -643,6 +649,7 @@ uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t
 
   try {
     m_device = SoapySDR::Device::make(devArgs);
+    assert(m_device != nullptr);
 
     m_device->setSampleRate(SOAPY_SDR_RX, RX_CHANNEL, samplerate);
     m_device->setSampleRate(SOAPY_SDR_TX, TX_CHANNEL, samplerate);
@@ -658,6 +665,9 @@ uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t
 
     m_rxStream = m_device->setupStream(SOAPY_SDR_RX, "CF32", {RX_CHANNEL}, rxArgs);
     m_txStream = m_device->setupStream(SOAPY_SDR_TX, "CF32", {TX_CHANNEL}, txArgs);
+
+    assert(m_rxStream != nullptr);
+    assert(m_txStream != nullptr);
 
     m_device->activateStream(m_rxStream);
     m_device->activateStream(m_txStream);

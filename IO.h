@@ -49,7 +49,7 @@ public:
 
   void stop();
 
-  void write24FSK(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
+  void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
 
   uint16_t getSpace() const;
 

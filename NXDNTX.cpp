@@ -173,7 +173,7 @@ void CNXDNTX::writeByte(uint8_t c)
 
   ::arm_fir_fast_q15(&m_sincFilter, intBuffer, outBuffer, NXDN_RADIO_SYMBOL_LENGTH * 4U);
 
-  io.write24FSK(MMDVM_STATE::NXDN, outBuffer, NXDN_RADIO_SYMBOL_LENGTH * 4U);
+  io.write(MMDVM_STATE::NXDN, outBuffer, NXDN_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CNXDNTX::writeSilence()
@@ -186,7 +186,7 @@ void CNXDNTX::writeSilence()
 
   ::arm_fir_fast_q15(&m_sincFilter, intBuffer, outBuffer, NXDN_RADIO_SYMBOL_LENGTH * 4U);
 
-  io.write24FSK(MMDVM_STATE::NXDN, outBuffer, NXDN_RADIO_SYMBOL_LENGTH * 4U);
+  io.write(MMDVM_STATE::NXDN, outBuffer, NXDN_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CNXDNTX::setTXDelay(uint8_t delay)
