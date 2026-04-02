@@ -274,8 +274,6 @@ int CMMDVM::run()
     LogInfo("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
 
     while (!m_killed) {
-        CThread::sleep(1U);
-
         serial.process();
 
         io.process();

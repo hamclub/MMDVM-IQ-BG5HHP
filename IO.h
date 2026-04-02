@@ -121,6 +121,8 @@ private:
   double               m_soapyTXFreq;
   double               m_soapyPocsagFreq;
 
+  bool                 m_soapyInit;
+
   uint32_t             m_phase;
   std::complex<float>  m_prevRXIQSample;
   CDelayBuffer<TXSample>* m_delayedTXBuffer;

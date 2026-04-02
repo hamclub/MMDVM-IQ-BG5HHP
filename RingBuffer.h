@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2006-2009,2012,2013,2015,2016,2025 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2006-2009,2012,2013,2015,2016,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -83,10 +83,8 @@ public:
 
 	bool getData(T* buffer, unsigned int nSamples)
 	{
-		if (dataSize() < nSamples) {
-			LogError("**** Underflow in %s ring buffer, %u < %u", m_name, dataSize(), nSamples);
+		if (dataSize() < nSamples)
 			return false;
-		}
 
 		for (unsigned int i = 0U; i < nSamples; i++) {
 			buffer[i] = m_buffer[m_oPtr++];

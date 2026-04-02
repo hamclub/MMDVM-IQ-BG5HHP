@@ -130,6 +130,7 @@ m_rxFreq(0U),
 m_pocsagFreq(0U),
 m_soapyTXFreq(0.0),
 m_soapyPocsagFreq(0.0),
+m_soapyInit(false),
 m_phase(0U),
 m_prevRXIQSample({0.0F, 0.0F}),
 m_delayedTXBuffer(nullptr),
@@ -226,8 +227,10 @@ void CIO::stop()
     assert(m_rxStream != nullptr);
     assert(m_txStream != nullptr);
 
-    m_device->deactivateStream(m_rxStream, 0, 0);
-    m_device->deactivateStream(m_txStream, 0, 0);
+    if (m_soapyInit) {
+      m_device->deactivateStream(m_rxStream, 0, 0);
+      m_device->deactivateStream(m_txStream, 0, 0);
+    }
 
     m_device->closeStream(m_rxStream);
     m_device->closeStream(m_txStream);
@@ -238,6 +241,8 @@ void CIO::stop()
   m_rxStream = nullptr;
   m_txStream = nullptr;
   m_device   = nullptr;
+  
+  m_soapyInit = false;
 }
 
 void CIO::process()
@@ -248,21 +253,59 @@ void CIO::process()
   if (m_device == nullptr)
     return;
 
+  assert(m_device != nullptr);
+  assert(m_rxStream != nullptr);
+  assert(m_txStream != nullptr);
+
+  if (!m_soapyInit) {
+    m_device->activateStream(m_rxStream);
+    m_device->activateStream(m_txStream);
+
+    // Write initial zeros to transmit buffer to start streams
+    for (size_t i = 0; i < m_buffer.size(); i++)
+      m_buffer[i] = {0.0F, 0.0F};
+    
+    for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
+      void *buffs[1] = {(void*)m_buffer.data()};
+      int flags = 0;
+      int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
+      if (ret <= 0) {
+        LogError("TX stream start error: %d (%s)", ret, SoapySDR_errToStr(ret));
+        break;
+      }
+    }
+
+    m_soapyInit = true;
+  }
+
   void *buffs[1] = {(void*)m_buffer.data()};
   long long timeNs = 0LL;
-  int flags = 0;
   
-  // Handle the receive stream
-  int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
-  if (ret > 0)
-    processIQBlock();
-  else
-    LogError("RX stream error: %d", ret);
+  if (m_soapyInit) {
+    int flags = 0;
+    int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
+    if (ret > 0) {
+      processIQBlock();
+    } else {
+      LogError("RX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
+      m_soapyInit = false;
+    }
+  }
 
-  flags = 0;
-  ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNs);
-  if (ret <= 0)
-    LogError("TX stream error: %d", ret);
+  if (m_soapyInit) {
+    int flags = 0;
+    int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNs);
+    if (ret <= 0) {
+      LogError("TX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
+      m_soapyInit = false;
+    }
+  }
+
+  if (!m_soapyInit) {
+    m_device->deactivateStream(m_rxStream);
+    m_device->deactivateStream(m_txStream);
+    return;
+  }
 
   // Switch off the transmitter if needed
   if (!m_txBuffer.hasData() && m_tx) {
@@ -669,22 +712,7 @@ uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t
     assert(m_rxStream != nullptr);
     assert(m_txStream != nullptr);
 
-    m_device->activateStream(m_rxStream);
-    m_device->activateStream(m_txStream);
-
-    // Write initial zeros to transmit buffer to start streams
-    for (size_t i = 0; i < m_buffer.size(); i++)
-      m_buffer[i] = {0.0F, 0.0F};
-    
-    for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
-      void *buffs[1] = {(void*)m_buffer.data()};
-      int flags = 0;
-      int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
-      if (ret <= 0) {
-        LogError("TX stream start error: %d", ret);
-        return 4U;
-      }
-    }
+    m_soapyInit = false;
 
     LogMessage("SoapySDR device setup done");
   } catch (std::runtime_error &e) {
