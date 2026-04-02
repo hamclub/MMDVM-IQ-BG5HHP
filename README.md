@@ -1,8 +1,8 @@
-This is the source code of the MMDVM firmware that supports D-Star, DMR, System Fusion, P25, NXDN, POCSAG, and FM modes.
+This is the source code of the MMDVM firmware that supports the D-Star, DMR, System Fusion, P25, NXDN, POCSAG, and FM modes.
 
-It is currently used with the SXceiver Pi hat or similar running on a Raspberry Pi. All of the development work is done on a Pi 4 as there are reports of incompatibilities with the Pi 5.
+It is currently used with the SXceiver Pi hat or similar running on a Raspberry Pi. All of the development work is done on a Pi 4 as there are reports of incompatibilities with the Pi 5. It uses the SoapySDR interface that can be found at https://sxceiver.com/
 
-It connects with the current MMDVM Host via a UDP link. The corresponding entrues at the host end are:
+It connects with the current MMDVM Host via a UDP link. The corresponding entries at the host end are:
 
     [Modem]
     Protocol=udp

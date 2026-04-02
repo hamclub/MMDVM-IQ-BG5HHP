@@ -1,7 +1,8 @@
 /*
  *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
- *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
+ *   Copyright (C) 2023 by Tatu Peltola OH2EAT
  *   Copyright (C) 2016 by Colin Durbridge G4EML
+ *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -20,7 +21,6 @@
 
 #include "Globals.h"
 #include "Config.h"
-#include "Thread.h"
 #include "IO.h"
 
 #include <cstdio>

@@ -21,7 +21,6 @@
 #include "MMDVM.h"
 #include "Config.h"
 #include "Globals.h"
-#include "Thread.h"
 #include "Version.h"
 #include "Log.h"
 #include "GitVersion.h"
