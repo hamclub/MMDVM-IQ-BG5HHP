@@ -531,6 +531,12 @@ void CIO::processIQBlock()
   assert(m_fdudc != nullptr);
   assert(m_delayedTXBuffer != nullptr);
 
+  // Mute the receiver when transmitting in simplex mode
+  if (m_tx && !m_duplex) {
+    for (auto& d : m_buffer)
+      d = {0.0F, 0.0F};
+  }
+
   // Insert a channel filter here
   
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
