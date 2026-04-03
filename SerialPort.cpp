@@ -345,14 +345,11 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 37U)
+  if (length < 37U)
     return 4U;
 
-  bool rxInvert        = (data[0U] & 0x01U) == 0x01U;
-  bool txInvert        = (data[0U] & 0x02U) == 0x02U;
-  bool pttInvert       = (data[0U] & 0x04U) == 0x04U;
 #if defined(MODE_YSF)
   bool ysfLoDev        = (data[0U] & 0x08U) == 0x08U;
 #endif
@@ -445,15 +442,6 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
     return 4U;
 #endif
 
-  uint8_t rxLevel = data[7U];
-
-  uint8_t cwIdTXLevel   = data[8U];
-  uint8_t dstarTXLevel  = data[9U];
-  uint8_t dmrTXLevel    = data[10U];
-  uint8_t ysfTXLevel    = data[11U];
-  uint8_t p25TXLevel    = data[12U];
-  uint8_t nxdnTXLevel   = data[13U];
-  uint8_t pocsagTXLevel = data[15U];
   uint8_t fmTXLevel     = data[16U];
 
 #if defined(MODE_YSF)
@@ -513,9 +501,10 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 #endif
 #if defined(MODE_FM)
   m_fmEnable     = fmEnable;
+  fm.setTXLevel(fmTXLevel);
 #endif
 
-  return io.setParameters(rxInvert, txInvert, pttInvert, rxLevel, cwIdTXLevel, dstarTXLevel, dmrTXLevel, ysfTXLevel, p25TXLevel, nxdnTXLevel, pocsagTXLevel, fmTXLevel);
+  return io.setParameters();
 }
 
 #if defined(MODE_FM)

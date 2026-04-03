@@ -164,7 +164,7 @@ uint8_t CCWIdTX::write(const uint8_t* data, uint16_t length)
 
   m_poLen += 5U;
 
-  LogMessage("Message created with length %u", m_poLen);
+  LogMessage("CW message created with length %u", m_poLen);
 
   return 0U;
 }

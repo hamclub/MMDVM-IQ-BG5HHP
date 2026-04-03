@@ -61,6 +61,7 @@ m_rfAudioBoost(1U),
 m_extAudioBoost(1U),
 m_downSampler(400U),// 100 ms of audio
 m_extEnabled(false),
+m_txLevel(128 * 128),
 m_rxLevel(1),
 m_inputRFRB(2401U, "FM Input Buffer"),   // 100ms of audio + 1 sample
 m_outputRFRB(2400U, "FM Output Buffer"),  // 100ms of audio
@@ -226,6 +227,8 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
+    currentSample *= m_txLevel;
+
     m_outputRFRB.addData(&currentSample, 1U);
   }
 }
@@ -326,6 +329,8 @@ void CFM::linkSamples(q15_t* samples, uint8_t length)
     currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
 
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
+
+    currentSample *= m_txLevel;
 
     m_outputRFRB.addData(&currentSample, 1U);
   }
@@ -461,6 +466,11 @@ uint8_t CFM::setExt(const char* ack, uint8_t audioBoost, uint8_t speed, uint16_t
   m_extAudioBoost = q15_t(audioBoost);
 
   return m_extAck.setParams(ack, speed, frequency, level, level);
+}
+
+uint8_t CFM::setTXLevel(uint8_t level)
+{
+  m_txLevel = q15_t(level * 128);
 }
 
 void CFM::stateMachine(bool validRFSignal, bool validExtSignal)

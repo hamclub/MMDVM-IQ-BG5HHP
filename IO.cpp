@@ -79,6 +79,8 @@ const size_t LATENCY_BLOCKS = 3;
 
 const int32_t FM_DEVIATION = 550000;
 
+const q15_t LEVEL_50PC_INVERTED = -128 * 128;
+
 CIO::CIO() :
 m_trace(false),
 m_started(false),
@@ -115,15 +117,6 @@ m_nxdnState(),
 m_nxdnISincState(),
 #endif
 #endif
-m_rxLevel(128 * 128),
-m_cwIdTXLevel(128 * 128),
-m_dstarTXLevel(128 * 128),
-m_dmrTXLevel(128 * 128),
-m_ysfTXLevel(128 * 128),
-m_p25TXLevel(128 * 128),
-m_nxdnTXLevel(128 * 128),
-m_pocsagTXLevel(128 * 128),
-m_fmTXLevel(128 * 128),
 m_power(0.0F),
 m_txFreq(0U),
 m_rxFreq(0U),
@@ -324,7 +317,7 @@ void CIO::process()
       control[i] = sample.m_control;
       rssi[i]    = sample.m_rssi;
 
-      q31_t res2 = sample.m_sample * m_rxLevel;
+      q31_t res2 = sample.m_sample * LEVEL_50PC_INVERTED;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
     }
 
@@ -578,32 +571,10 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
     return;
 
   q15_t txLevel = 0;
-  switch (mode) {
-    case MMDVM_STATE::DSTAR:
-      txLevel = m_dstarTXLevel;
-      break;
-    case MMDVM_STATE::DMR:
-      txLevel = m_dmrTXLevel;
-      break;
-    case MMDVM_STATE::YSF:
-      txLevel = m_ysfTXLevel;
-      break;
-    case MMDVM_STATE::P25:
-      txLevel = m_p25TXLevel;
-      break;
-    case MMDVM_STATE::NXDN:
-      txLevel = m_nxdnTXLevel;
-      break;
-    case MMDVM_STATE::POCSAG:
-      txLevel = m_pocsagTXLevel;
-      break;
-    case MMDVM_STATE::FM:
-      txLevel = m_fmTXLevel;
-      break;
-    default:
-      txLevel = m_cwIdTXLevel;
-      break;
-  }
+  if (mode == MMDVM_STATE::FM)
+    txLevel = 1;
+  else
+    txLevel = LEVEL_50PC_INVERTED;
 
   if (!m_tx) {
       m_tx = true;
@@ -640,30 +611,8 @@ void CIO::setMode(MMDVM_STATE state)
   m_modemState = state;
 }
 
-uint8_t CIO::setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel)
+uint8_t CIO::setParameters()
 {
-  m_rxLevel       = q15_t(rxLevel * 128);
-  m_cwIdTXLevel   = q15_t(cwIdTXLevel * 128);
-  m_dstarTXLevel  = q15_t(dstarTXLevel * 128);
-  m_dmrTXLevel    = q15_t(dmrTXLevel * 128);
-  m_ysfTXLevel    = q15_t(ysfTXLevel * 128);
-  m_p25TXLevel    = q15_t(p25TXLevel * 128);
-  m_nxdnTXLevel   = q15_t(nxdnTXLevel * 128);
-  m_pocsagTXLevel = q15_t(pocsagTXLevel * 128);
-  m_fmTXLevel     = q15_t(fmTXLevel * 128);
-
-  if (rxInvert)
-    m_rxLevel = -m_rxLevel;
-  
-  if (txInvert) {
-    m_dstarTXLevel  = -m_dstarTXLevel;
-    m_dmrTXLevel    = -m_dmrTXLevel;
-    m_ysfTXLevel    = -m_ysfTXLevel;
-    m_p25TXLevel    = -m_p25TXLevel;
-    m_nxdnTXLevel   = -m_nxdnTXLevel;
-    m_pocsagTXLevel = -m_pocsagTXLevel;
-  }
-
   SoapySDR::Kwargs devArgs;
   SoapySDR::Kwargs rxArgs;
   SoapySDR::Kwargs txArgs;

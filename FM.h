@@ -66,6 +66,7 @@ public:
   uint8_t setAck(const char* rfAck, uint8_t speed, uint16_t frequency, uint8_t minTime, uint16_t delay, uint8_t level);
   uint8_t setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, bool noiseSquelch, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel);
   uint8_t setExt(const char* ack, uint8_t audioBoost, uint8_t speed, uint16_t frequency, uint8_t level);
+  uint8_t setTXLevel(uint8_t level);
 
   uint8_t getSpace() const;
 
@@ -103,6 +104,7 @@ private:
   q15_t                m_extAudioBoost;
   CFMDownSampler       m_downSampler;
   bool                 m_extEnabled;
+  q15_t                m_txLevel;
   q15_t                m_rxLevel;
   CRingBuffer<q15_t>   m_inputRFRB;
   CRingBuffer<q15_t>   m_outputRFRB;

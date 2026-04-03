@@ -55,8 +55,8 @@ public:
 
   void setMode(MMDVM_STATE state);
   
-  uint8_t setParameters(bool rxInvert, bool txInvert, bool pttInvert, uint8_t rxLevel, uint8_t cwIdTXLevel, uint8_t dstarTXLevel, uint8_t dmrTXLevel, uint8_t ysfTXLevel, uint8_t p25TXLevel, uint8_t nxdnTXLevel, uint8_t pocsagTXLevel, uint8_t fmTXLevel);
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
+  uint8_t setParameters();
 
 private:
   bool                  m_trace;
@@ -101,16 +101,6 @@ private:
   q15_t                m_nxdnISincState[60U];     // NoTaps + BlockSize - 1, 32 + 20 - 1 plus some spare
 #endif
 #endif
-
-  q15_t                m_rxLevel;
-  q15_t                m_cwIdTXLevel;
-  q15_t                m_dstarTXLevel;
-  q15_t                m_dmrTXLevel;
-  q15_t                m_ysfTXLevel;
-  q15_t                m_p25TXLevel;
-  q15_t                m_nxdnTXLevel;
-  q15_t                m_pocsagTXLevel;
-  q15_t                m_fmTXLevel;
 
   float                m_power;
   uint32_t             m_txFreq;
