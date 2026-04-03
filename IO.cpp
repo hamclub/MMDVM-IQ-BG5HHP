@@ -680,15 +680,14 @@ uint8_t CIO::setParameters()
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-  // XXX FIXME change the return value for a bad frequency
   if ((txFreq < MIN_RF_FREQUENCY) || (txFreq > MAX_RF_FREQUENCY))
-    return 10U;
+    return 4U;
 
   if ((rxFreq < MIN_RF_FREQUENCY) || (rxFreq > MAX_RF_FREQUENCY))
-    return 10U;
+    return 4U;
 
   if ((pocsagFreq < MIN_RF_FREQUENCY) || (pocsagFreq > MAX_RF_FREQUENCY))
-    return 10U;
+    return 4U;
 
   m_power      = float(power) / 255.0F;
   m_txFreq     = txFreq;

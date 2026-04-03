@@ -510,9 +510,9 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 #if defined(MODE_FM)
 uint8_t CSerialPort::setFMParams1(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 8U)
+  if (length < 8U)
     return 4U;
 
   uint8_t  speed     = data[0U];;
@@ -537,9 +537,9 @@ uint8_t CSerialPort::setFMParams1(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setFMParams2(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 6U)
+  if (length < 6U)
     return 4U;
 
   uint8_t  speed     = data[0U];
@@ -559,9 +559,9 @@ uint8_t CSerialPort::setFMParams2(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 14U)
+  if (length < 14U)
     return 4U;
 
   uint16_t timeout        = data[0U] * 5U;
@@ -591,9 +591,9 @@ uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setFMParams4(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 4U)
+  if (length < 4U)
     return 4U;
 
   uint8_t  audioBoost = data[0U];
@@ -613,9 +613,9 @@ uint8_t CSerialPort::setFMParams4(const uint8_t* data, uint16_t length)
 
 uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 {
-    assert(data != nullptr);
+  assert(data != nullptr);
 
-    if (length < 1U)
+  if (length < 1U)
     return 4U;
 
   MMDVM_STATE modemState = MMDVM_STATE(data[0U]);
