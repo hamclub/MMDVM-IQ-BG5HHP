@@ -20,32 +20,51 @@
 
 #if defined(MODE_FM)
 
-#if !defined(FMNOISESQUELCH_H)
-#define  FMNOISESQUELCH_H
+#include "Globals.h"
+#include "FMSquelch.h"
 
-class CFMNoiseSquelch {
-public:
-  CFMNoiseSquelch();
-  ~CFMNoiseSquelch();
+const uint8_t MAX_COUNT = 4U;
 
-  void setParams(uint8_t highThreshold, uint8_t lowThreshold);
-  
-  bool process(q15_t sample);
 
-  void reset();
+CFMSquelch::CFMSquelch() :
+m_highThreshold(0U),
+m_lowThreshold(0U),
+m_count(0U),
+m_state(false)
+{
+}
 
-private:
-  q31_t    m_highThreshold;
-  q31_t    m_lowThreshold;
-  uint16_t m_count;
-  q31_t    m_q0;
-  q31_t    m_q1;
-  bool     m_state;
-  uint8_t  m_validCount;
-  uint8_t  m_invalidCount;
-};
+CFMSquelch::~CFMSquelch()
+{
+}
+
+void CFMSquelch::setParams(uint8_t highThreshold, uint8_t lowThreshold)
+{
+	m_highThreshold = highThreshold;
+	m_lowThreshold  = lowThreshold;
+}
+
+bool CFMSquelch::process(uint16_t rssi)
+{
+	if (m_state) {
+		if (rssi <= m_lowThreshold) {
+			m_count--;
+
+			if (m_count == 0U)
+				m_state = false;
+		} else {
+			m_state = MAX_COUNT;
+		}
+	} else {
+		if (rssi >= m_highThreshold) {
+			m_count++;
+
+			if (m_count >= MAX_COUNT)
+				m_state = true;
+		}
+	}
+
+	return m_state;
+}
 
 #endif
-
-#endif
-

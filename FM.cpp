@@ -56,7 +56,6 @@ m_filterStage3(32768, -65536, 32768, 32768, -64075, 31460),
 m_blanking(),
 m_accessMode(1U),
 m_linkMode(false),
-m_noiseSquelch(false),
 m_rfAudioBoost(1U),
 m_extAudioBoost(1U),
 m_downSampler(400U),// 100 ms of audio
@@ -83,19 +82,19 @@ CFM::~CFM()
 void CFM::samples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
   if (m_linkMode)
-    linkSamples(samples, length);
+    linkSamples(samples, rssi, length);
   else
     repeaterSamples(samples, rssi, length);
 }
 
 void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
-  bool cos = false;   // XXX FIXME
-
   clock(length);
 
   uint8_t i = 0U;
   for (; i < length; i++) {
+    bool cos = m_squelch.process(rssi[i]);
+
     if (m_state == FM_STATE::RELAYING_RF) {
       m_rssiAccum += rssi[i];
       m_rssiCount++;
@@ -103,9 +102,6 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     // ARMv7-M has hardware integer division 
     q15_t currentRFSample = q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
-
-    if (m_noiseSquelch)
-      cos = m_squelch.process(currentRFSample);
 
     q15_t currentExtSample;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
@@ -233,19 +229,16 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
   }
 }
 
-void CFM::linkSamples(q15_t* samples, uint8_t length)
+void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
-  bool cos = false;   // XXX FIXME
-
   clock(length);
 
   uint8_t i = 0U;
   for (; i < length; i++) {
+    bool cos = m_squelch.process(rssi[i]);
+
     // ARMv7-M has hardware integer division 
     q15_t currentRFSample = q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
-
-    if (m_noiseSquelch)
-      cos = m_squelch.process(currentRFSample);
 
     q15_t currentExtSample;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
@@ -431,11 +424,10 @@ uint8_t CFM::setAck(const char* rfAck, uint8_t speed, uint16_t frequency, uint8_
   return m_rfAck.setParams(rfAck, speed, frequency, level, level);
 }
 
-uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, bool noiseSquelch, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
+uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
 {
   m_accessMode   = accessMode;
   m_linkMode     = linkMode;
-  m_noiseSquelch = noiseSquelch;
 
   m_rfAudioBoost = q15_t(rfAudioBoost);
 

@@ -71,10 +71,10 @@
     <ClInclude Include="FMKeyer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FMNoiseSquelch.h">
+    <ClInclude Include="FMSamplePairPack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FMSamplePairPack.h">
+    <ClInclude Include="FMSquelch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FMTimeout.h">
@@ -211,7 +211,7 @@
     <ClCompile Include="FMKeyer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FMNoiseSquelch.cpp">
+    <ClCompile Include="FMSquelch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FMTimeout.cpp">

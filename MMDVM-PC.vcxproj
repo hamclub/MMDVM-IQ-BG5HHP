@@ -170,8 +170,8 @@
     <ClInclude Include="FMDirectForm1.h" />
     <ClInclude Include="FMDownSampler.h" />
     <ClInclude Include="FMKeyer.h" />
-    <ClInclude Include="FMNoiseSquelch.h" />
     <ClInclude Include="FMSamplePairPack.h" />
+    <ClInclude Include="FMSquelch.h" />
     <ClInclude Include="FMTimeout.h" />
     <ClInclude Include="FMTimer.h" />
     <ClInclude Include="FMUpSampler.h" />
@@ -217,7 +217,7 @@
     <ClCompile Include="FMCTCSSTX.cpp" />
     <ClCompile Include="FMDownSampler.cpp" />
     <ClCompile Include="FMKeyer.cpp" />
-    <ClCompile Include="FMNoiseSquelch.cpp" />
+    <ClCompile Include="FMSquelch.cpp" />
     <ClCompile Include="FMTimeout.cpp" />
     <ClCompile Include="FMTimer.cpp" />
     <ClCompile Include="FMUpSampler.cpp" />
