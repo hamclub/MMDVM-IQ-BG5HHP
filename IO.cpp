@@ -552,7 +552,7 @@ void CIO::processIQBlock()
 
     RXSample rxSample = {
       .m_sample  = q15_t(d + 0.5F),
-      .m_rssi    = uint16_t(std::abs(rxIQSample)),
+      .m_rssi    = uint16_t(std::norm(rxIQSample)),
       .m_control = txSample.m_control
     };
 
