@@ -28,7 +28,16 @@
 #include "RingBuffer.h"
 #include "FMSamplePairPack.h"
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#endif
+
 #include "arm_math.h"
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 class CFMUpSampler {
 public:

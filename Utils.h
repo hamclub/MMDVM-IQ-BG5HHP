@@ -19,7 +19,16 @@
 #if !defined(UTILS_H)
 #define  UTILS_H
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#endif
+
 #include "arm_math.h"
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 static inline q15_t FLOAT32_TO_Q15(float32_t in)
 {

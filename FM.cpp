@@ -389,7 +389,6 @@ void CFM::reset()
   m_inputExtRB.reset();
 
   m_downSampler.reset();
-  m_squelch.reset();
   
   m_needReverse = false;
   m_rfSignal    = false;
@@ -463,6 +462,8 @@ uint8_t CFM::setExt(const char* ack, uint8_t audioBoost, uint8_t speed, uint16_t
 uint8_t CFM::setTXLevel(uint8_t level)
 {
   m_txLevel = q15_t(level * 128);
+
+  return 0U;
 }
 
 void CFM::stateMachine(bool validRFSignal, bool validExtSignal)
