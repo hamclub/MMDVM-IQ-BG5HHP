@@ -22,6 +22,7 @@
 
 #include "Globals.h"
 #include "FMSquelch.h"
+#include "Log.h"
 
 const uint8_t MAX_COUNT = 4U;
 
@@ -50,8 +51,10 @@ bool CFMSquelch::process(uint16_t rssi)
 		if (rssi <= m_lowThreshold) {
 			m_count--;
 
-			if (m_count == 0U)
+			if (m_count == 0U) {
+				LogDebug("Squelch closed");
 				m_state = false;
+			}
 		} else {
 			m_state = MAX_COUNT;
 		}
@@ -59,8 +62,10 @@ bool CFMSquelch::process(uint16_t rssi)
 		if (rssi >= m_highThreshold) {
 			m_count++;
 
-			if (m_count >= MAX_COUNT)
+			if (m_count >= MAX_COUNT) {
+				LogDebug("Squelch open");
 				m_state = true;
+			}
 		}
 	}
 

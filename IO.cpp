@@ -545,14 +545,14 @@ void CIO::processIQBlock()
     float d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
     m_prevRXIQSample = rxIQSample;
  
-    // Scale -pi...pi to -2048...2048
-    d *= 2048.0F / M_PI;
+    // Scale -pi...pi to -4096...4096
+    d *= 4096.0F / M_PI;
 
     txSample = m_delayedTXBuffer->process(txSample);
 
     RXSample rxSample = {
       .m_sample  = q15_t(d + 0.5F),
-      .m_rssi    = uint16_t(std::norm(rxIQSample)),
+      .m_rssi    = uint16_t(100000000.0F * std::norm(rxIQSample)),
       .m_control = txSample.m_control
     };
 
