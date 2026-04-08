@@ -23,10 +23,10 @@ CSRCS = $(wildcard \
 CDEPS = $(CSRCS:.c=.d)
 COBJS = $(CSRCS:.c=.o)
 
-all:		MMDVM-PC
+all:		MMDVM-IQ
 
-MMDVM-PC:	$(CXXOBJS) $(COBJS)
-		$(CXX) $(CXXOBJS) $(COBJS) $(LDFLAGS) $(LIBS) -o MMDVM-PC
+MMDVM-IQ:	$(CXXOBJS) $(COBJS)
+		$(CXX) $(CXXOBJS) $(COBJS) $(LDFLAGS) $(LIBS) -o MMDVM-IQ
 
 %.o: %.cpp
 		$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -43,10 +43,11 @@ SerialPort.o: GitVersion.h FORCE
 FORCE:
 
 install:
-		install -m 755 MMDVM-PC /usr/local/bin/
+		install -m 755 MMDVM-IQ /usr/local/bin/
+		install -m 644 MMDVM-IQ.ini /etc
 
 clean:
-		$(RM) MMDVM-PC *.o *.d *.bak *~ GitVersion.h
+		$(RM) MMDVM-IQ *.o *.d *.bak *~ GitVersion.h
 
 # Export the current git version if the index file exists, else 000...
 GitVersion.h:

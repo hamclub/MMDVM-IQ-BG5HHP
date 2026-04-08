@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{7b510332-8e9d-4527-8ee3-68ca039dd5bb}</ProjectGuid>
-    <RootNamespace>MMDVMPC</RootNamespace>
+    <RootNamespace>MMDVMIQ</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

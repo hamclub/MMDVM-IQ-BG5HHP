@@ -92,9 +92,9 @@ CSerialPort serial;
 CIO io;
 
 #if defined(_WIN32) || defined(_WIN64)
-const char* DEFAULT_INI_FILE = "MMDVM.ini";
+const char* DEFAULT_INI_FILE = "MMDVM-IQ.ini";
 #else
-const char* DEFAULT_INI_FILE = "/etc/MMDVM.ini";
+const char* DEFAULT_INI_FILE = "/etc/MMDVM-IQ.ini";
 #endif
 
 static bool m_killed = false;
@@ -121,10 +121,10 @@ int main(int argc, char** argv)
         for (int currentArg = 1; currentArg < argc; ++currentArg) {
             std::string arg = argv[currentArg];
             if ((arg == "-v") || (arg == "--version")) {
-                ::fprintf(stdout, "MMDVM-PC version %s git #%.7s\n", VERSION, gitversion);
+                ::fprintf(stdout, "MMDVM-IQ version %s git #%.7s\n", VERSION, gitversion);
                 return 0;
             } else if (arg.substr(0, 1) == "-") {
-                ::fprintf(stderr, "Usage: MMDVM-PC [-v|--version] [filename]\n");
+                ::fprintf(stderr, "Usage: MMDVM-IQ [-v|--version] [filename]\n");
                 return 1;
             } else {
                 iniFile = argv[currentArg];
@@ -150,19 +150,19 @@ int main(int argc, char** argv)
 
         switch (m_signal) {
         case 2:
-            ::LogInfo("MMDVM-PC-%s exited on receipt of SIGINT", VERSION);
+            ::LogInfo("MMDVM-IQ-%s exited on receipt of SIGINT", VERSION);
             break;
         case 15:
-            ::LogInfo("MMDVM-PC-%s exited on receipt of SIGTERM", VERSION);
+            ::LogInfo("MMDVM-IQ-%s exited on receipt of SIGTERM", VERSION);
             break;
         case 1:
-            ::LogInfo("MMDVM-PC-%s exited on receipt of SIGHUP", VERSION);
+            ::LogInfo("MMDVM-IQ-%s exited on receipt of SIGHUP", VERSION);
             break;
         case 10:
-            ::LogInfo("MMDVM-PC-%s is restarting on receipt of SIGUSR1", VERSION);
+            ::LogInfo("MMDVM-IQ-%s is restarting on receipt of SIGUSR1", VERSION);
             break;
         default:
-            ::LogInfo("MMDVM-PC-%s exited on receipt of an unknown signal", VERSION);
+            ::LogInfo("MMDVM-IQ-%s exited on receipt of an unknown signal", VERSION);
             break;
         }
     } while (m_signal == 10);
@@ -185,7 +185,7 @@ int CMMDVM::run()
 {
     bool ret = m_conf.read();
     if (!ret) {
-        ::fprintf(stderr, "MMDVM-PC: cannot read the .ini file\n");
+        ::fprintf(stderr, "MMDVM-IQ: cannot read the .ini file\n");
         return 1;
     }
 
@@ -250,7 +250,7 @@ int CMMDVM::run()
     m_mqtt = new CMQTTConnection(m_conf.getMQTTHost(), m_conf.getMQTTPort(), m_conf.getMQTTName(), m_conf.getMQTTAuthEnabled(), m_conf.getMQTTUsername(), m_conf.getMQTTPassword(), subscriptions, m_conf.getMQTTKeepalive());
     ret = m_mqtt->open();
     if (!ret) {
-        ::fprintf(stderr, "MMDVM-PC: unable to start the MQTT Publisher\n");
+        ::fprintf(stderr, "MMDVM-IQ: unable to start the MQTT Publisher\n");
         delete m_mqtt;
         return 1;
     }
@@ -269,7 +269,7 @@ int CMMDVM::run()
         return 1;
     }
 
-    LogInfo("MMDVM-PC-%s is starting", VERSION);
+    LogInfo("MMDVM-IQ-%s is starting", VERSION);
     LogInfo("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
 
     while (!m_killed) {
@@ -321,10 +321,12 @@ int CMMDVM::run()
             cwIdTX.process();
     }
 
-    LogInfo("MMDVM-PC is stopping");
+    LogInfo("MMDVM-IQ is stopping");
 
     io.stop();
     serial.stop();
+
+    ::LogFinalise();
 
     return 0;
 }
