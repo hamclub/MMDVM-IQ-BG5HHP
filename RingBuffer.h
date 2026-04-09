@@ -81,6 +81,19 @@ public:
 		return true;
 	}
 
+	bool getData(T& buffer)
+	{
+		if (isEmpty())
+			return false;
+
+		buffer = m_buffer[m_oPtr++];
+
+		if (m_oPtr == m_length)
+			m_oPtr = 0U;
+
+		return true;
+	}
+
 	bool getData(T* buffer, unsigned int nSamples)
 	{
 		if (dataSize() < nSamples)
@@ -92,6 +105,16 @@ public:
 			if (m_oPtr == m_length)
 				m_oPtr = 0U;
 		}
+
+		return true;
+	}
+
+	bool peek(T& buffer)
+	{
+		if (isEmpty())
+			return false;
+
+		buffer = m_buffer[m_oPtr];
 
 		return true;
 	}

@@ -163,7 +163,7 @@ bool CFMCTCSSRX::process(q15_t sample)
     m_state = value >= threshold;
 
     if (previousState != m_state)
-      LogDebug("CTCSS value/threshold/valid: %d/%d/%s", value, threshold, m_state ? "true" : "false");
+      LogDebug("FM: CTCSS value/threshold/valid: %d/%d/%s", value, threshold, m_state ? "true" : "false");
 
     m_count = 0U;
     m_q0 = 0;

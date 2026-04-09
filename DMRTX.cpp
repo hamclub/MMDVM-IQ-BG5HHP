@@ -296,7 +296,7 @@ void CDMRTX::createData(uint8_t slotIndex)
 
   if (fifo->dataSize() >= DMR_FRAME_LENGTH_BYTES && m_frameCount >= STARTUP_COUNT && m_abortCount[slotIndex] >= ABORT_COUNT) {
     for (unsigned int i = 0U; i < DMR_FRAME_LENGTH_BYTES; i++) {
-      fifo->getData(m_poBuffer + i, 1U);
+      fifo->getData(m_poBuffer[i]);
       m_markBuffer[i] = MARK_NONE;
     }
   } else {

@@ -52,7 +52,7 @@ bool CFMSquelch::process(uint16_t rssi)
 			m_count--;
 
 			if (m_count == 0U) {
-				LogDebug("Squelch closed");
+				LogDebug("FM: squelch closed");
 				m_state = false;
 			}
 		} else {
@@ -63,7 +63,7 @@ bool CFMSquelch::process(uint16_t rssi)
 			m_count++;
 
 			if (m_count >= MAX_COUNT) {
-				LogDebug("Squelch open");
+				LogDebug("FM: squelch open");
 				m_state = true;
 			}
 		}

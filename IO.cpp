@@ -313,7 +313,7 @@ void CIO::process()
 
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       RXSample sample;
-      m_rxBuffer.getData(&sample, 1U);
+      m_rxBuffer.getData(sample);
       control[i] = sample.m_control;
       rssi[i]    = sample.m_rssi;
 
@@ -535,7 +535,7 @@ void CIO::processIQBlock()
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
     std::complex<float> txIQSample = {0.0F, 0.0F};
     TXSample txSample = {0, MARK_NONE};
-    if (m_txBuffer.getData(&txSample, 1U)) {
+    if (m_txBuffer.getData(txSample)) {
       // Modulate TX
       m_phase += txSample.m_sample * FM_DEVIATION;
       float ph = m_phase * float(M_PI / 0x80000000UL);
@@ -570,19 +570,13 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_started)
     return;
 
-  q15_t txLevel = 0;
-  if (mode == MMDVM_STATE::FM)
-    txLevel = 1;
-  else
-    txLevel = LEVEL_50PC_INVERTED;
-
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
   }
 
   for (uint16_t i = 0U; i < length; i++) {
-    q31_t res1 = samples[i] * txLevel;
+    q31_t res1 = samples[i] * LEVEL_50PC_INVERTED;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
     if (control == nullptr)

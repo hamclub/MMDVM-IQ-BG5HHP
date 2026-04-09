@@ -87,11 +87,8 @@ void CNXDNTX::process()
       m_poBuffer[m_poLen++] = NXDN_PREAMBLE[1U];
       m_poBuffer[m_poLen++] = NXDN_PREAMBLE[2U];
     } else {
-      for (uint8_t i = 0U; i < NXDN_FRAME_LENGTH_BYTES; i++) {
-        uint8_t c = 0U;
-        m_buffer.getData(&c, 1U);
-        m_poBuffer[m_poLen++] = c;
-      }
+      for (uint8_t i = 0U; i < NXDN_FRAME_LENGTH_BYTES; i++)
+        m_buffer.getData(m_poBuffer[m_poLen++]);
     }
 
     m_poPtr = 0U;

@@ -217,7 +217,7 @@ void CDStarTX::process()
     return;
 
   uint8_t type = 0U;
-  m_buffer.peek(&type, 1U);
+  m_buffer.peek(type);
 
   if (type == DSTAR_HEADER && m_poLen == 0U) {
     if (!m_tx) {
@@ -226,7 +226,7 @@ void CDStarTX::process()
     } else {
       // Pop the type byte off
       uint8_t dummy = 0U;
-      m_buffer.getData(&dummy, 1U);
+      m_buffer.getData(dummy);
 
       uint8_t header[DSTAR_HEADER_LENGTH_BYTES];
       m_buffer.getData(header, DSTAR_HEADER_LENGTH_BYTES);
@@ -248,10 +248,10 @@ void CDStarTX::process()
   if (type == DSTAR_DATA && m_poLen == 0U) {
     // Pop the type byte off
     uint8_t dummy = 0U;
-    m_buffer.getData(&dummy, 1U);
+    m_buffer.getData(dummy);
 
     for (uint8_t i = 0U; i < DSTAR_DATA_LENGTH_BYTES; i++)
-      m_buffer.getData(&m_poBuffer[m_poLen++], 1U);
+      m_buffer.getData(m_poBuffer[m_poLen++]);
 
     m_poPtr = 0U;
   }
@@ -259,7 +259,7 @@ void CDStarTX::process()
   if (type == DSTAR_EOT && m_poLen == 0U) {
     // Pop the type byte off
     uint8_t dummy = 0U;
-    m_buffer.getData(&dummy, 1U);
+    m_buffer.getData(dummy);
 
     for (uint8_t j = 0U; j < 3U; j++) {
       for (uint8_t i = 0U; i < DSTAR_END_SYNC_LENGTH_BYTES; i++)
@@ -298,7 +298,7 @@ uint8_t CDStarTX::writeHeader(const uint8_t* header, uint16_t length)
     return 5U;
   }
 
-  m_buffer.addData(&DSTAR_HEADER, 1U);
+  m_buffer.addData(DSTAR_HEADER);
   m_buffer.addData(header, DSTAR_HEADER_LENGTH_BYTES);
     
   return 0U;
@@ -315,7 +315,7 @@ uint8_t CDStarTX::writeData(const uint8_t* data, uint16_t length)
     return 5U;
   }
 
-  m_buffer.addData(&DSTAR_DATA, 1U);
+  m_buffer.addData(DSTAR_DATA);
   m_buffer.addData(data, DSTAR_DATA_LENGTH_BYTES);
     
   return 0U;
@@ -329,7 +329,7 @@ uint8_t CDStarTX::writeEOT()
     return 5U;
   }
 
-  m_buffer.addData(&DSTAR_EOT, 1U);
+  m_buffer.addData(DSTAR_EOT);
 
   return 0U;
 }

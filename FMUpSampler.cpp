@@ -53,7 +53,7 @@ void CFMUpSampler::addData(const uint8_t* data, uint16_t length)
   TSamplePairPack* packPointerEnd = packPointer + (length / 3U);
 
   while (packPointer != packPointerEnd) {
-    m_samples.addData(packPointer, 1U);
+    m_samples.addData(*packPointer);
     packPointer++;
   }
 
@@ -69,7 +69,7 @@ bool CFMUpSampler::getSample(q15_t& sample)
   switch (m_upSampleIndex) {
   case 0U: {
     TSamplePairPack pairPack;
-    if (!m_samples.getData(&pairPack, 1U)) {
+    if (!m_samples.getData(pairPack)) {
       m_running = false;
       return false;
     }

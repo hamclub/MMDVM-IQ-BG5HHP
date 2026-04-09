@@ -82,7 +82,7 @@ uint8_t CSocket::read()
 {
 	uint8_t c = 0U;
 
-	m_buffer.getData(&c, 1U);
+	m_buffer.getData(c);
 
 	return c;
 }

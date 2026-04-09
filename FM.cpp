@@ -119,8 +119,8 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           bool ctcss = m_ctcssRX.process(currentRFSample);
 
           // Delay the audio by 100ms to better match the CTCSS detector output
-          m_inputRFRB.addData(&currentRFSample, 1U);
-          m_inputRFRB.getData(&currentRFSample, 1U);
+          m_inputRFRB.addData(currentRFSample);
+          m_inputRFRB.getData(currentRFSample);
 
           if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
@@ -223,9 +223,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
-    currentSample *= m_txLevel;
+    q31_t res1 = currentSample * m_txLevel;
+    q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
-    m_outputRFRB.addData(&currentSample, 1U);
+    m_outputRFRB.addData(res2);
   }
 }
 
@@ -256,8 +257,8 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           bool ctcss = m_ctcssRX.process(currentRFSample);
 
           // Delay the audio by 100ms to better match the CTCSS detector output
-          m_inputRFRB.addData(&currentRFSample, 1U);
-          m_inputRFRB.getData(&currentRFSample, 1U);
+          m_inputRFRB.addData(currentRFSample);
+          m_inputRFRB.getData(currentRFSample);
 
           if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
@@ -323,9 +324,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
-    currentSample *= m_txLevel;
+    q31_t res1 = currentSample * m_txLevel;
+    q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
-    m_outputRFRB.addData(&currentSample, 1U);
+    m_outputRFRB.addData(res2);
   }
 }
 
@@ -1250,7 +1252,7 @@ void CFM::insertDelay(uint16_t ms)
 
   for (uint32_t i = 0U; i < nSamples; i++) {
       const q15_t empty = 0;
-      m_inputRFRB.addData(&empty, 1U);
+      m_inputRFRB.addData(empty);
   }
 }
 
@@ -1260,7 +1262,7 @@ void CFM::insertSilence(uint16_t ms)
 
   for (uint32_t i = 0U; i < nSamples; i++) {
       const q15_t empty = 0;
-      m_outputRFRB.addData(&empty, 1U);
+      m_outputRFRB.addData(empty);
   }
 }
 
