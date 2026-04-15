@@ -80,6 +80,7 @@ const size_t LATENCY_BLOCKS = 3;
 const int32_t FM_DEVIATION = 550000;
 
 const q15_t LEVEL_50PC_INVERTED = -128 * 128;
+const q15_t LEVEL_100PC         = 255 * 128;
 
 CIO::CIO() :
 m_trace(false),
@@ -575,8 +576,14 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
       LogMessage("TX ON");
   }
 
+  q15_t txLevel;
+  if (mode == MMDVM_STATE::FM)
+    txLevel = LEVEL_50PC_INVERTED;
+  else
+    txLevel = LEVEL_100PC;
+
   for (uint16_t i = 0U; i < length; i++) {
-    q31_t res1 = samples[i] * LEVEL_50PC_INVERTED;
+    q31_t res1 = samples[i] * txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
     if (control == nullptr)
