@@ -614,6 +614,8 @@ void CIO::setMode(MMDVM_STATE state)
 
 uint8_t CIO::setParameters()
 {
+  stop();
+
   SoapySDR::Kwargs devArgs;
   SoapySDR::Kwargs rxArgs;
   SoapySDR::Kwargs txArgs;
