@@ -179,7 +179,7 @@
     <ClInclude Include="Globals.h" />
     <ClInclude Include="IO.h" />
     <ClInclude Include="Log.h" />
-    <ClInclude Include="MMDVM.h" />
+    <ClInclude Include="MMDVM-IQ.h" />
     <ClInclude Include="NXDNDefines.h" />
     <ClInclude Include="NXDNRX.h" />
     <ClInclude Include="NXDNTX.h" />
@@ -223,7 +223,7 @@
     <ClCompile Include="FMUpSampler.cpp" />
     <ClCompile Include="IO.cpp" />
     <ClCompile Include="Log.cpp" />
-    <ClCompile Include="MMDVM.cpp" />
+    <ClCompile Include="MMDVM-IQ.cpp" />
     <ClCompile Include="NXDNRX.cpp" />
     <ClCompile Include="NXDNTX.cpp" />
     <ClCompile Include="P25RX.cpp" />

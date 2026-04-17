@@ -18,7 +18,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "MMDVM.h"
+#include "MMDVM-IQ.h"
 #include "Config.h"
 #include "Globals.h"
 #include "Version.h"
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     do {
         m_signal = 0;
 
-        CMMDVM* mmdvm = new CMMDVM(std::string(iniFile));
+        CMMDVMIQ* mmdvm = new CMMDVMIQ(std::string(iniFile));
         ret = mmdvm->run();
         delete mmdvm;
 
@@ -172,16 +172,16 @@ int main(int argc, char** argv)
     return ret;
 }
 
-CMMDVM::CMMDVM(const std::string& filename) :
+CMMDVMIQ::CMMDVMIQ(const std::string& filename) :
 m_conf(filename)
 {
 }
 
-CMMDVM::~CMMDVM()
+CMMDVMIQ::~CMMDVMIQ()
 {
 }
 
-int CMMDVM::run()
+int CMMDVMIQ::run()
 {
     bool ret = m_conf.read();
     if (!ret) {

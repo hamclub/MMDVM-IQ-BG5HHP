@@ -149,7 +149,7 @@
     <ClInclude Include="RingBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MMDVM.h">
+    <ClInclude Include="MMDVM-IQ.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GitVersion.h">
@@ -226,7 +226,7 @@
     <ClCompile Include="IO.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MMDVM.cpp">
+    <ClCompile Include="MMDVM-IQ.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NXDNRX.cpp">

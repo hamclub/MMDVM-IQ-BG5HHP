@@ -16,17 +16,17 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(MMDVM_H)
-#define	MMDVM_H
+#if !defined(MMDVM_IQ_H)
+#define	MMDVM_IQ_H
 
 #include "Conf.h"
 
 #include <string>
 
-class CMMDVM {
+class CMMDVMIQ {
 public:
-	CMMDVM(const std::string& filename);
-	~CMMDVM();
+	CMMDVMIQ(const std::string& filename);
+	~CMMDVMIQ();
 
 	int run();
 

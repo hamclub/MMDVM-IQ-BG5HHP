@@ -35,7 +35,7 @@ MMDVM-IQ:	$(CXXOBJS) $(COBJS)
 %.o: %.c
 		$(CC) $(CFLAGS) -c -o $@ $<
 
-MMDVM.o: GitVersion.h FORCE
+MMDVM-IQ.o: GitVersion.h FORCE
 SerialPort.o: GitVersion.h FORCE
 
 .PHONY: GitVersion.h
