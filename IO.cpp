@@ -82,6 +82,7 @@ const int32_t FM_DEVIATION = 550000;
 // To allow for fine tuning of the deviation levels
 const q15_t LEVEL_50PC_INVERTED = -128 * 128;
 const q15_t LEVEL_40PC_INVERTED = -102 * 128;
+const q15_t LEVEL_30PC_INVERTED = -77  * 128;
 const q15_t LEVEL_100PC         =  255 * 128;
 
 CIO::CIO() :
@@ -579,12 +580,14 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   }
 
   q15_t txLevel;
-  if (mode == MMDVM_STATE::FM)
-    txLevel = LEVEL_50PC_INVERTED;
-  else if (mode == MMDVM_STATE::DSTAR)
-    txLevel = LEVEL_40PC_INVERTED;
-  else
-    txLevel = LEVEL_100PC;
+  switch (mode) {
+    case MMDVM_STATE::FM:
+      txLevel = LEVEL_100PC;
+      break;
+    default:
+      txLevel = LEVEL_40PC_INVERTED;
+      break;
+  }
 
   for (uint16_t i = 0U; i < length; i++) {
     q31_t res1 = samples[i] * txLevel;
