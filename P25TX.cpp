@@ -54,7 +54,7 @@ m_lpState(),
 m_poBuffer(),
 m_poLen(0U),
 m_poPtr(0U),
-m_txDelay(240U),      // 200ms
+m_txDelay(60U),      // 200ms
 m_txHang(6000U),      // 5s
 m_txCount(0U)
 {
@@ -188,7 +188,7 @@ void CP25TX::writeSilence()
 
 void CP25TX::setTXDelay(uint8_t delay)
 {
-  m_txDelay = 600U + uint16_t(delay) * 12U;        // 500ms + tx delay
+  m_txDelay = 60U + uint16_t(delay) * 12U;        // 50ms + tx delay
 
   if (m_txDelay > 1200U)
     m_txDelay = 1200U;

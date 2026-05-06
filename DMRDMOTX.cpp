@@ -57,7 +57,7 @@ m_modState(),
 m_poBuffer(),
 m_poLen(0U),
 m_poPtr(0U),
-m_txDelay(240U)       // 200ms
+m_txDelay(60U)       // 50ms
 {
   ::memset(m_modState, 0x00U, 16U * sizeof(q15_t));
 
@@ -160,7 +160,7 @@ uint8_t CDMRDMOTX::getSpace() const
 
 void CDMRDMOTX::setTXDelay(uint8_t delay)
 {
-  m_txDelay = 600U + uint16_t(delay) * 12U;        // 500ms + tx delay
+  m_txDelay = 60U + uint16_t(delay) * 12U;        // 50ms + tx delay
 
   if (m_txDelay > 1200U)
     m_txDelay = 1200U;

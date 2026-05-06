@@ -56,7 +56,7 @@ m_sincState(),
 m_poBuffer(),
 m_poLen(0U),
 m_poPtr(0U),
-m_txDelay(240U),     // 200ms
+m_txDelay(60U),     // 200ms
 m_txHang(3000U),     // 5s
 m_txCount(0U)
 {
@@ -188,7 +188,7 @@ void CNXDNTX::writeSilence()
 
 void CNXDNTX::setTXDelay(uint8_t delay)
 {
-  m_txDelay = 300U + uint16_t(delay) * 6U;        // 500ms + tx delay
+  m_txDelay = 60U + uint16_t(delay) * 6U;        // 500ms + tx delay
 
   if (m_txDelay > 1200U)
     m_txDelay = 1200U;
