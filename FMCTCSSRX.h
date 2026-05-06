@@ -28,7 +28,7 @@ public:
   CFMCTCSSRX();
   ~CFMCTCSSRX();
 
-  uint8_t setParams(uint8_t frequency, uint8_t highThreshold, uint8_t lowThreshold);
+  uint8_t setParams(uint8_t frequency, uint16_t highThreshold, uint16_t lowThreshold);
   
   bool process(q15_t sample);
 

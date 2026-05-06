@@ -24,7 +24,7 @@
 #include "FMSquelch.h"
 #include "Log.h"
 
-const uint8_t MAX_COUNT = 4U;
+const uint8_t MAX_COUNT = 10U;
 
 
 CFMSquelch::CFMSquelch() :
@@ -39,7 +39,7 @@ CFMSquelch::~CFMSquelch()
 {
 }
 
-void CFMSquelch::setParams(uint8_t highThreshold, uint8_t lowThreshold)
+void CFMSquelch::setParams(uint16_t highThreshold, uint16_t lowThreshold)
 {
 	m_highThreshold = highThreshold;
 	m_lowThreshold  = lowThreshold;
@@ -52,7 +52,7 @@ bool CFMSquelch::process(uint16_t rssi)
 			m_count--;
 
 			if (m_count == 0U) {
-				LogDebug("FM: squelch closed");
+				LogDebug("FM: squelch closed, rssi %u", rssi);
 				m_state = false;
 			}
 		} else {
@@ -63,7 +63,7 @@ bool CFMSquelch::process(uint16_t rssi)
 			m_count++;
 
 			if (m_count >= MAX_COUNT) {
-				LogDebug("FM: squelch open");
+				LogDebug("FM: squelch open, rssi %u", rssi);
 				m_state = true;
 			}
 		}
