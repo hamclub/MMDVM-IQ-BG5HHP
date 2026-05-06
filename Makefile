@@ -1,27 +1,38 @@
 #
 
-# Library paths
-DSP_LIB_PATH=./CMSIS_4/CMSIS
-DSP_SRC_PATH=$(DSP_LIB_PATH)/DSP_Lib/Source
+USE_MQTT ?= 0
+DEBUG ?= 0
 
 CC       = cc
 CXX      = c++
-CFLAGS   = -g -O3 -Wall -std=c11 -MMD -MD -pthread -I$(DSP_LIB_PATH)/Include -DARM_MATH_CM0
-CXXFLAGS = -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -I$(DSP_LIB_PATH)/Include -DARM_MATH_CM0
-LIBS     = -lpthread -lmosquitto -lSoapySDR
-LDFLAGS  = -g -L/usr/local/lib
+CFLAGS   = -Wall -std=c11 -MMD -MD -pthread -DARM_MATH_RPI
+CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI
+LIBS     = -lpthread -lSoapySDR
+LDFLAGS  = -L/usr/local/lib
+
+ifeq ($(USE_MQTT), 1)
+	CXXFLAGS+= -DUSE_MQTT=1
+	LDFLAGS+= -lmosquitto
+endif
+
+ifeq ($(DEBUG), 1)
+	CFLAGS+= -DDEBUG -g
+	CXXFLAGS+= -DDEBUG -g
+	LDFLAGS+= -g
+else
+	CFLAGS+= -DNDEBUG -O3
+	CXXFLAGS+= -DNDEBUG -O3
+endif
+
+ifeq ($(shell uname -s),Darwin)
+	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
+	CXXFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
+	LDFLAGS+= -L/opt/homebrew/lib
+endif
 
 CXXSRCS = $(wildcard *.cpp)
 CXXDEPS = $(CXXSRCS:.cpp=.d)
 CXXOBJS = $(CXXSRCS:.cpp=.o)
-
-CSRCS = $(wildcard \
- $(DSP_SRC_PATH)/FastMathFunctions/*.c  \
- $(DSP_SRC_PATH)/FilteringFunctions/*.c \
- $(DSP_SRC_PATH)/SupportFunctions/*.c   \
- $(DSP_SRC_PATH)/CommonTables/*.c       )
-CDEPS = $(CSRCS:.c=.d)
-COBJS = $(CSRCS:.c=.o)
 
 all:		MMDVM-IQ
 
