@@ -155,8 +155,6 @@ bool CConf::read()
 		} else if (section == SECTION::MODEM) {
 			if (::strcmp(key, "Version") == 0)
 				m_modemVersion = ::atoi(value);
-			else if (::strcmp(key, "Trace") == 0)
-				m_modemTrace = ::atoi(value) == 1;
 			else if (::strcmp(key, "Type") == 0)
 				m_modemType = value;
 			else if (::strcmp(key, "URI") == 0)
