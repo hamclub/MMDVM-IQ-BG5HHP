@@ -38,6 +38,9 @@ enum class SECTION {
 CConf::CConf(const std::string& file) :
 m_file(file),
 m_daemon(false),
+m_logFileLevel(0U),
+m_logFilePath(),
+m_logFileRoot(),
 m_logDisplayLevel(0U),
 m_logMQTTLevel(0U),
 m_mqttHost("127.0.0.1"),
@@ -125,6 +128,12 @@ bool CConf::read()
 				m_logMQTTLevel = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "DisplayLevel") == 0)
 				m_logDisplayLevel = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "FilePath") == 0)
+				m_logFilePath = value;
+			else if (::strcmp(key, "FileRoot") == 0)
+				m_logFileRoot = value;
+			else if (::strcmp(key, "FileLevel") == 0)
+				m_logFileLevel = (unsigned int)::atoi(value);
 		} else if (section == SECTION::MQTT) {
 			if (::strcmp(key, "Host") == 0)
 				m_mqttHost = value;
@@ -165,6 +174,21 @@ bool CConf::read()
 bool CConf::getDaemon() const
 {
 	return m_daemon;
+}
+
+unsigned int CConf::getLogFileLevel() const
+{
+	return m_logFileLevel;
+}
+
+std::string CConf::getLogFilePath() const
+{
+	return m_logFilePath;
+}
+
+std::string CConf::getLogFileRoot() const
+{
+	return m_logFileRoot;
 }
 
 unsigned int CConf::getLogDisplayLevel() const

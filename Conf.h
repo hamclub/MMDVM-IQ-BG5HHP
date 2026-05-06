@@ -34,6 +34,9 @@ public:
 	bool         getDaemon() const;
 
 	// The Log section
+	unsigned int getLogFileLevel() const;
+	std::string  getLogFilePath() const;
+	std::string  getLogFileRoot() const;
 	unsigned int getLogDisplayLevel() const;
 	unsigned int getLogMQTTLevel() const;
 
@@ -60,6 +63,10 @@ private:
 	std::string m_file;
 
 	bool         m_daemon;
+
+	unsigned int m_logFileLevel;
+	std::string  m_logFilePath;
+	std::string  m_logFileRoot;
 
 	unsigned int m_logDisplayLevel;
 	unsigned int m_logMQTTLevel;

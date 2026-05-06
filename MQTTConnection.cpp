@@ -16,6 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_MQTT) && USE_MQTT == 1
+
 #include "MQTTConnection.h"
 
 #include <cassert>
@@ -231,3 +233,4 @@ void CMQTTConnection::onDisconnect(mosquitto* mosq, void* obj, int rc)
 	p->m_connected = false;
 }
 
+#endif // #if defined(USE_MQTT) && USE_MQTT == 1
