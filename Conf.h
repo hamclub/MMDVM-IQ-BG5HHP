@@ -52,6 +52,7 @@ public:
 	// The Modem section
 	std::string  getModemType() const;
 	std::string  getModemURI() const;
+	unsigned char getModemVersion() const;
 
 	bool         getModemTrace() const;
 
@@ -84,6 +85,8 @@ private:
 
 	std::string  m_modemType;
 	std::string  m_modemURI;
+
+	unsigned char m_modemVersion;
 
 	bool         m_modemTrace;
 

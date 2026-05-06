@@ -52,6 +52,7 @@ m_mqttUsername(),
 m_mqttPassword(),
 m_modemType(),
 m_modemURI(),
+m_modemVersion(1),
 m_modemTrace(false),
 m_networkHostAddress("127.0.0.1"),
 m_networkHostPort(3335U),
@@ -152,7 +153,9 @@ bool CConf::read()
 			else if (::strcmp(key, "Password") == 0)
 				m_mqttPassword = value;
 		} else if (section == SECTION::MODEM) {
-			if (::strcmp(key, "Type") == 0)
+			if (::strcmp(key, "Version") == 0)
+				m_modemVersion = ::atoi(value);
+			else if (::strcmp(key, "Type") == 0)
 				m_modemType = value;
 			else if (::strcmp(key, "URI") == 0)
 				m_modemURI = value;
@@ -250,6 +253,11 @@ std::string CConf::getModemType() const
 std::string CConf::getModemURI() const
 {
 	return m_modemURI;
+}
+
+unsigned char CConf::getModemVersion() const
+{
+	return m_modemVersion;
 }
 
 bool CConf::getModemTrace() const
