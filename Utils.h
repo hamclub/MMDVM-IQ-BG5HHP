@@ -24,7 +24,7 @@
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #endif
 
-#include "arm_math.h"
+#include "arm_math_rpi.h"
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
