@@ -161,6 +161,8 @@ bool CConf::read()
 				m_modemType = value;
 			else if (::strcmp(key, "URI") == 0)
 				m_modemURI = value;
+			else if (::strcmp(key, "Trace") == 0)
+				m_modemTrace = ::atoi(value) == 1;
 		} else if (section == SECTION::MMDVM_HOST) {
 			if (::strcmp(key, "HostAddress") == 0)
 				m_networkHostAddress = value;
