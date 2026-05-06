@@ -687,13 +687,13 @@ uint8_t CIO::setParameters()
     m_device->setFrequency(SOAPY_SDR_RX, RX_CHANNEL, soapyRXFreq);
     m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
 
-    if (m_soapyDeviceType.compare("pluto") == 0)
+    if (m_soapyDeviceType.compare("plutosdr") == 0)
     {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "A_BALANCED");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "A");
 
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
-      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 70.0);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 89.75);
     }
     else if (m_soapyDeviceType.compare("limesdr") == 0)
     {
