@@ -55,6 +55,8 @@ public:
 
   void setMode(MMDVM_STATE state);
   
+  void setSoapyDeviceInfo(const char* type, const char* uri);
+
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();
 
@@ -120,6 +122,9 @@ private:
   std::vector<std::complex<float>> m_buffer;
 
   CFDUDC*              m_fdudc;
+
+  std::string          m_soapyDeviceType;
+  std::string          m_soapyDeviceURI;
 
   SoapySDR::Device*    m_device;
   SoapySDR::Stream*    m_rxStream;
