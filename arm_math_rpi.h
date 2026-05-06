@@ -160,6 +160,38 @@ typedef struct
     return ((int32_t)(clip_q63_to_q31((q63_t)x + (q31_t)y)));
   }
 
-#define __SSAT(x, y)  ((x>32767)  ? 32767 : ((x < -32768) ? -32768 : x))
+#if defined(__linux__) && defined(__arm__) && !defined(__aarch64__)
+    /* arm32 */
+    #define __SSAT(x, sat) \
+    __extension__ \
+    ({ \
+        int32_t __res; \
+        int32_t __val = (int32_t)(x); \
+        __asm__ ("ssat %0, %1, %2" \
+                 : "=r" (__res) \
+                 : "I" (sat), "r" (__val) \
+                 : "cc"); \
+        __res; \
+    })
+#elif defined(__aarch64__)
+    /* arm64 */
+    #if defined(__GNUC__) || defined(__clang__)
+        #define __SSAT(x, sat) ({ \
+            int32_t __pos_limit = (1 << ((sat) - 1)) - 1; \
+            int32_t __neg_limit = -(1 << ((sat) - 1)); \
+            int32_t __v = (int32_t)(x); \
+            (__v > __pos_limit) ? __pos_limit : ((__v < __neg_limit) ? __neg_limit : __v); \
+        })
+    #endif
+#else
+    /* fallback */
+    static inline int32_t __SSAT(int32_t x, uint32_t sat) {
+        int32_t pos_limit = (1 << (sat - 1)) - 1;
+        int32_t neg_limit = -(1 << (sat - 1));
+        if (x > pos_limit) return pos_limit;
+        if (x < neg_limit) return neg_limit;
+        return x;
+    }
+#endif
 
 #endif
