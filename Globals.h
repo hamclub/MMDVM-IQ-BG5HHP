@@ -138,6 +138,8 @@ extern CFM    fm;
 
 extern CCWIdTX cwIdTX;
 
+#if defined(USE_MQTT) && USE_MQTT == 1
 extern CMQTTConnection* m_mqtt;
+#endif
 
 #endif

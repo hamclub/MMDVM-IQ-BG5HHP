@@ -16,6 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_MQTT) && USE_MQTT == 1
+
 #if !defined(MQTTPUBLISHER_H)
 #define	MQTTPUBLISHER_H
 
@@ -64,3 +66,4 @@ private:
 
 #endif
 
+#endif // #if defined(USE_MQTT) && USE_MQTT == 1
