@@ -93,7 +93,7 @@ const uint8_t MMDVM_DEBUG4       = 0xF4U;
 const uint8_t MMDVM_DEBUG5       = 0xF5U;
 const uint8_t MMDVM_DEBUG_DUMP   = 0xFAU;
 
-#define	HW_TYPE	"MMDVM-IQ"
+#define	HW_TYPE	"MMDVM-IQ-HHP"
 
 #if defined(GITVERSION)
 #define concat(h, a, b) h " " a " GitID #" b ""
