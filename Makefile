@@ -6,10 +6,16 @@ DSP_SRC_PATH=$(DSP_LIB_PATH)/DSP_Lib/Source
 
 CC       = cc
 CXX      = c++
-CFLAGS   = -g -O3 -Wall -std=c11 -MMD -MD -pthread -I$(DSP_LIB_PATH)/Include -DARM_MATH_CM0
-CXXFLAGS = -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -I$(DSP_LIB_PATH)/Include -DARM_MATH_CM0
+CFLAGS   = -g -O3 -Wall -std=c11 -MMD -MD -pthread -I$(DSP_LIB_PATH)/Include -DARM_MATH_RPI
+CXXFLAGS = -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -I$(DSP_LIB_PATH)/Include -DARM_MATH_RPI
 LIBS     = -lpthread -lmosquitto -lSoapySDR
 LDFLAGS  = -g -L/usr/local/lib
+
+ifeq ($(shell uname -s),Darwin)
+	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
+	CXXFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
+	LDFLAGS+= -L/opt/homebrew/lib
+endif
 
 CXXSRCS = $(wildcard *.cpp)
 CXXDEPS = $(CXXSRCS:.cpp=.d)
