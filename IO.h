@@ -54,6 +54,8 @@ public:
   uint16_t getSpace() const;
 
   void setMode(MMDVM_STATE state);
+
+  void setSoapyDeviceInfo(const char* type, const char* uri);
   
   void setSoapyDeviceInfo(const char* type, const char* uri);
 

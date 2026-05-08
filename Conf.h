@@ -52,9 +52,9 @@ public:
 	// The Modem section
 	std::string  getModemType() const;
 	std::string  getModemURI() const;
-	unsigned char getModemVersion() const;
-
 	bool         getModemTrace() const;
+
+	unsigned char getModemVersion() const;
 
 	// The MMDVMHost section
 	std::string  getNetworkHostAddress() const;
@@ -85,9 +85,7 @@ private:
 
 	std::string  m_modemType;
 	std::string  m_modemURI;
-
 	unsigned char m_modemVersion;
-
 	bool         m_modemTrace;
 
 	std::string  m_networkHostAddress;

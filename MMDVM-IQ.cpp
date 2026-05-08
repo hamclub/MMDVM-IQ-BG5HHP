@@ -269,7 +269,6 @@ int CMMDVMIQ::run()
     }
 
     serial.setVersion(m_conf.getModemVersion());
-
     io.setSoapyDeviceInfo(m_conf.getModemType().c_str(), m_conf.getModemURI().c_str());
 
     ret = io.start(m_conf.getModemTrace());
