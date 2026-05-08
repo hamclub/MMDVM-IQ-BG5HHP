@@ -47,6 +47,8 @@ public:
     std::string    getMQTTPassword() const;
 
 	// The Modem section
+	std::string  getModemType() const;
+	std::string  getModemURI() const;
 	bool         getModemTrace() const;
 
 	// The MMDVMHost section
@@ -71,6 +73,9 @@ private:
     bool         m_mqttAuthEnabled;
     std::string  m_mqttUsername;
     std::string  m_mqttPassword;
+
+    std::string  m_modemType;
+    std::string  m_modemURI;
 
 	bool         m_modemTrace;
 

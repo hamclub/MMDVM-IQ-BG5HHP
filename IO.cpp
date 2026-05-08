@@ -133,6 +133,8 @@ m_prevRXIQSample(0.0F, 0.0F),
 m_delayedTXBuffer(nullptr),
 m_buffer(),
 m_fdudc(nullptr),
+m_soapyDeviceType(),
+m_soapyDeviceURI(),
 m_device(nullptr),
 m_rxStream(nullptr),
 m_txStream(nullptr)
@@ -632,9 +634,30 @@ uint8_t CIO::setParameters()
   const unsigned rxIfNum = 1U, rxIfDen = 12U;
   const unsigned txIfNum = 1U, txIfDen = 12U;
 
-  devArgs["driver"] = "sx";
-  rxArgs["link"]    = "1";
-  txArgs["link"]    = "1";
+  const char* PLUTO_DEFAULT_URI = "ip:pluto.local";
+  const char* LIME_DEFAULT_URI = "index=0";         // eg: addr=1111:2222 or serial=xxxxxxxx
+
+  if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0)
+  {
+    const char* uri = m_soapyDeviceURI.empty() ? PLUTO_DEFAULT_URI : m_soapyDeviceURI.c_str();;
+    devArgs["driver"] = "plutosdr";
+    rxArgs["uri"]     = uri;
+    LogMessage("Using plutosdr driver uri %s", uri);
+  }
+  else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0)
+  {
+    const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();;
+    devArgs["driver"] = "lime";
+    rxArgs["uri"]     = uri;
+    LogMessage("Using limesdr driver uri %s", uri);
+  }
+  else
+  {
+    devArgs["driver"] = "sx";
+    rxArgs["link"]    = "1";
+    txArgs["link"]    = "1";
+    LogMessage("Using sx driver 1, 1");
+  }
 
   const unsigned blockSize = 512U;
 
@@ -655,6 +678,8 @@ uint8_t CIO::setParameters()
 
   double soapyRXFreq = double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen);
 
+  LogMessage("SDR Sample Rate %f, RXFreq %.2f, TXFreq %.2f", samplerate, soapyRXFreq, m_soapyTXFreq);
+
   try {
     m_device = SoapySDR::Device::make(devArgs);
     assert(m_device != nullptr);
@@ -665,11 +690,30 @@ uint8_t CIO::setParameters()
     m_device->setFrequency(SOAPY_SDR_RX, RX_CHANNEL, soapyRXFreq);
     m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
 
-    m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAL");
-    m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
+    if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0)
+    {
+      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "A_BALANCED");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "A");
 
-    m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
-    m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 89.75);
+    }
+    else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0)
+    {
+      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAH");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
+
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
+    }
+    else
+    {
+      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAL");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
+
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
+    }
 
     m_rxStream = m_device->setupStream(SOAPY_SDR_RX, "CF32", {RX_CHANNEL}, rxArgs);
     m_txStream = m_device->setupStream(SOAPY_SDR_TX, "CF32", {TX_CHANNEL}, txArgs);
@@ -686,6 +730,11 @@ uint8_t CIO::setParameters()
   }
 
   return 0U;
+}
+
+void CIO::setSoapyDeviceInfo(const char* type, const char* uri) {
+  m_soapyDeviceType = type ? type : "";
+  m_soapyDeviceURI = uri ? uri : "";
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
