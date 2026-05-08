@@ -9,6 +9,10 @@
 #include "FDUDC.h"
 #include <cassert>
 
+#ifndef M_PIf32
+#define M_PIf32 3.141592653589793f
+#endif
+
 static float sinc(float v)
 {
     if (v == 0.0f)
@@ -53,7 +57,7 @@ m_p(0),
 m_i(0),
 m_ddc_i(0),
 m_duc_i(0),
-m_ducIn({0.0f, 0.0f})
+m_ducIn(0.0f, 0.0f)
 {
     size_t approxlen = (size_t)resampDen * (size_t)length;
     // Number of filter branches:
