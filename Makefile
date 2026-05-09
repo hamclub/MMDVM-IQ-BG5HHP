@@ -42,15 +42,12 @@ CXXOBJS = $(CXXSRCS:.cpp=.o)
 
 all:		MMDVM-IQ
 
-MMDVM-IQ:	$(CXXOBJS) $(COBJS)
-		$(CXX) $(CXXOBJS) $(COBJS) $(LDFLAGS) $(LIBS) -o MMDVM-IQ
+MMDVM-IQ:	$(CXXOBJS)
+		$(CXX) $(CXXOBJS) $(LDFLAGS) $(LIBS) -o MMDVM-IQ
 
 %.o: %.cpp
 		$(CXX) $(CXXFLAGS) -c -o $@ $<
 -include $(CXXDEPS)
-
-%.o: %.c
-		$(CC) $(CFLAGS) -c -o $@ $<
 
 MMDVM-IQ.o: GitVersion.h FORCE
 SerialPort.o: GitVersion.h FORCE
