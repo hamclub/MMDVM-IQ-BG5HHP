@@ -133,7 +133,7 @@ m_prevRXIQSample(0.0F, 0.0F),
 m_delayedTXBuffer(nullptr),
 m_buffer(),
 m_fdudc(nullptr),
-m_soapyDeviceType(),
+m_soapyDeviceType("sx"),
 m_soapyDeviceURI(),
 m_device(nullptr),
 m_rxStream(nullptr),
@@ -731,9 +731,10 @@ uint8_t CIO::setParameters()
   return 0U;
 }
 
-void CIO::setSoapyDeviceInfo(const char* type, const char* uri) {
-  m_soapyDeviceType = type ? type : "";
-  m_soapyDeviceURI = uri ? uri : "";
+void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri)
+{
+  m_soapyDeviceType = type;
+  m_soapyDeviceURI  = uri;
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)

@@ -55,7 +55,7 @@ public:
 
   void setMode(MMDVM_STATE state);
 
-  void setSoapyDeviceInfo(const char* type, const char* uri);
+  void setSoapyDeviceInfo(const std::string& type, const std::string& uri);
   
   void setSoapyDeviceInfo(const char* type, const char* uri);
 
