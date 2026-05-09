@@ -263,7 +263,7 @@ int CMMDVMIQ::run()
         return 1;
     }
 
-    io.setSoapyDeviceInfo(m_conf.getModemType().c_str(), m_conf.getModemURI().c_str());
+    io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI());
 
     ret = io.start(m_conf.getModemTrace());
     if (!ret) {

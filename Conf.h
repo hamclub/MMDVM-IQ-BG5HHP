@@ -76,7 +76,6 @@ private:
 
     std::string  m_modemType;
     std::string  m_modemURI;
-
 	bool         m_modemTrace;
 
 	std::string  m_networkHostAddress;

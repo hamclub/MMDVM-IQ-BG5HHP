@@ -133,7 +133,7 @@ m_prevRXIQSample(0.0F, 0.0F),
 m_delayedTXBuffer(nullptr),
 m_buffer(),
 m_fdudc(nullptr),
-m_soapyDeviceType(),
+m_soapyDeviceType("sx"),
 m_soapyDeviceURI(),
 m_device(nullptr),
 m_rxStream(nullptr),
@@ -637,22 +637,17 @@ uint8_t CIO::setParameters()
   const char* PLUTO_DEFAULT_URI = "ip:pluto.local";
   const char* LIME_DEFAULT_URI = "index=0";         // eg: addr=1111:2222 or serial=xxxxxxxx
 
-  if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0)
-  {
+  if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0) {
     const char* uri = m_soapyDeviceURI.empty() ? PLUTO_DEFAULT_URI : m_soapyDeviceURI.c_str();;
     devArgs["driver"] = "plutosdr";
     rxArgs["uri"]     = uri;
     LogMessage("Using plutosdr driver uri %s", uri);
-  }
-  else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0)
-  {
+  } else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0) {
     const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();;
     devArgs["driver"] = "lime";
     rxArgs["uri"]     = uri;
     LogMessage("Using limesdr driver uri %s", uri);
-  }
-  else
-  {
+  } else {
     devArgs["driver"] = "sx";
     rxArgs["link"]    = "1";
     txArgs["link"]    = "1";
@@ -697,17 +692,13 @@ uint8_t CIO::setParameters()
 
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 89.75);
-    }
-    else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0)
-    {
+    } else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0) {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAH");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
 
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
-    }
-    else
-    {
+    } else {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAL");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
 
@@ -732,9 +723,10 @@ uint8_t CIO::setParameters()
   return 0U;
 }
 
-void CIO::setSoapyDeviceInfo(const char* type, const char* uri) {
-  m_soapyDeviceType = type ? type : "";
-  m_soapyDeviceURI = uri ? uri : "";
+void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri)
+{
+  m_soapyDeviceType = type;
+  m_soapyDeviceURI  = uri;
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)

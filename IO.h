@@ -55,7 +55,7 @@ public:
 
   void setMode(MMDVM_STATE state);
 
-  void setSoapyDeviceInfo(const char* type, const char* uri);
+  void setSoapyDeviceInfo(const std::string& type, const std::string& uri);
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();

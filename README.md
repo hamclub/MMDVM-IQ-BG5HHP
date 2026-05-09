@@ -1,11 +1,8 @@
 This is the source code of the MMDVM firmware that supports the D-Star, DMR, System Fusion, P25, NXDN, POCSAG, and FM modes.
 
-It is currently used with the SXceiver Pi hat or similar running on a Raspberry Pi. All of the development work is done on a Pi 4 as there are reports of incompatibilities with the Pi 5. It uses the SoapySDR interface that can be found at https://sxceiver.com/
+It can be used with the SXceiver Pi hat or similar running on a Raspberry Pi, the Pluto SDR, or the Lime SDR. All of the development work is done on a Pi 4 with an SXceiver Pi hat as there are reports of incompatibilities with the Pi 5. It uses the SoapySDR interface that can be found at https://sxceiver.com/
 
-This software uses CMSIS-DSP from ARM software which can be found at: https://github.com/ARM-software/CMSIS_4.git
-and it should be cloned into the MMDVM-IQ source directory. The CMSIS-DSP source code generates a lot of warnings but compiles correctly.
-
-It connects with the current MMDVM Host via a UDP link. The corresponding entries at the host end are:
+It connects to the MMDVM Host via a UDP link. The corresponding entries at the host end are:
 
     [Modem]
     Protocol=udp
