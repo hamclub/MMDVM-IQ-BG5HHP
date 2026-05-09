@@ -56,7 +56,7 @@ bool CFMSquelch::process(uint16_t rssi)
 				m_state = false;
 			}
 		} else {
-			m_state = MAX_COUNT;
+			m_count = MAX_COUNT;
 		}
 	} else {
 		if (rssi >= m_highThreshold) {
