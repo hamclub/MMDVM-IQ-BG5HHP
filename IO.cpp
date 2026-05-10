@@ -568,9 +568,13 @@ void CIO::processIQBlock()
 
     txSample = m_delayedTXBuffer->process(txSample);
 
+    float rssi = 100000000.0F * std::norm(rxIQSample);
+    if (rssi > 65535.0F)
+      rssi = 65535.0F;
+
     RXSample rxSample = {
       .m_sample  = q15_t(d + 0.5F),
-      .m_rssi    = uint16_t(100000000.0F * std::norm(rxIQSample)),
+      .m_rssi    = uint16_t(rssi),
       .m_control = txSample.m_control
     };
 
