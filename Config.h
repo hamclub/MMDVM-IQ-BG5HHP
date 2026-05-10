@@ -45,6 +45,6 @@
 #define MODE_FM
 
 // To reduce CPU load, you can remove the DC blocker by commenting out the next line
-#define USE_DCBLOCKER
+// #define USE_DCBLOCKER
 
 #endif
