@@ -71,18 +71,23 @@ public:
   void writeFMEOT();
 #endif
 
+  void setVersion(unsigned char version) { m_version = version; };
+
 private:
   uint8_t   m_buffer[512U];
   uint16_t  m_ptr;
   uint16_t  m_len;
   CSocket   m_socket;
+  unsigned char m_version;
   bool      m_trace;
 
   void    sendACK(uint8_t type);
   void    sendNAK(uint8_t type, uint8_t err);
   void    getStatus();
+  void    getVersion1();
   void    getVersion();
   uint8_t setFrequency(const uint8_t* data, uint16_t length);
+  uint8_t setConfig1(const uint8_t* data, uint16_t length);
   uint8_t setConfig(const uint8_t* data, uint16_t length);
   uint8_t setMode(const uint8_t* data, uint16_t length);
   void    setMode(MMDVM_STATE modemState);

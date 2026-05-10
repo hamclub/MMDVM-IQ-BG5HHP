@@ -244,6 +244,7 @@ int CMMDVMIQ::run()
         }
     }
 #endif
+#if defined(USE_MQTT) && USE_MQTT == 1
     ::LogInitialise(m_conf.getLogDisplayLevel(), m_conf.getLogMQTTLevel());
 
     std::vector<std::pair<std::string, void (*)(const unsigned char*, unsigned int)>> subscriptions;
@@ -254,6 +255,10 @@ int CMMDVMIQ::run()
         delete m_mqtt;
         return 1;
     }
+#else
+    bool logUTC = false;
+    ::LogInitialiseFile(m_conf.getDaemon(), m_conf.getLogFilePath().c_str(), m_conf.getLogFileRoot().c_str(), m_conf.getLogFileLevel(), m_conf.getLogDisplayLevel(), logUTC);
+#endif
 
     ret = serial.start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
                             m_conf.getNetworkHostAddress(), m_conf.getNetworkHostPort(),
@@ -263,6 +268,7 @@ int CMMDVMIQ::run()
         return 1;
     }
 
+    serial.setVersion(m_conf.getModemVersion());
     io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI());
 
     ret = io.start(m_conf.getModemTrace());

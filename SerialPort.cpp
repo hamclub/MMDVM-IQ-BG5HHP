@@ -93,7 +93,7 @@ const uint8_t MMDVM_DEBUG4       = 0xF4U;
 const uint8_t MMDVM_DEBUG5       = 0xF5U;
 const uint8_t MMDVM_DEBUG_DUMP   = 0xFAU;
 
-#define	HW_TYPE	"MMDVM-IQ"
+#define	HW_TYPE	"MMDVM-IQ-HHP"
 
 #if defined(GITVERSION)
 #define concat(h, a, b) h " " a " GitID #" b ""
@@ -114,6 +114,7 @@ m_buffer(),
 m_ptr(0U),
 m_len(0U),
 m_socket(),
+m_version(2),
 m_trace(false)
 {
 }
@@ -257,8 +258,39 @@ void CSerialPort::getStatus()
       dump("Get Status", reply, 20U);
 }
 
+void CSerialPort::getVersion1()
+{
+  uint8_t reply[200U];
+
+  reply[0U] = MMDVM_FRAME_START;
+  reply[1U] = 0U;
+  reply[2U] = MMDVM_GET_VERSION;
+
+  reply[3U] = 1;
+
+  uint8_t count = 4U;
+  for (uint8_t i = 0U; HARDWARE[i] != 0x00U; i++, count++)
+    reply[count] = HARDWARE[i];
+
+  reply[count++] = 0;
+
+  // TODO - put the serial here
+
+  reply[1U] = count;
+
+  m_socket.write(reply, count);
+
+  if (m_trace)
+      dump("Get Version1", reply, count);
+}
+
 void CSerialPort::getVersion()
 {
+  if (m_version == 1) {
+    getVersion1();
+    return;
+  }
+
   uint8_t reply[200U];
 
   reply[0U] = MMDVM_FRAME_START;
@@ -338,8 +370,221 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
   return io.setFrequency(power, txFreq, rxFreq, pocsagFreq);
 }
 
+uint8_t CSerialPort::setConfig1(const uint8_t* data, uint16_t length)
+{
+  assert(data != nullptr);
+
+  if (length < 19U)
+    return 4U;
+
+  bool rxInvert        = (data[0U] & 0x01U) == 0x01U;
+  bool txInvert        = (data[0U] & 0x02U) == 0x02U;
+  bool pttInvert       = (data[0U] & 0x04U) == 0x04U;
+  bool useCOSAsLockout = (data[0U] & 0x20U) == 0x20U;
+  // bool caldata      = (data[0U] & 0x40U) == 0x40U;    // We use 0x40 as the marker for calibrate data
+  bool debug = (data[0U] & 0x10U) == 0x10U;
+
+#if defined(MODE_YSF)
+  bool ysfLoDev        = (data[0U] & 0x08U) == 0x08U;
+#endif
+  bool simplex         = (data[0U] & 0x80U) == 0x80U;
+
+#if defined(MODE_DSTAR)
+  bool dstarEnable  = (data[1U] & 0x01U) == 0x01U;
+#endif
+#if defined(MODE_DMR)
+  bool dmrEnable    = (data[1U] & 0x02U) == 0x02U;
+#endif
+#if defined(MODE_YSF)
+  bool ysfEnable    = (data[1U] & 0x04U) == 0x04U;
+#endif
+#if defined(MODE_P25)
+  bool p25Enable    = (data[1U] & 0x08U) == 0x08U;
+#endif
+#if defined(MODE_NXDN)
+  bool nxdnEnable   = (data[1U] & 0x10U) == 0x10U;
+#endif
+#if defined(MODE_POCSAG)
+  bool pocsagEnable = (data[1U] & 0x20U) == 0x20U;
+#endif
+#if defined(MODE_FM)
+  bool fmEnable     = (data[1U] & 0x40U) == 0x40U;
+#endif
+#if defined(MODE_APRS)
+  bool aprsEnable   = (data[1U] & 0x80U) == 0x80U;
+#endif
+
+  uint8_t txDelay = data[2U];
+  if (txDelay > 50U)
+    return 4U;
+
+  MMDVM_STATE modemState = MMDVM_STATE(data[3U]);
+
+  if (modemState != MMDVM_STATE::IDLE && modemState != MMDVM_STATE::DSTAR && modemState != MMDVM_STATE::DMR && modemState != MMDVM_STATE::YSF && modemState != MMDVM_STATE::P25 && modemState != MMDVM_STATE::NXDN && modemState != MMDVM_STATE::POCSAG && modemState != MMDVM_STATE::FM)
+    return 4U;
+
+#if defined(MODE_DSTAR)
+  if (modemState == MMDVM_STATE::DSTAR && !dstarEnable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::DSTAR)
+    return 4U;
+#endif
+
+#if defined(MODE_DMR)
+  if (modemState == MMDVM_STATE::DMR && !dmrEnable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::DMR)
+    return 4U;
+#endif
+
+#if defined(MODE_YSF)
+  if (modemState == MMDVM_STATE::YSF && !ysfEnable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::YSF)
+    return 4U;
+#endif
+
+#if defined(MODE_P25)
+  if (modemState == MMDVM_STATE::P25 && !p25Enable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::P25)
+    return 4U;
+#endif
+
+#if defined(MODE_NXDN)
+  if (modemState == MMDVM_STATE::NXDN && !nxdnEnable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::NXDN)
+    return 4U;
+#endif
+
+#if defined(MODE_POCSAG)
+  if (modemState == MMDVM_STATE::POCSAG && !pocsagEnable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::POCSAG)
+    return 4U;
+#endif
+
+#if defined(MODE_FM)
+  if (modemState == MMDVM_STATE::FM && !fmEnable)
+    return 4U;
+#else
+  if (modemState == MMDVM_STATE::FM)
+    return 4U;
+#endif
+
+  uint8_t rxLevel       = data[4U];
+  // uint8_t cwIdTXLelev   = data[5U];
+
+#if defined(MODE_DMR)
+  uint8_t colorCode = data[6U];
+  if (colorCode > 15U)
+    return 4U;
+
+  uint8_t dmrDelay = data[7U];
+  bool    trunking = false; // (data[25U] & 0x80U) == 0x80U;
+#endif
+
+// reads legacy tx level values
+  // int16_t dstarTXLevel = int16_t(data[9U])  * 128;
+  // int16_t dmrTXLevel   = int16_t(data[10U]) * 128;
+  // int16_t ysfTXLevel   = int16_t(data[11U]) * 128;
+  // int16_t p25TXLevel   = int16_t(data[12U]) * 128;
+
+  // int16_t txDCOffset   = int16_t(data[13U]) - 128;
+  // int16_t rxDCOffset   = int16_t(data[14U]) - 128;
+
+  // int16_t nxdnTXLevel  = int16_t(data[15U]) * 128;
+
+#if defined(MODE_YSF)
+  uint8_t ysfTXHang     = data[16U];
+#endif
+#if defined(MODE_POCSAG)
+  uint8_t pocsagTXLevel = data[17U];
+#endif
+#if defined(MODE_FM)
+  uint8_t fmTXLevel     = data[18U];
+#endif
+#if defined(MODE_P25)
+  uint8_t p25TXHang     = (length > 21) ? data[19U] : 5;
+#endif
+#if defined(MODE_NXDN)
+  uint8_t nxdnTXHang    = (length > 21) ? data[20U] : 5;
+#endif
+
+  setMode(modemState);
+
+  m_duplex       = !simplex;
+
+#if defined(MODE_DSTAR)
+  m_dstarEnable  = dstarEnable;
+  dstarTX.setTXDelay(txDelay);
+#endif
+#if defined(MODE_DMR)
+  m_dmrEnable    = dmrEnable;
+  dmrDMOTX.setTXDelay(txDelay);
+
+  dmrTX.setTrunking(trunking);
+  dmrTX.setColorCode(colorCode);
+  dmrRX.setColorCode(colorCode);
+  dmrRX.setDelay(dmrDelay);
+  dmrDMORX.setColorCode(colorCode);
+  dmrIdleRX.setColorCode(colorCode);
+#endif
+#if defined(MODE_YSF)
+  m_ysfEnable    = ysfEnable;
+  ysfTX.setTXDelay(txDelay);
+  ysfTX.setParams(ysfLoDev, ysfTXHang);
+#endif
+#if defined(MODE_P25)
+  m_p25Enable    = p25Enable;
+  p25TX.setTXDelay(txDelay);
+  p25TX.setParams(p25TXHang);
+#endif
+#if defined(MODE_NXDN)
+  m_nxdnEnable   = nxdnEnable;
+  nxdnTX.setTXDelay(txDelay);
+  nxdnTX.setParams(nxdnTXHang);
+#endif
+#if defined(MODE_POCSAG)
+  m_pocsagEnable = pocsagEnable;
+  pocsagTX.setTXDelay(txDelay);
+#endif
+#if defined(MODE_FM)
+  m_fmEnable     = fmEnable;
+  fm.setTXLevel(fmTXLevel);
+#endif
+
+  // unused parameters
+  (void)rxInvert;
+  (void)txInvert;
+  (void)pttInvert;
+  (void)useCOSAsLockout;
+  (void)debug;
+  (void)rxLevel;
+  // (void)cwIdTXLelev;
+  // (void)dstarTXLevel;
+  // (void)dmrTXLevel;
+  // (void)ysfTXLevel;
+  // (void)p25TXLevel;
+  // (void)txDCOffset; 
+  // (void)rxDCOffset;
+  // (void)nxdnTXLevel;
+
+  return io.setParameters();
+}
+
 uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 {
+  if (m_version == 1)
+    return setConfig1(data, length);
+
   assert(data != nullptr);
 
   if (length < 37U)
@@ -565,8 +810,8 @@ uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
   uint8_t  timeoutLevel   = data[1U];
 
   uint8_t  ctcssFrequency     = data[2U];
-  uint8_t  ctcssHighThreshold = data[3U];
-  uint8_t  ctcssLowThreshold  = data[4U];
+  uint16_t  ctcssHighThreshold = (uint16_t)data[3U] * 10;
+  uint16_t  ctcssLowThreshold  = (uint16_t)data[4U] * 10;
   uint8_t  ctcssLevel         = data[5U];
 
   uint8_t  kerchunkTime   = data[6U];
@@ -574,15 +819,23 @@ uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
 
   uint8_t  accessMode     = data[8U] & 0x0FU;
   bool     linkMode       = (data[8U] & 0x20U) == 0x20U;
+  bool     noiseSquelch   = (data[8U] & 0x40U) == 0x40U;
+  bool     cosInvert      = (data[8U] & 0x80U) == 0x80U;
 
   uint8_t  rfAudioBoost   = data[9U];
   uint8_t  maxDev         = data[10U];
   uint8_t  rxLevel        = data[11U];
 
-  uint8_t  squelchHighThreshold = data[12U];
-  uint8_t  squelchLowThreshold  = data[13U];
+  uint16_t  squelchHighThreshold = (uint16_t)data[12U] * 10;
+  uint16_t  squelchLowThreshold  = (uint16_t)data[13U] * 10;
 
-  return fm.setMisc(timeout, timeoutLevel, ctcssFrequency, ctcssHighThreshold, ctcssLowThreshold, ctcssLevel, kerchunkTime, hangTime, accessMode, linkMode, squelchHighThreshold, squelchLowThreshold, rfAudioBoost, maxDev, rxLevel);
+  // Support different CTCSS for TX
+  uint8_t  ctcssFrequencyTX = ctcssFrequency;
+  if(length > 14)
+    ctcssFrequencyTX = data[14U];
+
+  // rxLevel = 255;
+  return fm.setMisc(timeout, timeoutLevel, ctcssFrequency, ctcssFrequencyTX, ctcssHighThreshold, ctcssLowThreshold, ctcssLevel, kerchunkTime, hangTime, accessMode, linkMode, squelchHighThreshold, squelchLowThreshold, rfAudioBoost, maxDev, rxLevel);
 }
 
 uint8_t CSerialPort::setFMParams4(const uint8_t* data, uint16_t length)
