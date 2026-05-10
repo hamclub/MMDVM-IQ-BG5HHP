@@ -128,6 +128,8 @@ m_pocsagFreq(0U),
 m_soapyTXFreq(0.0),
 m_soapyPocsagFreq(0.0),
 m_soapyInit(false),
+m_timestamped(false),
+m_latencyNS(0LL),
 m_phase(0U),
 m_prevRXIQSample(0.0F, 0.0F),
 m_delayedTXBuffer(nullptr),
@@ -260,17 +262,19 @@ void CIO::process()
     m_device->activateStream(m_rxStream);
     m_device->activateStream(m_txStream);
 
-    // Write initial zeros to transmit buffer to start streams
-    for (size_t i = 0; i < m_buffer.size(); i++)
-      m_buffer[i] = {0.0F, 0.0F};
-    
-    for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
-      void *buffs[1] = {(void*)m_buffer.data()};
-      int flags = 0;
-      int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
-      if (ret <= 0) {
-        LogError("TX stream start error: %d (%s)", ret, SoapySDR_errToStr(ret));
-        break;
+    if (!m_timestamped) {
+      // Write initial zeros to transmit buffer to start streams
+      for (size_t i = 0; i < m_buffer.size(); i++)
+        m_buffer[i] = { 0.0F, 0.0F };
+
+      for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
+        void* buffs[1] = { (void*)m_buffer.data() };
+        int flags = 0;
+        int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
+        if (ret <= 0) {
+          LogError("TX stream start error: %d (%s)", ret, SoapySDR_errToStr(ret));
+          break;
+        }
       }
     }
 
@@ -278,11 +282,11 @@ void CIO::process()
   }
 
   void *buffs[1] = {(void*)m_buffer.data()};
-  long long timeNs = 0LL;
+  long long timeNS = 0LL;
   
   if (m_soapyInit) {
     int flags = 0;
-    int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
+    int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNS);
     if (ret > 0) {
       processIQBlock();
     } else {
@@ -293,7 +297,12 @@ void CIO::process()
 
   if (m_soapyInit) {
     int flags = 0;
-    int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNs);
+    if (m_timestamped) {
+      timeNS += m_latencyNS;
+      flags   = SOAPY_SDR_HAS_TIME;
+    }
+
+    int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNS);
     if (ret <= 0) {
       LogError("TX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
       m_soapyInit = false;
@@ -541,6 +550,7 @@ void CIO::processIQBlock()
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
     std::complex<float> txIQSample = {0.0F, 0.0F};
     TXSample txSample = {0, MARK_NONE};
+
     if (m_txBuffer.getData(txSample)) {
       // Modulate TX
       m_phase += txSample.m_sample * FM_DEVIATION;
@@ -548,6 +558,7 @@ void CIO::processIQBlock()
       txIQSample = std::polar(m_power, ph);
     }
 
+    // Demodulate RX
     float d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
     m_prevRXIQSample = rxIQSample;
  
@@ -629,51 +640,73 @@ uint8_t CIO::setParameters()
   SoapySDR::Kwargs rxArgs;
   SoapySDR::Kwargs txArgs;
 
-  const unsigned resampLen = 11U;
-  const unsigned resampNum = 4U, resampDen = 25U;
-  const unsigned rxIfNum = 1U, rxIfDen = 12U;
-  const unsigned txIfNum = 1U, txIfDen = 12U;
+  size_t blockSize = 512;
+  size_t iqHWDelay = 10;
+  unsigned int resampNum = 4U;
+  unsigned int resampDen = 25U;
+
+  const unsigned int resampLen = 11U;
+  const unsigned int rxIfNum = 1U, rxIfDen = 12U;
+  const unsigned int txIfNum = 1U, txIfDen = 12U;
 
   const char* PLUTO_DEFAULT_URI = "ip:pluto.local";
-  const char* LIME_DEFAULT_URI = "index=0";         // eg: addr=1111:2222 or serial=xxxxxxxx
+  const char* LIME_DEFAULT_URI  = "index=0";         // eg: addr=1111:2222 or serial=xxxxxxxx
 
   if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0) {
     const char* uri = m_soapyDeviceURI.empty() ? PLUTO_DEFAULT_URI : m_soapyDeviceURI.c_str();;
+
     devArgs["driver"] = "plutosdr";
     rxArgs["uri"]     = uri;
-    LogMessage("Using plutosdr driver uri %s", uri);
+
+    m_timestamped = false;
+
+    LogMessage("Using Pluto SDR driver uri %s", uri);
   } else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0) {
     const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();;
+    resampNum = 2U;
+    resampDen = 25U;
+    blockSize = 1024U;
+    iqHWDelay = 100U;
+
     devArgs["driver"] = "lime";
     rxArgs["uri"]     = uri;
-    LogMessage("Using limesdr driver uri %s", uri);
+    rxArgs["latency"] = "0";
+    txArgs["latency"] = "0";
+
+    m_timestamped = true;
+
+    LogMessage("Using Lime SDR driver uri %s", uri);
   } else {
+    resampNum = 4U;
+    resampDen = 25U;
+    blockSize = 512U;
+    iqHWDelay = 10U;
+
     devArgs["driver"] = "sx";
-    rxArgs["link"]    = "1";
-    txArgs["link"]    = "1";
-    LogMessage("Using sx driver 1, 1");
+
+    m_timestamped = true;
+
+    LogMessage("Using SX1255 driver");
   }
 
-  const unsigned blockSize = 512U;
-
   m_buffer.resize(blockSize);
-
-  const size_t iqHWDelay = 10U;
 
   size_t latencySamples = (blockSize * LATENCY_BLOCKS + iqHWDelay) * resampNum / resampDen + resampLen;
 
   m_delayedTXBuffer = new CDelayBuffer<TXSample>(latencySamples, {0, 0U});
 
-  m_fdudc = new CFDUDC(resampNum, resampDen, rxIfNum, rxIfDen, txIfNum, txIfDen, resampLen, 0.5F);
-
   const double samplerate = 24000.0 * double(resampDen) / double(resampNum);
+
+  m_latencyNS = (long long)std::round(1e9 / samplerate * (double)(blockSize * LATENCY_BLOCKS));
+
+  m_fdudc = new CFDUDC(resampNum, resampDen, rxIfNum, rxIfDen, txIfNum, txIfDen, resampLen, 0.5F);
 
   m_soapyTXFreq     = double(m_txFreq)     - samplerate * double(txIfNum) / double(txIfDen);
   m_soapyPocsagFreq = double(m_pocsagFreq) - samplerate * double(txIfNum) / double(txIfDen);
 
   double soapyRXFreq = double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen);
 
-  LogMessage("SDR Sample Rate %f, RXFreq %.2f, TXFreq %.2f", samplerate, soapyRXFreq, m_soapyTXFreq);
+  LogMessage("SDR Sample Rate %f, RX Freq %.2f, TX Freq %.2f, POCSAG Freq %.2f", samplerate, soapyRXFreq, m_soapyTXFreq, m_soapyPocsagFreq);
 
   try {
     m_device = SoapySDR::Device::make(devArgs);
@@ -685,8 +718,7 @@ uint8_t CIO::setParameters()
     m_device->setFrequency(SOAPY_SDR_RX, RX_CHANNEL, soapyRXFreq);
     m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
 
-    if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0)
-    {
+    if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0) {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "A_BALANCED");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "A");
 

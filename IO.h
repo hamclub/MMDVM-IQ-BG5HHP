@@ -115,6 +115,9 @@ private:
 
   bool                 m_soapyInit;
 
+  bool                 m_timestamped;
+  long long            m_latencyNS;
+
   uint32_t             m_phase;
   std::complex<float>  m_prevRXIQSample;
   CDelayBuffer<TXSample>* m_delayedTXBuffer;
