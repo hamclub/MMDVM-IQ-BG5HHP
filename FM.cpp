@@ -101,9 +101,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     }
 
     // ARMv7-M has hardware integer division 
-    q15_t currentRFSample = q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
+    // q15_t currentRFSample = q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
+    q15_t currentRFSample = __SSAT(q31_t(samples[i]) << 2, 16);
 
-    q15_t currentExtSample;
+    q15_t currentExtSample = 0;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
     inputExt = inputExt && m_extEnabled;
 
@@ -239,9 +240,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     bool cos = m_squelch.process(rssi[i]);
 
     // ARMv7-M has hardware integer division 
-    q15_t currentRFSample = q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
+    // q15_t currentRFSample =  q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
+    q15_t currentRFSample = __SSAT(q31_t(samples[i]) << 2, 16);
 
-    q15_t currentExtSample;
+    q15_t currentExtSample = 0;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
     inputExt = inputExt && m_extEnabled;
 
@@ -425,7 +427,7 @@ uint8_t CFM::setAck(const char* rfAck, uint8_t speed, uint16_t frequency, uint8_
   return m_rfAck.setParams(rfAck, speed, frequency, level, level);
 }
 
-uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
+uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssFrequencyTX, uint16_t ctcssHighThreshold, uint16_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, uint16_t squelchHighThreshold, uint16_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
 {
   m_accessMode   = accessMode;
   m_linkMode     = linkMode;
@@ -441,7 +443,14 @@ uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFreque
   m_timeoutTone.setParams(timeoutLevel);
   m_blanking.setParams(maxDev, timeoutLevel);
 
-  m_rxLevel = rxLevel; //q15_t(255)/q15_t(rxLevel >> 1);
+  // m_rxLevel = rxLevel; //q15_t(255)/q15_t(rxLevel >> 1);
+
+  // LogMessage("FM RX Level %d", rxLevel);
+  LogMessage("FM RF AudioBoost %d", m_rfAudioBoost);
+  LogMessage("FM RX SQL %u/%u", squelchHighThreshold, squelchLowThreshold);
+  LogMessage("FM Link Mode %s", m_linkMode ? "On" : "Off");
+  LogMessage("FM Access Mode %d", m_accessMode);
+  LogMessage("FM BLK Param %d/%d", maxDev, timeoutLevel);
 
   m_squelch.setParams(squelchHighThreshold, squelchLowThreshold);
 
@@ -449,7 +458,10 @@ uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFreque
   if (ret != 0U)
     return ret;
 
-  return m_ctcssTX.setParams(ctcssFrequency, ctcssLevel);
+  if (ctcssFrequencyTX > 0)
+    ret = m_ctcssTX.setParams(ctcssFrequencyTX, ctcssLevel);
+
+  return ret;
 }
 
 uint8_t CFM::setExt(const char* ack, uint8_t audioBoost, uint8_t speed, uint16_t frequency, uint8_t level)

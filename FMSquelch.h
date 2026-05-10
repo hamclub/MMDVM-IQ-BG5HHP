@@ -28,7 +28,7 @@ public:
 	CFMSquelch();
 	~CFMSquelch();
 
-	void setParams(uint8_t highThreshold, uint8_t lowThreshold);
+	void setParams(uint16_t highThreshold, uint16_t lowThreshold);
   
 	bool process(uint16_t rssi);
 
@@ -37,7 +37,7 @@ public:
 private:
 	uint16_t m_highThreshold;
 	uint16_t m_lowThreshold;
-	uint8_t  m_count;
+	uint16_t  m_count;
 	bool     m_state;
 };
 
