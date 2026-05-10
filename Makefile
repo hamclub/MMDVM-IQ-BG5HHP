@@ -30,18 +30,6 @@ ifeq ($(shell uname -s),Darwin)
 	LDFLAGS+= -L/opt/homebrew/lib
 endif
 
-ifeq ($(shell uname -s),Darwin)
-	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
-	CXXFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
-	LDFLAGS+= -L/opt/homebrew/lib
-endif
-
-ifeq ($(shell uname -s),Darwin)
-	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
-	CXXFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
-	LDFLAGS+= -L/opt/homebrew/lib
-endif
-
 CXXSRCS = $(wildcard *.cpp)
 CXXDEPS = $(CXXSRCS:.cpp=.d)
 CXXOBJS = $(CXXSRCS:.cpp=.o)
