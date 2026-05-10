@@ -16,6 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined USE_MQTT && USE_MQTT == 1
+
 #include "Log.h"
 #include "MQTTConnection.h"
 
@@ -93,3 +95,5 @@ void Log(unsigned int level, const char* fmt, ...)
 	if (level == 6U)		// Fatal
 		exit(1);
 }
+
+#endif // #if defined USE_MQTT && USE_MQTT == 0

@@ -34,6 +34,9 @@ public:
 	bool         getDaemon() const;
 
 	// The Log section
+	unsigned int getLogFileLevel() const;
+	std::string  getLogFilePath() const;
+	std::string  getLogFileRoot() const;
 	unsigned int getLogDisplayLevel() const;
 	unsigned int getLogMQTTLevel() const;
 
@@ -51,6 +54,8 @@ public:
 	std::string  getModemURI() const;
 	bool         getModemTrace() const;
 
+	unsigned char getModemVersion() const;
+
 	// The MMDVMHost section
 	std::string  getNetworkHostAddress() const;
 	unsigned short getNetworkHostPort() const;
@@ -62,6 +67,10 @@ private:
 	std::string m_file;
 
 	bool         m_daemon;
+
+	unsigned int m_logFileLevel;
+	std::string  m_logFilePath;
+	std::string  m_logFileRoot;
 
 	unsigned int m_logDisplayLevel;
 	unsigned int m_logMQTTLevel;
@@ -77,6 +86,7 @@ private:
     std::string  m_modemType;
     std::string  m_modemURI;
 	bool         m_modemTrace;
+    unsigned char m_modemVersion;
 
 	std::string  m_networkHostAddress;
 	unsigned short m_networkHostPort;

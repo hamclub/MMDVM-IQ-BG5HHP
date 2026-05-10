@@ -1,9 +1,28 @@
 #
 
+USE_MQTT ?= 0
+DEBUG ?= 0
+
+CC       = cc
 CXX      = c++
-CXXFLAGS = -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI -Wno-narrowing -Wno-strict-aliasing
-LIBS     = -lpthread -lmosquitto -lSoapySDR
-LDFLAGS  = -g -L/usr/local/lib
+CFLAGS   = -Wall -std=c11 -MMD -MD -pthread -DARM_MATH_RPI
+CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI
+LIBS     = -lpthread -lSoapySDR
+LDFLAGS  = -L/usr/local/lib
+
+ifeq ($(USE_MQTT), 1)
+	CXXFLAGS+= -DUSE_MQTT=1
+	LDFLAGS+= -lmosquitto
+endif
+
+ifeq ($(DEBUG), 1)
+	CFLAGS+= -DDEBUG -g
+	CXXFLAGS+= -DDEBUG -g
+	LDFLAGS+= -g
+else
+	CFLAGS+= -DNDEBUG -O3
+	CXXFLAGS+= -DNDEBUG -O3
+endif
 
 ifeq ($(shell uname -s),Darwin)
 	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
