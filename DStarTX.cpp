@@ -438,7 +438,7 @@ void CDStarTX::writeByte(uint8_t c)
 
 void CDStarTX::setTXDelay(uint8_t delay)
 {
-  m_txDelay = 300U + uint16_t(delay) * 6U;        // 250ms + tx delay
+  m_txDelay = 60U + uint16_t(delay) * 6U;        // 50ms + tx delay
 
   if (m_txDelay > 600U)
     m_txDelay = 600U;

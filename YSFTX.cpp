@@ -53,7 +53,7 @@ m_modState(),
 m_poBuffer(),
 m_poLen(0U),
 m_poPtr(0U),
-m_txDelay(240U),      // 200ms
+m_txDelay(60U),      // 100ms
 m_loDev(false),
 m_txHang(4800U),      // 4s
 m_txCount(0U)
@@ -175,7 +175,7 @@ void CYSFTX::writeSilence()
 
 void CYSFTX::setTXDelay(uint8_t delay)
 {
-  m_txDelay = 600U + uint16_t(delay) * 12U;        // 500ms + tx delay
+  m_txDelay = 60U + uint16_t(delay) * 12U;        // 100ms + tx delay
 
   if (m_txDelay > 1200U)
     m_txDelay = 1200U;
