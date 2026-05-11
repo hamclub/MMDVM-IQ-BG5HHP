@@ -706,8 +706,6 @@ uint8_t CIO::setParameters()
 
   double soapyRXFreq = double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen);
 
-  LogMessage("SDR Sample Rate %f, RX Freq %.2f, TX Freq %.2f, POCSAG Freq %.2f", samplerate, soapyRXFreq, m_soapyTXFreq, m_soapyPocsagFreq);
-
   try {
     m_device = SoapySDR::Device::make(devArgs);
     assert(m_device != nullptr);

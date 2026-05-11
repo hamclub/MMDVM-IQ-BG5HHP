@@ -331,7 +331,7 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
 
   uint32_t pocsagFreq = txFreq;
 
-  if (length == 17U) {
+  if (length == 14U) {
     power = data[9U];
 
     pocsagFreq = 0U;
