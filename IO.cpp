@@ -653,7 +653,7 @@ uint8_t CIO::setParameters()
   const char* LIME_DEFAULT_URI  = "index=0";         // eg: addr=1111:2222 or serial=xxxxxxxx
 
   if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0) {
-    const char* uri = m_soapyDeviceURI.empty() ? PLUTO_DEFAULT_URI : m_soapyDeviceURI.c_str();;
+    const char* uri = m_soapyDeviceURI.empty() ? PLUTO_DEFAULT_URI : m_soapyDeviceURI.c_str();
 
     devArgs["driver"] = "plutosdr";
     rxArgs["uri"]     = uri;
@@ -662,26 +662,15 @@ uint8_t CIO::setParameters()
 
     LogMessage("Using Pluto SDR driver uri %s", uri);
   } else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0) {
-    const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();;
-    resampNum = 2U;
-    resampDen = 25U;
-    blockSize = 1024U;
-    iqHWDelay = 100U;
+    const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();
 
     devArgs["driver"] = "lime";
     rxArgs["uri"]     = uri;
-    rxArgs["latency"] = "0";
-    txArgs["latency"] = "0";
 
-    m_timestamped = true;
+    m_timestamped = false;
 
     LogMessage("Using Lime SDR driver uri %s", uri);
   } else {
-    resampNum = 4U;
-    resampDen = 25U;
-    blockSize = 512U;
-    iqHWDelay = 10U;
-
     devArgs["driver"] = "sx";
 
     m_timestamped = true;
