@@ -111,12 +111,13 @@ private:
 
   // Frequencies as used by SoapySDR
   double               m_soapyTXFreq;
+  double               m_soapyRXFreq;
   double               m_soapyPocsagFreq;
 
   bool                 m_soapyInit;
 
   bool                 m_timestamped;
-  long long            m_latencyNS;
+  long long            m_latencyNs;
 
   uint32_t             m_phase;
   std::complex<float>  m_prevRXIQSample;
