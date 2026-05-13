@@ -312,7 +312,7 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
 {
   assert(data != nullptr);
 
-  if (length < 9U)
+  if (length < 14U)
     return 4U;
 
   uint32_t rxFreq = 0U;
@@ -327,19 +327,13 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
   txFreq |= (data[7U] << 16) & 0x00FF0000U;
   txFreq |= (data[8U] << 24) & 0xFF000000U;
 
-  uint8_t power = 255U;
+  uint8_t power = data[9U];
 
-  uint32_t pocsagFreq = txFreq;
-
-  if (length == 14U) {
-    power = data[9U];
-
-    pocsagFreq = 0U;
-    pocsagFreq |= (data[10U] << 0)  & 0x000000FFU;
-    pocsagFreq |= (data[11U] << 8)  & 0x0000FF00U;
-    pocsagFreq |= (data[12U] << 16) & 0x00FF0000U;
-    pocsagFreq |= (data[13U] << 24) & 0xFF000000U;
-  }
+  uint32_t pocsagFreq = 0U;
+  pocsagFreq |= (data[10U] << 0)  & 0x000000FFU;
+  pocsagFreq |= (data[11U] << 8)  & 0x0000FF00U;
+  pocsagFreq |= (data[12U] << 16) & 0x00FF0000U;
+  pocsagFreq |= (data[13U] << 24) & 0xFF000000U;
 
   return io.setFrequency(power, txFreq, rxFreq, pocsagFreq);
 }

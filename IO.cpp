@@ -675,7 +675,7 @@ uint8_t CIO::setParameters()
     LogMessage("Using SX1255 driver");
   }
 
-  const unsigned int blockSize = 512;
+  const unsigned int blockSize = 512U;
 
   m_buffer.resize(blockSize);
 
