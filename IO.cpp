@@ -721,8 +721,8 @@ uint8_t CIO::setParameters()
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAH");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
 
-      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
-      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 60.0);
     } else {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAL");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
