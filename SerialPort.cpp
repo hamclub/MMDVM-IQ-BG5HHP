@@ -2001,7 +2001,7 @@ void CSerialPort::dump(const char* text, const uint8_t* data, uint16_t length) c
 
         ::strcat(line, "*");
 
-        LogDebug(line);
+        LogDebug("%s", line);
 
         offset += 16U;
 
