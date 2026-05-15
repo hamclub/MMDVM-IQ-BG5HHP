@@ -279,7 +279,7 @@ void CSerialPort::getStatus1() {
 void CSerialPort::getStatus()
 {
   if (m_version == 1) {
-    getVersion1();
+    getStatus1();
     return;
   }
 
