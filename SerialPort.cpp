@@ -154,8 +154,135 @@ void CSerialPort::sendNAK(uint8_t type, uint8_t err)
       dump("Send NAK", reply, 5U);
 }
 
+void CSerialPort::getStatus1() {
+  uint8_t reply[20U];
+
+  // Send all sorts of interesting internal values
+  reply[0U]  = MMDVM_FRAME_START;
+  reply[1U]  = 16U;
+  reply[2U]  = MMDVM_GET_STATUS;
+
+  reply[3U]  = 0x00U;
+
+#if defined(MODE_DSTAR)
+  if (m_dstarEnable)
+    reply[3U] |= 0x01U;
+#endif
+
+#if defined(MODE_DMR)
+  if (m_dmrEnable)
+    reply[3U] |= 0x02U;
+#endif
+
+#if defined(MODE_YSF)
+  if (m_ysfEnable)
+    reply[3U] |= 0x04U;
+#endif
+
+#if defined(MODE_P25)
+  if (m_p25Enable)
+    reply[3U] |= 0x08U;
+#endif
+
+  #if defined(MODE_NXDN)
+  if (m_nxdnEnable)
+    reply[3U] |= 0x10U;
+  #endif
+
+  #if defined(MODE_POCSAG)
+  if (m_pocsagEnable)
+    reply[3U] |= 0x20U;
+  #endif
+
+  #if defined(MODE_FM)
+  if (m_fmEnable)
+    reply[3U] |= 0x40U;
+  #endif
+
+  reply[4U]  = uint8_t(m_modemState);
+
+  reply[5U]  = m_tx  ? 0x01U : 0x00U;
+
+  reply[5U] |= m_dcd ? 0x40U : 0x00U;
+
+#if defined(MODE_DSTAR)
+  if (m_dstarEnable)
+    reply[6U] = dstarTX.getSpace();
+  else
+#endif
+    reply[6U] = 0U;
+
+#if defined(MODE_DMR)
+  if (m_dmrEnable) {
+    if (m_duplex) {
+      reply[7U] = dmrTX.getSpace1();
+      reply[8U] = dmrTX.getSpace2();
+    } else {
+      reply[7U] = 10U;
+      reply[8U] = dmrDMOTX.getSpace();
+    }
+  } else {
+    reply[7U] = 0U;
+    reply[8U] = 0U;
+  }
+#else
+  reply[7U] = 0U;
+  reply[8U] = 0U;
+#endif
+
+#if defined(MODE_YSF)
+  if (m_ysfEnable)
+    reply[9U] = ysfTX.getSpace();
+  else
+#endif
+    reply[9U] = 0U;
+
+#if defined(MODE_P25)
+  if (m_p25Enable)
+    reply[10U] = p25TX.getSpace();
+  else
+#endif
+    reply[10U] = 0U;
+
+#if defined(MODE_NXDN)
+  if (m_nxdnEnable)
+    reply[11U] = nxdnTX.getSpace();
+  else
+#endif
+    reply[11U] = 0U;
+
+  // NOT USED
+  reply[12U] = 0U;
+
+#if defined(MODE_FM)
+  if (m_fmEnable)
+    reply[13U] = fm.getSpace();
+  else
+#endif
+    reply[13U] = 0U;
+
+#if defined(MODE_POCSAG)
+  if (m_pocsagEnable)
+    reply[14U] = pocsagTX.getSpace();
+  else
+#endif
+    reply[14U] =  0U;
+
+  reply[15U] =  0U;
+
+  m_socket.write(reply, 16);
+
+  // if (m_trace)
+  //     dump("Get Status1", reply, 20U);
+}
+
 void CSerialPort::getStatus()
 {
+  if (m_version == 1) {
+    getVersion1();
+    return;
+  }
+
   uint8_t reply[30U];
 
   // Send all sorts of interesting internal values
@@ -254,8 +381,10 @@ void CSerialPort::getStatus()
 
   m_socket.write(reply, 20U);
 
+#if DEBUG
   if (m_trace)
       dump("Get Status", reply, 20U);
+#endif
 }
 
 void CSerialPort::getVersion1()
@@ -280,8 +409,10 @@ void CSerialPort::getVersion1()
 
   m_socket.write(reply, count);
 
+#if DEBUG
   if (m_trace)
       dump("Get Version1", reply, count);
+#endif
 }
 
 void CSerialPort::getVersion()

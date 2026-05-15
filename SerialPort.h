@@ -83,6 +83,7 @@ private:
 
   void    sendACK(uint8_t type);
   void    sendNAK(uint8_t type, uint8_t err);
+  void    getStatus1();
   void    getStatus();
   void    getVersion1();
   void    getVersion();
