@@ -641,8 +641,12 @@ uint8_t CIO::setParameters()
   SoapySDR::Kwargs rxArgs;
   SoapySDR::Kwargs txArgs;
 
+  unsigned int resampNum = 4U;
+  unsigned int resampDen = 25U;
+  size_t blockSize = 512U;
+  size_t iqHWDelay = 10;
+
   const unsigned int resampLen = 11U;
-  const unsigned int resampNum = 4U, resampDen = 25U;
   const unsigned int rxIfNum = 1U, rxIfDen = 12U;
   const unsigned int txIfNum = 1U, txIfDen = 12U;
 
@@ -661,13 +665,25 @@ uint8_t CIO::setParameters()
   } else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0) {
     const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();
 
+    resampNum = 2U;
+    resampDen = 50U;
+    blockSize = 2048U;
+    iqHWDelay = 50U;
+
     devArgs["driver"] = "lime";
     rxArgs["uri"]     = uri;
+    rxArgs["latency"] = "0";
+    txArgs["latency"] = "0";
 
-    m_timestamped = false;
+    m_timestamped = true;
 
     LogMessage("Using Lime SDR driver uri %s", uri);
   } else {
+    resampNum = 4U;
+    resampDen = 25U;
+    blockSize = 512U;
+    iqHWDelay = 10U;
+
     devArgs["driver"] = "sx";
 
     m_timestamped = true;
@@ -675,11 +691,7 @@ uint8_t CIO::setParameters()
     LogMessage("Using SX1255 driver");
   }
 
-  const unsigned int blockSize = 512U;
-
   m_buffer.resize(blockSize);
-
-  const size_t iqHWDelay = 10;
 
   size_t latencySamples = (blockSize * LATENCY_BLOCKS + iqHWDelay) * resampNum / resampDen + resampLen;
 
@@ -697,6 +709,7 @@ uint8_t CIO::setParameters()
 
   LogMessage("SDR Parameters");
   LogMessage("  Sample Rate:      %.0f samples/sec", samplerate);
+  LogMessage("  Latency    :      %.2f ms", (double)m_latencyNs / 1e6);
   LogMessage("  TX Frequency:     %.0f Hz", m_soapyTXFreq);
   LogMessage("  RX Frequency:     %.0f Hz", m_soapyRXFreq);
   LogMessage("  POCSAG Frequency: %.0f Hz", m_soapyPocsagFreq);
