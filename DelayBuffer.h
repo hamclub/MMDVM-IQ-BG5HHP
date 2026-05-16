@@ -32,6 +32,10 @@ public:
         }
     }
 
+    ~CDelayBuffer() {
+        delete[] m_buffer;
+    }
+
     TDATATYPE process(TDATATYPE input)
     {
         if (m_length == 0) {
