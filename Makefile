@@ -6,7 +6,7 @@ DEBUG ?= 0
 CC       = cc
 CXX      = c++
 CFLAGS   = -Wall -std=c11 -MMD -pthread -DARM_MATH_RPI
-CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -pthread -DARM_MATH_RPI -fno-strict-aliasing -Wno-c++11-narrowing
+CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -pthread -DARM_MATH_RPI -fno-strict-aliasing
 LIBS     = -lpthread -lSoapySDR
 LDFLAGS  = -L/usr/local/lib
 
