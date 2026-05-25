@@ -5,8 +5,8 @@ DEBUG ?= 0
 
 CC       = cc
 CXX      = c++
-CFLAGS   = -Wall -std=c11 -MMD -MD -pthread -DARM_MATH_RPI
-CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI
+CFLAGS   = -Wall -std=c11 -MMD -pthread -DARM_MATH_RPI
+CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -pthread -DARM_MATH_RPI -fno-strict-aliasing -Wno-c++11-narrowing
 LIBS     = -lpthread -lSoapySDR
 LDFLAGS  = -L/usr/local/lib
 
@@ -25,8 +25,8 @@ else
 endif
 
 ifeq ($(shell uname -s),Darwin)
-	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
-	CXXFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing
+	CFLAGS+= -I/opt/homebrew/include
+	CXXFLAGS+= -I/opt/homebrew/include
 	LDFLAGS+= -L/opt/homebrew/lib
 endif
 
