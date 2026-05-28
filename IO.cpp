@@ -243,7 +243,7 @@ void CIO::stop()
   m_rxStream = nullptr;
   m_txStream = nullptr;
   m_device   = nullptr;
-  
+
   m_soapyInit = false;
 }
 
@@ -284,7 +284,7 @@ void CIO::process()
 
   void *buffs[1] = {(void*)m_buffer.data()};
   long long timeNs = 0LL;
-  
+
   if (m_soapyInit) {
     int flags = 0;
     int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
@@ -320,6 +320,7 @@ void CIO::process()
   if (!m_txBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
+    m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
   }
 
   while (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
@@ -547,7 +548,7 @@ void CIO::processIQBlock()
   }
 
   // Insert a channel filter here
-  
+
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
     std::complex<float> txIQSample = {0.0F, 0.0F};
     TXSample txSample = {0, MARK_NONE};
@@ -562,7 +563,7 @@ void CIO::processIQBlock()
     // Demodulate RX
     float d = std::arg(rxIQSample * std::conj(m_prevRXIQSample));
     m_prevRXIQSample = rxIQSample;
- 
+
     // Scale -pi...pi to -4096...4096
     d *= 4096.0F / M_PI;
 
@@ -591,6 +592,7 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
   }
 
   q15_t txLevel;
@@ -737,8 +739,8 @@ uint8_t CIO::setParameters()
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 60.0);
     } else {
-      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAL");
-      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
+      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "RX");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
 
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);

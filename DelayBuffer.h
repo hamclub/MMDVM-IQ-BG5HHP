@@ -27,32 +27,32 @@ public:
     m_length(length),
     m_index(0)
     {
-        for (size_t i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++)
             m_buffer[i] = initial_value;
-        }
     }
 
-    ~CDelayBuffer() {
+    ~CDelayBuffer()
+    {
         delete[] m_buffer;
     }
 
     TDATATYPE process(TDATATYPE input)
     {
-        if (m_length == 0) {
+        if (m_length == 0)
             return input;
-        }
+
         auto delayed = m_buffer[m_index];
         m_buffer[m_index] = input;
-        if (++m_index >= m_length) {
+        if (++m_index >= m_length)
             m_index = 0;
-        }
+
         return delayed;
     }
 
 private:
     TDATATYPE *m_buffer;
-    size_t m_length;
-    size_t m_index;
+    size_t     m_length;
+    size_t     m_index;
 };
 
 #endif
