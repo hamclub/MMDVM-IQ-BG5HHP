@@ -680,6 +680,17 @@ uint8_t CIO::setParameters()
     m_timestamped = true;
 
     LogMessage("Using Lime SDR driver uri %s", uri);
+  } else if (m_soapyDeviceType.compare("mucell") == 0) {
+    resampNum = 4U;
+    resampDen = 25U;
+    blockSize = 512U;
+    iqHWDelay = 10U;
+
+    devArgs["driver"] = "mucell";
+
+    m_timestamped = true;
+
+    LogMessage("Using muCell driver");
   } else {
     resampNum = 4U;
     resampDen = 25U;
