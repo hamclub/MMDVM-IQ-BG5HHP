@@ -125,6 +125,8 @@ m_power(0.0F),
 m_txFreq(0U),
 m_rxFreq(0U),
 m_pocsagFreq(0U),
+m_rxGain(50.0F),
+m_txGain(30.0F),
 m_soapyTXFreq(0.0),
 m_soapyRXFreq(0.0),
 m_soapyPocsagFreq(0.0),
@@ -320,7 +322,14 @@ void CIO::process()
   if (!m_txBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
-    m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
+    if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0
+      || m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0
+      || m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 1.0);
+    }
+    else {
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
+    }
   }
 
   while (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
@@ -592,7 +601,14 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
-      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
+      if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0
+        || m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0
+        || m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
+        m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
+      }
+      else {
+        m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
+      }
   }
 
   q15_t txLevel;
@@ -638,7 +654,12 @@ void CIO::setMode(MMDVM_STATE state)
 uint8_t CIO::setParameters()
 {
   stop();
-
+  if(m_trace) {
+    SoapySDR::setLogLevel(SOAPY_SDR_DEBUG);
+  }
+  else {
+    SoapySDR::setLogLevel(SOAPY_SDR_INFO);
+  }
   SoapySDR::Kwargs devArgs;
   SoapySDR::Kwargs rxArgs;
   SoapySDR::Kwargs txArgs;
@@ -680,6 +701,22 @@ uint8_t CIO::setParameters()
     m_timestamped = true;
 
     LogMessage("Using Lime SDR driver uri %s", uri);
+  } else if (m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("limenet-micro") == 0) {
+    const char* uri = m_soapyDeviceURI.empty() ? LIME_DEFAULT_URI : m_soapyDeviceURI.c_str();
+
+    resampNum = 2U;
+    resampDen = 50U;
+    blockSize = 2048U;
+    iqHWDelay = 50U;
+
+    devArgs["driver"] = "lime";
+    rxArgs["uri"]     = uri;
+    rxArgs["latency"] = "0";
+    txArgs["latency"] = "0";
+
+    m_timestamped = true;
+
+    LogMessage("Using LimeSDR-mini driver uri %s", uri);
   } else if (m_soapyDeviceType.compare("mucell") == 0) {
     resampNum = 4U;
     resampDen = 25U;
@@ -741,20 +778,26 @@ uint8_t CIO::setParameters()
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "A_BALANCED");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "A");
 
-      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
-      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 89.75);
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
     } else if (m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0) {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "LNAH");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "BAND1");
 
-      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 30.0);
-      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 60.0);
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
+    } else if (m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
+      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "Auto");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "Auto");
+
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
     } else {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "RX");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
 
-      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, 50.0);
-      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 30.0);
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
     }
 
     m_rxStream = m_device->setupStream(SOAPY_SDR_RX, "CF32", {RX_CHANNEL}, rxArgs);
@@ -774,10 +817,12 @@ uint8_t CIO::setParameters()
   return 0U;
 }
 
-void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri)
+void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
 {
   m_soapyDeviceType = type;
   m_soapyDeviceURI  = uri;
+  m_rxGain = float(rxGain);
+  m_txGain = float(txGain);
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)

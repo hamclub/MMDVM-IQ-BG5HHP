@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <SoapySDR/Device.hpp>
+#include <SoapySDR/Logger.hpp>
 
 struct TXSample {
   volatile q15_t   m_sample;
@@ -55,7 +56,7 @@ public:
 
   void setMode(MMDVM_STATE state);
 
-  void setSoapyDeviceInfo(const std::string& type, const std::string& uri);
+  void setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain);
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();
@@ -108,6 +109,8 @@ private:
   uint32_t             m_txFreq;
   uint32_t             m_rxFreq;
   uint32_t             m_pocsagFreq;
+  float                m_rxGain;
+  float                m_txGain;
 
   // Frequencies as used by SoapySDR
   double               m_soapyTXFreq;
