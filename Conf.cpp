@@ -159,6 +159,10 @@ bool CConf::read()
 				m_modemType = value;
 			else if (::strcmp(key, "URI") == 0)
 				m_modemURI = value;
+			else if (::strcmp(key, "RxGain") == 0)
+				m_rxGain = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "TxGain") == 0)
+				m_txGain = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Version") == 0)
 				m_modemVersion = ::atoi(value);
 		} else if (section == SECTION::MMDVM_HOST) {
@@ -253,6 +257,16 @@ std::string CConf::getModemType() const
 std::string CConf::getModemURI() const
 {
 	return m_modemURI;
+}
+
+unsigned int CConf::getRxGain() const
+{
+	return m_txGain;
+}
+
+unsigned int CConf::getTxGain() const
+{
+	return m_txGain;
 }
 
 unsigned char CConf::getModemVersion() const

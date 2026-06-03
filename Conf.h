@@ -52,6 +52,8 @@ public:
 	// The Modem section
 	std::string  getModemType() const;
 	std::string  getModemURI() const;
+	unsigned int getRxGain() const;
+	unsigned int getTxGain() const;
 	bool         getModemTrace() const;
 
 	unsigned char getModemVersion() const;
@@ -75,16 +77,18 @@ private:
 	unsigned int m_logDisplayLevel;
 	unsigned int m_logMQTTLevel;
 
-    std::string  m_mqttHost;
-    unsigned short m_mqttPort;
-    unsigned int m_mqttKeepalive;
-    std::string  m_mqttName;
-    bool         m_mqttAuthEnabled;
-    std::string  m_mqttUsername;
-    std::string  m_mqttPassword;
+	std::string  m_mqttHost;
+	unsigned short m_mqttPort;
+	unsigned int m_mqttKeepalive;
+	std::string  m_mqttName;
+	bool         m_mqttAuthEnabled;
+	std::string  m_mqttUsername;
+	std::string  m_mqttPassword;
 
-    std::string  m_modemType;
-    std::string  m_modemURI;
+	std::string  m_modemType;
+	std::string  m_modemURI;
+	unsigned int m_rxGain;
+	unsigned int m_txGain;
 	bool         m_modemTrace;
     unsigned char m_modemVersion;
 
