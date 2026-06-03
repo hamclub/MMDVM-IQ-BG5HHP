@@ -234,7 +234,7 @@ std::string CConf::getModemURI() const
 
 unsigned int CConf::getRxGain() const
 {
-	return m_txGain;
+	return m_rxGain;
 }
 
 unsigned int CConf::getTxGain() const
