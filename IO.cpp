@@ -26,6 +26,10 @@
 #include <cstdio>
 #include <cassert>
 
+#if !defined(M_PI)
+#define M_PI    3.141592654
+#endif
+
 #if defined(USE_DCBLOCKER)
 // Generated using [b, a] = butter(1, 0.001) in MATLAB
 static q31_t   DC_FILTER[] = {3367972, 0, 3367972, 0, 2140747704, 0}; // {b0, 0, b1, b2, -a1, -a2}
@@ -142,7 +146,8 @@ m_soapyDeviceType("sx"),
 m_soapyDeviceURI(),
 m_device(nullptr),
 m_rxStream(nullptr),
-m_txStream(nullptr)
+m_txStream(nullptr),
+m_pocsag(false)
 {
 #if defined(USE_DCBLOCKER)
   ::memset(m_dcState, 0x00U, 4U * sizeof(q31_t));
@@ -322,14 +327,16 @@ void CIO::process()
   if (!m_txBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
-    if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0
-      || m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0
-      || m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
+
+    if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
+        m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
+        m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0)
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 1.0);
-    }
-    else {
+    else
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
-    }
+
+    // Return to the main transmit frequency
+    setTXFrequency(false);
   }
 
   while (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
@@ -605,12 +612,15 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
-      if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0
-        || m_soapyDeviceType.compare("limesdr") == 0 || m_soapyDeviceType.compare("lime") == 0
-        || m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
+
+      // Set the transmit frequency for POCSAG if needed
+      setTXFrequency(mode == MMDVM_STATE::POCSAG);
+
+      if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
+          m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
+          m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
         m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
-      }
-      else {
+      } else {
         m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
       }
   }
@@ -643,27 +653,35 @@ uint16_t CIO::getSpace() const
 
 void CIO::setMode(MMDVM_STATE state)
 {
-  // Do we need to stop or pause the transmit stream to do this?
-  if (m_device != nullptr) {
-    if ((state == MMDVM_STATE::POCSAG) && (m_modemState != MMDVM_STATE::POCSAG))
-      m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyPocsagFreq);
-
-    if ((m_modemState == MMDVM_STATE::POCSAG) && (state != MMDVM_STATE::POCSAG))
-      m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
-  }
-
   m_modemState = state;
+}
+
+void CIO::setTXFrequency(bool pocsag)
+{
+    if (m_device != nullptr) {
+        if (pocsag && !m_pocsag) {
+            m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyPocsagFreq);
+            m_pocsag = true;
+            return;
+        }
+        
+        if (!pocsag && m_pocsag) {
+            m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
+            m_pocsag = false;
+            return;
+        }
+    }
 }
 
 uint8_t CIO::setParameters()
 {
   stop();
-  if(m_trace) {
+
+  if (m_trace)
     SoapySDR::setLogLevel(SOAPY_SDR_DEBUG);
-  }
-  else {
+  else
     SoapySDR::setLogLevel(SOAPY_SDR_INFO);
-  }
+
   SoapySDR::Kwargs devArgs;
   SoapySDR::Kwargs rxArgs;
   SoapySDR::Kwargs txArgs;
@@ -759,7 +777,7 @@ uint8_t CIO::setParameters()
 
   m_soapyTXFreq     = double(m_txFreq)     - samplerate * double(txIfNum) / double(txIfDen);
   m_soapyPocsagFreq = double(m_pocsagFreq) - samplerate * double(txIfNum) / double(txIfDen);
-  m_soapyRXFreq     = double(m_rxFreq) - samplerate * double(rxIfNum) / double(rxIfDen);
+  m_soapyRXFreq     = double(m_rxFreq)     - samplerate * double(rxIfNum) / double(rxIfDen);
 
   LogMessage("SDR Parameters");
   LogMessage("  Sample Rate:      %.0f samples/sec", samplerate);
@@ -825,6 +843,7 @@ void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, un
 {
   m_soapyDeviceType = type;
   m_soapyDeviceURI  = uri;
+
   m_rxGain = float(rxGain);
   m_txGain = float(txGain);
 }
