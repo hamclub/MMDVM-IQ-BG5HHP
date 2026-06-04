@@ -613,9 +613,6 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
       m_tx = true;
       LogMessage("TX ON");
 
-      // Set the transmit frequency for POCSAG if needed
-      setTXFrequency(mode == MMDVM_STATE::POCSAG);
-
       if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
           m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
           m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
@@ -623,6 +620,11 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
       } else {
         m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
       }
+  }
+
+  if (m_tx) {
+    // Set the correct transmit frequency for the mode if needed, even in the middle of a transmission
+    setTXFrequency(mode == MMDVM_STATE::POCSAG);
   }
 
   q15_t txLevel;
@@ -658,19 +660,19 @@ void CIO::setMode(MMDVM_STATE state)
 
 void CIO::setTXFrequency(bool pocsag)
 {
-    if (m_device != nullptr) {
-        if (pocsag && !m_pocsag) {
-            m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyPocsagFreq);
-            m_pocsag = true;
-            return;
-        }
-        
-        if (!pocsag && m_pocsag) {
-            m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
-            m_pocsag = false;
-            return;
-        }
+  if (m_device != nullptr) {
+    if (pocsag && !m_pocsag) {
+      m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyPocsagFreq);
+      m_pocsag = true;
+      return;
     }
+        
+    if (!pocsag && m_pocsag) {
+      m_device->setFrequency(SOAPY_SDR_TX, TX_CHANNEL, m_soapyTXFreq);
+      m_pocsag = false;
+      return;
+    }
+  }
 }
 
 uint8_t CIO::setParameters()
