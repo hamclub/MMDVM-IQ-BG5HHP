@@ -330,7 +330,8 @@ void CIO::process()
 
     if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
         m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
-        m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0)
+        m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0 ||
+        m_soapyDeviceType.compare("usrp") == 0)
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, 1.0);
     else
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "NONE");
@@ -615,7 +616,8 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
 
       if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
           m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
-          m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
+          m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0 ||
+          m_soapyDeviceType.compare("usrp") == 0) {
         m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
       } else {
         m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
@@ -741,6 +743,22 @@ uint8_t CIO::setParameters()
     m_timestamped = true;
 
     LogMessage("Using LimeSDR-mini driver uri %s", uri);
+  } else if (m_soapyDeviceType.compare("usrp") == 0) {
+    const char* uri = m_soapyDeviceURI.c_str();
+
+    resampNum = 2U;
+    resampDen = 50U;
+    blockSize = 2048U;
+    iqHWDelay = 50U;
+
+    devArgs["driver"] = "uhd";
+    rxArgs["uri"]     = uri;
+    txArgs["uri"]     = uri;
+    rxArgs["recv_frame_size"] = "1024";
+
+    m_timestamped = true;
+
+    LogMessage("Using Ettus USRP driver uri %s", uri);
   } else if (m_soapyDeviceType.compare("mucell") == 0) {
     resampNum = 4U;
     resampDen = 25U;
@@ -813,6 +831,12 @@ uint8_t CIO::setParameters()
     } else if (m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0) {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "Auto");
       m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "Auto");
+
+      m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
+      m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
+    } else if (m_soapyDeviceType.compare("usrp") == 0) {
+      m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "RX2");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX/RX");
 
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
