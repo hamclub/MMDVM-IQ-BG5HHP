@@ -836,7 +836,7 @@ uint8_t CIO::setParameters()
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
     } else if (m_soapyDeviceType.compare("usrp") == 0) {
       m_device->setAntenna(SOAPY_SDR_RX, RX_CHANNEL, "RX2");
-      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
+      m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX/RX");
 
       m_device->setGain(SOAPY_SDR_RX, RX_CHANNEL, m_rxGain);
       m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
