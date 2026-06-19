@@ -137,7 +137,10 @@ private:
   SoapySDR::Stream*    m_rxStream;
   SoapySDR::Stream*    m_txStream;
 
+  bool                 m_pocsag;
+
   void processIQBlock();
+  void setTXFrequency(bool pocsag);
 };
 
 #endif
