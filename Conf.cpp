@@ -32,7 +32,8 @@ enum class SECTION {
 	LOG,
 	MQTT,
 	MODEM,
-	MMDVM_HOST
+	MMDVM_HOST,
+	MMDVM_MULTI
 };
 
 CConf::CConf(const std::string& file) :
@@ -54,7 +55,12 @@ m_networkHostAddress("127.0.0.1"),
 m_networkHostPort(3335U),
 m_networkLocalAddress("127.0.0.1"),
 m_networkLocalPort(3334U),
-m_networkTrace(false)
+m_networkTrace(false),
+m_multiModem(false),
+m_multiModemAddress("127.0.0.1"),
+m_multiModemPort(48200),
+m_multiModemLocalAddress("127.0.0.1"),
+m_multiModemLocalPort(48100)
 {
 }
 
@@ -88,6 +94,8 @@ bool CConf::read()
 				section = SECTION::MODEM;
 			else if (::strncmp(buffer, "[MMDVM Host]", 12U) == 0)
 				section = SECTION::MMDVM_HOST;
+			else if (::strncmp(buffer, "[MMDVM Multi]", 13U) == 0)
+				section = SECTION::MMDVM_MULTI;
 			else
 				section = SECTION::NONE;
 
@@ -164,6 +172,17 @@ bool CConf::read()
 				m_networkLocalPort = (unsigned short)::atoi(value);
 			else if (::strcmp(key, "Trace") == 0)
 				m_networkTrace = ::atoi(value) == 1;
+		} else if (section == SECTION::MMDVM_MULTI) {
+			if (::strcmp(key, "Enabled") == 0)
+				m_multiModem = ::atoi(value) == 1;
+			else if (::strcmp(key, "MultiModemAddress") == 0)
+				m_multiModemAddress = value;
+			else if (::strcmp(key, "MultiModemPort") == 0)
+				m_multiModemPort = (unsigned short)::atoi(value);
+			else if (::strcmp(key, "LocalAddress") == 0)
+				m_multiModemLocalAddress = value;
+			else if (::strcmp(key, "LocalPort") == 0)
+				m_multiModemLocalPort = (unsigned short)::atoi(value);
 		}
 	}
 
@@ -272,4 +291,29 @@ unsigned short CConf::getNetworkLocalPort() const
 bool CConf::getNetworkTrace() const
 {
 	return m_networkTrace;
+}
+
+std::string CConf::getMultiModemAddress() const
+{
+	return m_multiModemAddress;
+}
+
+unsigned short CConf::getMultiModemPort() const
+{
+	return m_multiModemPort;
+}
+
+std::string CConf::getMultiModemLocalAddress() const
+{
+	return m_multiModemLocalAddress;
+}
+
+unsigned short CConf::getMultiModemLocalPort() const
+{
+	return m_multiModemLocalPort;
+}
+
+bool CConf::getMultiModem() const
+{
+	return m_multiModem;
 }

@@ -32,6 +32,7 @@ public:
 
 	bool    available();
 	uint8_t read();
+	int     readDatagram(unsigned char* buffer, uint16_t length);
 	bool    write(const uint8_t* buffer, uint16_t length);
 
 	void close();
