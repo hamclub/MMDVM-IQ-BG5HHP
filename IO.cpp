@@ -351,11 +351,13 @@ void CIO::process(bool networkData)
   if(m_multiModem && m_txBuffer.hasData() && !m_tx) {
     LogMessage("TX OFF");
     m_txBuffer.clear(); // clear off partial DMR timeslot data so good timing info is present in packet
+    m_txNetworkBuffer.clear();
   }
 
   if(m_multiModem && !networkData && !m_txBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
+    m_txNetworkBuffer.clear();
   }
 
 
