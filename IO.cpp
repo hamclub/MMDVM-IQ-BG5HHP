@@ -961,7 +961,7 @@ void CIO::processMultiNetwork()
       ::memset(reply, 0U, MULTIMODEM_PACKET_SIZE);
       ::memcpy(reply, &num_send_items, sizeof(uint32_t));
       for(unsigned int i=0;i< num_send_items;i++) {
-        int64_t sample = samples[i].m_sample;
+        int16_t sample = samples[i].m_sample;
         uint8_t control = samples[i].m_control;
         ::memcpy(reply + sizeof(uint32_t) + i * sizeof(uint8_t), &control, sizeof(uint8_t));
         ::memcpy(reply + sizeof(uint32_t) + num_send_items * sizeof(uint8_t) + i * sizeof(int16_t),
