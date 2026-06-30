@@ -950,9 +950,6 @@ void CIO::processMultiNetwork()
   ::memset(recv_message, 0U, MULTIMODEM_PACKET_SIZE);
   int num_bytes = m_multiModemSocket.readDatagram(recv_message, MULTIMODEM_PACKET_SIZE);
 
-  if(num_bytes < 1)
-    return;
-
   if(num_bytes == MULTIMODEM_PACKET_SIZE) {
     if((m_txNetworkBuffer.hasData()) && (m_txNetworkBuffer.dataSize() >= num_send_items)) {
       TXSample samples[SAMPLES_TO_NETWORK];
