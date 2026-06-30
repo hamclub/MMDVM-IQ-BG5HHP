@@ -953,7 +953,7 @@ void CIO::processMultiNetwork()
   if(num_bytes < 1)
     return;
 
-  if((num_bytes == 1) && (recv_message[0U] == 's')) {
+  if(num_bytes == MULTIMODEM_PACKET_SIZE) {
     if((m_txNetworkBuffer.hasData()) && (m_txNetworkBuffer.dataSize() >= num_send_items)) {
       TXSample samples[SAMPLES_TO_NETWORK];
       m_txNetworkBuffer.getData(samples, num_send_items);
@@ -977,8 +977,7 @@ void CIO::processMultiNetwork()
         LogError("Error writing to socket\n");
       }
     }
-  }
-  if(num_bytes == MULTIMODEM_PACKET_SIZE) {           // sample block
+
     uint32_t data_size = 0;
     ::memcpy(&data_size, recv_message, sizeof(uint32_t));
     if(data_size != SAMPLES_TO_NETWORK) {
