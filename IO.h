@@ -21,6 +21,7 @@
 
 #include "DelayBuffer.h"
 #include "RingBuffer.h"
+#include "Socket.h"
 #include "FDUDC.h"
 
 #include <vector>
@@ -44,9 +45,13 @@ public:
   CIO();
   ~CIO();
 
+  bool startMultiNetwork(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort);
+
   bool start(bool trace);
 
-  void process();
+  void process(bool networkData=false);
+
+  void processMultiNetwork();
 
   void stop();
 
@@ -67,6 +72,8 @@ private:
   bool                  m_started;
   CRingBuffer<RXSample> m_rxBuffer;
   CRingBuffer<TXSample> m_txBuffer;
+  CRingBuffer<RXSample> m_rxNetworkBuffer;
+  CRingBuffer<TXSample> m_txNetworkBuffer;
 
 #if defined(USE_DCBLOCKER)
   arm_biquad_casd_df1_inst_q31 m_dcFilter;
@@ -136,6 +143,9 @@ private:
   SoapySDR::Device*    m_device;
   SoapySDR::Stream*    m_rxStream;
   SoapySDR::Stream*    m_txStream;
+
+  CSocket              m_multiModemSocket;
+  bool                 m_multiModem;
 
   bool                 m_pocsag;
 

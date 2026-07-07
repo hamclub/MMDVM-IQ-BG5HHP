@@ -18,6 +18,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <thread>
+#include <chrono>
 #include "MMDVM-IQ.h"
 #include "Config.h"
 #include "Globals.h"
@@ -252,7 +254,7 @@ int CMMDVMIQ::run()
     if (!ret) {
         ::fprintf(stderr, "MMDVM-IQ: unable to start the MQTT Publisher\n");
         delete m_mqtt;
-        return 1;
+        m_mqtt = nullptr;
     }
 
     ret = serial.start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
@@ -261,6 +263,16 @@ int CMMDVMIQ::run()
     if (!ret) {
         LogError("Unable to open the host network connection");
         return 1;
+    }
+
+    bool modeMulti = m_conf.getMultiModem();
+    if(modeMulti) {
+        bool ret = io.startMultiNetwork(m_conf.getMultiModemLocalAddress(), m_conf.getMultiModemLocalPort(),
+                                     m_conf.getMultiModemAddress(), m_conf.getMultiModemPort());
+        if(!ret) {
+            LogError("Unable to open the MMDVM-Multi network connection");
+            return 1;
+        }
     }
 
     io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI(), m_conf.getRxGain(), m_conf.getTxGain());
@@ -278,6 +290,9 @@ int CMMDVMIQ::run()
         serial.process();
 
         io.process();
+
+        if(modeMulti)
+            io.processMultiNetwork();
 
         // The following are for transmitting
 #if defined(MODE_DSTAR)
@@ -321,6 +336,9 @@ int CMMDVMIQ::run()
 
         if (m_modemState == MMDVM_STATE::IDLE)
             cwIdTX.process();
+
+        if(modeMulti)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     LogInfo("MMDVM-IQ is stopping");

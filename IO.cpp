@@ -3,6 +3,7 @@
  *   Copyright (C) 2023 by Tatu Peltola OH2EAT
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
+ *   Copyright (C) 2026 by Adrian Musceac YO8RZZ
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -89,11 +90,17 @@ const q15_t LEVEL_40PC_INVERTED = -102 * 128;
 const q15_t LEVEL_30PC_INVERTED = -77  * 128;
 const q15_t LEVEL_100PC         =  255 * 128;
 
+const unsigned int SAMPLES_TO_NETWORK = 720U;
+const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
+
+
 CIO::CIO() :
 m_trace(false),
 m_started(false),
 m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
 m_txBuffer(TX_RINGBUFFER_SIZE, "IO TX Buffer"),
+m_rxNetworkBuffer(721U, "MMDVM-Multi RX Buffer"),
+m_txNetworkBuffer(721U, "MMDVM-Multi TX Buffer"),
 #if defined(USE_DCBLOCKER)
 m_dcFilter(),
 m_dcState(),
@@ -147,6 +154,7 @@ m_soapyDeviceURI(),
 m_device(nullptr),
 m_rxStream(nullptr),
 m_txStream(nullptr),
+m_multiModem(false),
 m_pocsag(false)
 {
 #if defined(USE_DCBLOCKER)
@@ -210,6 +218,16 @@ CIO::~CIO()
 {
 }
 
+bool CIO::startMultiNetwork(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort)
+{
+  bool res = m_multiModemSocket.open(myAddress, myPort, modemAddress, modemPort);
+  if(!res) {
+    return false;
+  }
+  m_multiModem = true;
+  return true;
+}
+
 bool CIO::start(bool trace)
 {
   if (m_started)
@@ -226,6 +244,11 @@ bool CIO::start(bool trace)
 
 void CIO::stop()
 {
+  if(m_multiModem) {
+    m_multiModemSocket.close();
+    return;
+  }
+
   delete m_fdudc;
   m_fdudc = nullptr;
 
@@ -254,77 +277,92 @@ void CIO::stop()
   m_soapyInit = false;
 }
 
-void CIO::process()
+void CIO::process(bool networkData)
 {
   if (!m_started)
     return;
 
-  if (m_device == nullptr)
-    return;
+  if(!m_multiModem) {  // normal SDR device logic
+    if (m_device == nullptr)
+      return;
 
-  assert(m_device != nullptr);
-  assert(m_rxStream != nullptr);
-  assert(m_txStream != nullptr);
+    assert(m_device != nullptr);
+    assert(m_rxStream != nullptr);
+    assert(m_txStream != nullptr);
 
-  if (!m_soapyInit) {
-    m_device->activateStream(m_rxStream);
-    m_device->activateStream(m_txStream);
+    if (!m_soapyInit) {
+      m_device->activateStream(m_rxStream);
+      m_device->activateStream(m_txStream);
 
-    if (!m_timestamped) {
-      // Write initial zeros to transmit buffer to start streams
-      for (size_t i = 0; i < m_buffer.size(); i++)
-        m_buffer[i] = { 0.0F, 0.0F };
+      if (!m_timestamped) {
+        // Write initial zeros to transmit buffer to start streams
+        for (size_t i = 0; i < m_buffer.size(); i++)
+          m_buffer[i] = { 0.0F, 0.0F };
 
-      for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
-        void* buffs[1] = { (void*)m_buffer.data() };
-        int flags = 0;
-        int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
-        if (ret <= 0) {
-          LogError("TX stream start error: %d (%s)", ret, SoapySDR_errToStr(ret));
-          break;
+        for (size_t i = 0; i < LATENCY_BLOCKS; i++) {
+          void* buffs[1] = { (void*)m_buffer.data() };
+          int flags = 0;
+          int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags);
+          if (ret <= 0) {
+            LogError("TX stream start error: %d (%s)", ret, SoapySDR_errToStr(ret));
+            break;
+          }
         }
+      }
+
+      m_soapyInit = true;
+    }
+
+    void *buffs[1] = {(void*)m_buffer.data()};
+    long long timeNs = 0LL;
+
+    if (m_soapyInit) {
+      int flags = 0;
+      int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
+      if (ret > 0) {
+        processIQBlock();
+      } else {
+        LogError("RX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
+        m_soapyInit = false;
       }
     }
 
-    m_soapyInit = true;
-  }
+    if (m_soapyInit) {
+      int flags = 0;
+      if (m_timestamped) {
+        timeNs += m_latencyNs;
+        flags   = SOAPY_SDR_HAS_TIME;
+      }
 
-  void *buffs[1] = {(void*)m_buffer.data()};
-  long long timeNs = 0LL;
+      int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNs);
+      if (ret <= 0) {
+        LogError("TX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
+        m_soapyInit = false;
+      }
+    }
 
-  if (m_soapyInit) {
-    int flags = 0;
-    int ret = m_device->readStream(m_rxStream, buffs, m_buffer.size(), flags, timeNs);
-    if (ret > 0) {
-      processIQBlock();
-    } else {
-      LogError("RX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
-      m_soapyInit = false;
+    if (!m_soapyInit) {
+      m_device->deactivateStream(m_rxStream);
+      m_device->deactivateStream(m_txStream);
+      return;
     }
   }
 
-  if (m_soapyInit) {
-    int flags = 0;
-    if (m_timestamped) {
-      timeNs += m_latencyNs;
-      flags   = SOAPY_SDR_HAS_TIME;
-    }
-
-    int ret = m_device->writeStream(m_txStream, buffs, m_buffer.size(), flags, timeNs);
-    if (ret <= 0) {
-      LogError("TX stream error: %d (%s)", ret, SoapySDR_errToStr(ret));
-      m_soapyInit = false;
-    }
+  if(m_multiModem && m_txBuffer.hasData() && !m_tx) {
+    LogMessage("TX OFF");
+    m_txBuffer.clear(); // clear off partial DMR timeslot data so good timing info is present in packet
+    m_txNetworkBuffer.clear();
   }
 
-  if (!m_soapyInit) {
-    m_device->deactivateStream(m_rxStream);
-    m_device->deactivateStream(m_txStream);
-    return;
+  if(m_multiModem && !networkData && !m_txBuffer.hasData() && m_tx) {
+    m_tx = false;
+    LogMessage("TX OFF");
+    m_txNetworkBuffer.clear();
   }
+
 
   // Switch off the transmitter if needed
-  if (!m_txBuffer.hasData() && m_tx) {
+  if (!m_multiModem && !m_txBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
 
@@ -613,18 +651,19 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
-
-      if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
-          m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
-          m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0 ||
-          m_soapyDeviceType.compare("usrp") == 0) {
-        m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
-      } else {
-        m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
+      if(!m_multiModem) {
+        if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
+            m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
+            m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0 ||
+            m_soapyDeviceType.compare("usrp") == 0) {
+          m_device->setGain(SOAPY_SDR_TX, TX_CHANNEL, m_txGain);
+        } else {
+          m_device->setAntenna(SOAPY_SDR_TX, TX_CHANNEL, "TX");
+        }
       }
   }
 
-  if (m_tx) {
+  if (m_tx && !m_multiModem) {
     // Set the correct transmit frequency for the mode if needed, even in the middle of a transmission
     setTXFrequency(mode == MMDVM_STATE::POCSAG);
   }
@@ -679,6 +718,9 @@ void CIO::setTXFrequency(bool pocsag)
 
 uint8_t CIO::setParameters()
 {
+  if(m_multiModem)
+    return 0U;
+
   stop();
 
   if (m_trace)
@@ -891,4 +933,76 @@ uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint3
   m_pocsagFreq = pocsagFreq;
 
   return 0U;
+}
+
+void CIO::processMultiNetwork()
+{
+  unsigned int tx_available = m_txBuffer.dataSize();
+  while(((m_txNetworkBuffer.freeSpace() - 1U) >= 1U) && (tx_available >= 1U)) {
+    TXSample sample;
+    m_txBuffer.getData(sample);
+    m_txNetworkBuffer.addData(sample);
+    tx_available = m_txBuffer.dataSize();
+  }
+
+  uint32_t num_send_items = SAMPLES_TO_NETWORK;
+  unsigned char recv_message[MULTIMODEM_PACKET_SIZE];
+  ::memset(recv_message, 0U, MULTIMODEM_PACKET_SIZE);
+  int num_bytes = m_multiModemSocket.readDatagram(recv_message, MULTIMODEM_PACKET_SIZE);
+
+  if(num_bytes == MULTIMODEM_PACKET_SIZE) {
+    if((m_txNetworkBuffer.hasData()) && (m_txNetworkBuffer.dataSize() >= num_send_items)) {
+      TXSample samples[SAMPLES_TO_NETWORK];
+      m_txNetworkBuffer.getData(samples, num_send_items);
+      unsigned char reply[MULTIMODEM_PACKET_SIZE];
+      ::memset(reply, 0U, MULTIMODEM_PACKET_SIZE);
+      ::memcpy(reply, &num_send_items, sizeof(uint32_t));
+      for(unsigned int i=0;i< num_send_items;i++) {
+        int16_t sample = samples[i].m_sample;
+        uint8_t control = samples[i].m_control;
+        ::memcpy(reply + sizeof(uint32_t) + i * sizeof(uint8_t), &control, sizeof(uint8_t));
+        ::memcpy(reply + sizeof(uint32_t) + num_send_items * sizeof(uint8_t) + i * sizeof(int16_t),
+                &sample, sizeof(int16_t));
+      }
+      if(!m_multiModemSocket.write(reply, MULTIMODEM_PACKET_SIZE - 4U)) {
+        LogError("Error writing to socket\n");
+      }
+    } else {
+      unsigned char reply[4U];
+      ::memset(reply, 0U, 4U);
+      if(!m_multiModemSocket.write(reply, 4U)) {
+        LogError("Error writing to socket\n");
+      }
+    }
+
+    uint32_t data_size = 0;
+    ::memcpy(&data_size, recv_message, sizeof(uint32_t));
+    if(data_size != SAMPLES_TO_NETWORK) {
+      LogError("Received malformed packet from MMDVM-Multi: %u samples", data_size);
+      return;
+    }
+    uint32_t rssi = 0;
+    ::memcpy(&rssi, recv_message + sizeof(uint32_t), sizeof(uint32_t));
+    for(uint32_t i=0;i < data_size;i++) {
+      int16_t sample = 0;
+      uint8_t control = MARK_NONE;
+      ::memcpy(&control, recv_message + 2U * sizeof(uint32_t) + i, sizeof(uint8_t));
+      ::memcpy(&sample, recv_message + 2U * sizeof(uint32_t) + data_size * sizeof(uint8_t) + i * sizeof(int16_t), sizeof(int16_t));
+      RXSample rx_sample;
+      rx_sample.m_sample = sample;
+      rx_sample.m_control = control;
+      rx_sample.m_rssi = (uint16_t)rssi;
+      m_rxNetworkBuffer.addData(rx_sample);
+    }
+  }
+
+  unsigned int rx_available = m_rxBuffer.freeSpace() - 1U;
+  while((rx_available >= 1U) && (m_rxNetworkBuffer.hasData())) {
+    RXSample sample;
+    m_rxNetworkBuffer.getData(sample);
+    m_rxBuffer.addData(sample);
+    if(m_rxBuffer.dataSize() % RX_BLOCK_SIZE == 0U)
+      process(true);
+    rx_available = m_rxBuffer.freeSpace() - 1U;
+  }
 }

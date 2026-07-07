@@ -87,6 +87,15 @@ uint8_t CSocket::read()
 	return c;
 }
 
+int CSocket::readDatagram(unsigned char* buffer, uint16_t length)
+{
+	sockaddr_storage address;
+	unsigned int addr_length = 0U;
+	int m = m_socket->read(buffer, length, address, addr_length);
+	return m;
+}
+
+
 bool CSocket::write(const uint8_t* buffer, uint16_t length)
 {
 	return m_socket->write(buffer, length, m_address, m_addressLength);
