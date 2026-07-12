@@ -325,10 +325,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
 
     // Fix the CTCSS level issue by:
-    // increase the audio(12bit) level by 4 and decrease the CTCSS(16bit) level by 2
+    // increase the audio(12bit) level by 4 and decrease the CTCSS(16bit) level by 4
     // the CTCSSLevel could be 0 ~ 20 then
     currentSample = currentSample * 4;
-    currentSample += (m_ctcssTX.getAudio(m_reverseTimer.isRunning()) >> 1);
+    currentSample += (m_ctcssTX.getAudio(m_reverseTimer.isRunning()) >> 2);
 
     q31_t res1 = currentSample * m_txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
