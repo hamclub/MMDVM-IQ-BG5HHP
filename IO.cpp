@@ -221,10 +221,11 @@ CIO::~CIO()
 bool CIO::startMultiNetwork(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort)
 {
   bool res = m_multiModemSocket.open(myAddress, myPort, modemAddress, modemPort);
-  if(!res) {
+  if (!res)
     return false;
-  }
+
   m_multiModem = true;
+
   return true;
 }
 
@@ -244,7 +245,7 @@ bool CIO::start(bool trace)
 
 void CIO::stop()
 {
-  if(m_multiModem) {
+  if (m_multiModem) {
     m_multiModemSocket.close();
     return;
   }
@@ -282,7 +283,7 @@ void CIO::process(bool networkData)
   if (!m_started)
     return;
 
-  if(!m_multiModem) {  // normal SDR device logic
+  if (!m_multiModem) {  // normal SDR device logic
     if (m_device == nullptr)
       return;
 
@@ -348,18 +349,17 @@ void CIO::process(bool networkData)
     }
   }
 
-  if(m_multiModem && m_txBuffer.hasData() && !m_tx) {
+  if (m_multiModem && m_txBuffer.hasData() && !m_tx) {
     LogMessage("TX OFF");
     m_txBuffer.clear(); // clear off partial DMR timeslot data so good timing info is present in packet
     m_txNetworkBuffer.clear();
   }
 
-  if(m_multiModem && !networkData && !m_txBuffer.hasData() && m_tx) {
+  if (m_multiModem && !networkData && !m_txBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
     m_txNetworkBuffer.clear();
   }
-
 
   // Switch off the transmitter if needed
   if (!m_multiModem && !m_txBuffer.hasData() && m_tx) {
@@ -651,7 +651,7 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
-      if(!m_multiModem) {
+      if (!m_multiModem) {
         if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
             m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
             m_soapyDeviceType.compare("limemini") == 0 || m_soapyDeviceType.compare("lime-mini") == 0 ||
@@ -718,7 +718,7 @@ void CIO::setTXFrequency(bool pocsag)
 
 uint8_t CIO::setParameters()
 {
-  if(m_multiModem)
+  if (m_multiModem)
     return 0U;
 
   stop();
@@ -938,7 +938,8 @@ uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint3
 void CIO::processMultiNetwork()
 {
   unsigned int tx_available = m_txBuffer.dataSize();
-  while(((m_txNetworkBuffer.freeSpace() - 1U) >= 1U) && (tx_available >= 1U)) {
+
+  while (((m_txNetworkBuffer.freeSpace() - 1U) >= 1U) && (tx_available >= 1U)) {
     TXSample sample;
     m_txBuffer.getData(sample);
     m_txNetworkBuffer.addData(sample);
@@ -948,42 +949,46 @@ void CIO::processMultiNetwork()
   uint32_t num_send_items = SAMPLES_TO_NETWORK;
   unsigned char recv_message[MULTIMODEM_PACKET_SIZE];
   ::memset(recv_message, 0U, MULTIMODEM_PACKET_SIZE);
-  int num_bytes = m_multiModemSocket.readDatagram(recv_message, MULTIMODEM_PACKET_SIZE);
 
-  if(num_bytes == MULTIMODEM_PACKET_SIZE) {
-    if((m_txNetworkBuffer.hasData()) && (m_txNetworkBuffer.dataSize() >= num_send_items)) {
+  int num_bytes = m_multiModemSocket.readDatagram(recv_message, MULTIMODEM_PACKET_SIZE);
+  if (num_bytes == MULTIMODEM_PACKET_SIZE) {
+    if ((m_txNetworkBuffer.hasData()) && (m_txNetworkBuffer.dataSize() >= num_send_items)) {
       TXSample samples[SAMPLES_TO_NETWORK];
       m_txNetworkBuffer.getData(samples, num_send_items);
       unsigned char reply[MULTIMODEM_PACKET_SIZE];
       ::memset(reply, 0U, MULTIMODEM_PACKET_SIZE);
       ::memcpy(reply, &num_send_items, sizeof(uint32_t));
-      for(unsigned int i=0;i< num_send_items;i++) {
+
+      for (unsigned int i = 0U; i < num_send_items; i++) {
         int16_t sample = samples[i].m_sample;
         uint8_t control = samples[i].m_control;
         ::memcpy(reply + sizeof(uint32_t) + i * sizeof(uint8_t), &control, sizeof(uint8_t));
         ::memcpy(reply + sizeof(uint32_t) + num_send_items * sizeof(uint8_t) + i * sizeof(int16_t),
                 &sample, sizeof(int16_t));
       }
-      if(!m_multiModemSocket.write(reply, MULTIMODEM_PACKET_SIZE - 4U)) {
+
+      if (!m_multiModemSocket.write(reply, MULTIMODEM_PACKET_SIZE - 4U))
         LogError("Error writing to socket\n");
-      }
     } else {
       unsigned char reply[4U];
       ::memset(reply, 0U, 4U);
-      if(!m_multiModemSocket.write(reply, 4U)) {
+
+      if (!m_multiModemSocket.write(reply, 4U))
         LogError("Error writing to socket\n");
-      }
     }
 
     uint32_t data_size = 0;
     ::memcpy(&data_size, recv_message, sizeof(uint32_t));
-    if(data_size != SAMPLES_TO_NETWORK) {
+
+    if (data_size != SAMPLES_TO_NETWORK) {
       LogError("Received malformed packet from MMDVM-Multi: %u samples", data_size);
       return;
     }
+
     uint32_t rssi = 0;
     ::memcpy(&rssi, recv_message + sizeof(uint32_t), sizeof(uint32_t));
-    for(uint32_t i=0;i < data_size;i++) {
+
+    for (uint32_t i = 0U; i < data_size; i++) {
       int16_t sample = 0;
       uint8_t control = MARK_NONE;
       ::memcpy(&control, recv_message + 2U * sizeof(uint32_t) + i, sizeof(uint8_t));
@@ -997,12 +1002,14 @@ void CIO::processMultiNetwork()
   }
 
   unsigned int rx_available = m_rxBuffer.freeSpace() - 1U;
-  while((rx_available >= 1U) && (m_rxNetworkBuffer.hasData())) {
+  while ((rx_available >= 1U) && (m_rxNetworkBuffer.hasData())) {
     RXSample sample;
     m_rxNetworkBuffer.getData(sample);
     m_rxBuffer.addData(sample);
-    if(m_rxBuffer.dataSize() % RX_BLOCK_SIZE == 0U)
+
+    if (m_rxBuffer.dataSize() % RX_BLOCK_SIZE == 0U)
       process(true);
+
     rx_available = m_rxBuffer.freeSpace() - 1U;
   }
 }

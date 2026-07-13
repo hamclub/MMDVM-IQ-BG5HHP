@@ -18,12 +18,11 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <thread>
-#include <chrono>
 #include "MMDVM-IQ.h"
 #include "Config.h"
 #include "Globals.h"
 #include "Version.h"
+#include "Thread.h"
 #include "Log.h"
 #include "GitVersion.h"
 
@@ -266,10 +265,10 @@ int CMMDVMIQ::run()
     }
 
     bool modeMulti = m_conf.getMultiModem();
-    if(modeMulti) {
+    if (modeMulti) {
         bool ret = io.startMultiNetwork(m_conf.getMultiModemLocalAddress(), m_conf.getMultiModemLocalPort(),
                                      m_conf.getMultiModemAddress(), m_conf.getMultiModemPort());
-        if(!ret) {
+        if (!ret) {
             LogError("Unable to open the MMDVM-Multi network connection");
             return 1;
         }
@@ -291,7 +290,7 @@ int CMMDVMIQ::run()
 
         io.process();
 
-        if(modeMulti)
+        if (modeMulti)
             io.processMultiNetwork();
 
         // The following are for transmitting
@@ -337,8 +336,8 @@ int CMMDVMIQ::run()
         if (m_modemState == MMDVM_STATE::IDLE)
             cwIdTX.process();
 
-        if(modeMulti)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (modeMulti)
+            CThread::sleep(1U);
     }
 
     LogInfo("MMDVM-IQ is stopping");

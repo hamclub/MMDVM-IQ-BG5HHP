@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2024,2025,2026 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,35 +16,41 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(Socket_H)
-#define Socket_H
+#if !defined(THREAD_H)
+#define	THREAD_H
 
-#include "RingBuffer.h"
-#include "UDPSocket.h"
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
 
-
-class CSocket {
+class CThread
+{
 public:
-	CSocket();
-	~CSocket();
+  CThread();
+  virtual ~CThread();
 
-	bool open(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort);
+  virtual bool run();
 
-	bool    available();
-	uint8_t read();
-	int     readDatagram(uint8_t* buffer, uint16_t length);
-	bool    write(const uint8_t* buffer, uint16_t length);
+  virtual void entry() = 0;
 
-	void close();
+  virtual void wait();
 
-	static void startup();
-	static void shutdown();
+  static void sleep(unsigned int ms);
 
 private:
-	sockaddr_storage m_address;
-	unsigned int     m_addressLength;
-	CUDPSocket*      m_socket;
-	CRingBuffer<uint8_t> m_buffer;
+#if defined(_WIN32) || defined(_WIN64)
+  HANDLE    m_handle;
+#else
+  pthread_t m_thread;
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+  static DWORD __stdcall helper(LPVOID arg);
+#else
+  static void* helper(void* arg);
+#endif
 };
 
 #endif

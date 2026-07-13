@@ -255,13 +255,14 @@ uint8_t CDMRTX::writeAbort(const uint8_t* data, uint16_t length)
 void CDMRTX::setStart(bool start)
 {
   m_state = start ? DMRTXSTATE::SLOT1 : DMRTXSTATE::IDLE;
-  if(!start) { // abort current transmission (timed beacons) to avoid tail getting appended to next slot
+
+  if (!start) { // abort current transmission (timed beacons) to avoid tail getting appended to next slot
     m_poLen = 0;
     m_poPtr = 0;
-    m_tx = false;
+    m_tx    = false;
   }
 
-  m_frameCount = 0U;
+  m_frameCount     = 0U;
   m_abortCount[0U] = 0U;
   m_abortCount[1U] = 0U;
 
