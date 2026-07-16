@@ -3,12 +3,12 @@
 USE_MQTT ?= 0
 DEBUG ?= 0
 
-CC       = cc
-CXX      = c++
-CFLAGS   = -Wall -std=c11 -MMD -pthread -DARM_MATH_RPI
-CXXFLAGS = -Wall -std=c++11 -fpermissive -MMD -pthread -DARM_MATH_RPI -fno-strict-aliasing
-LIBS     = -lpthread -lSoapySDR
-LDFLAGS  = -L/usr/local/lib
+CC       ?= cc
+CXX      ?= c++
+CFLAGS   += -Wall -std=c11 -MMD -pthread -DARM_MATH_RPI
+CXXFLAGS += -Wall -std=c++11 -fpermissive -MMD -pthread -DARM_MATH_RPI -fno-strict-aliasing
+LIBS     += -lpthread -lSoapySDR
+LDFLAGS  += -L/usr/local/lib
 
 ifeq ($(USE_MQTT), 1)
 	CXXFLAGS+= -DUSE_MQTT=1
