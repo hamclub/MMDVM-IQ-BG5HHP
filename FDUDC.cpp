@@ -100,7 +100,8 @@ CFDUDC::~CFDUDC()
 
 void CFDUDC::process(
     std::vector<std::complex<float>> &buffer,
-    std::function<std::complex<float>(std::complex<float>)> process_sample
+    // std::function<std::complex<float>(std::complex<float>)> process_sample
+    ProcessSampleFP process_sample, void* pData
 )
 {
     const size_t branchlen = m_in.size() / 2;
@@ -132,7 +133,7 @@ void CFDUDC::process(
                 p += (size_t)m_resampNum;
             }
 
-            m_ducIn = duc_scaling * process_sample(ddcOut);
+            m_ducIn = duc_scaling * process_sample(ddcOut, pData);
         }
 
         sample = (m_out[m_i] + m_out[m_i + branchlen]) * m_duc_sine[m_duc_i];

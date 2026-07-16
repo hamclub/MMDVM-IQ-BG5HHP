@@ -553,6 +553,44 @@ void CIO::process()
   }
 }
 
+std::complex<float> CIO::processIQSampleInt(std::complex<float> rxIQSample, void* pData) {
+  assert(pData);
+  CIO* self = (CIO*)pData;
+
+  std::complex<float> txIQSample = {0.0F, 0.0F};
+  TXSample txSample = {0, MARK_NONE};
+
+  if (self->m_txBuffer.getData(txSample)) {
+    // Modulate TX
+    self->m_phase += txSample.m_sample * FM_DEVIATION;
+    float ph = self->m_phase * float(M_PI / 0x80000000UL);
+    txIQSample = std::polar(self->m_power, ph);
+  }
+
+  // Demodulate RX
+  float d = std::arg(rxIQSample * std::conj(self->m_prevRXIQSample));
+  self->m_prevRXIQSample = rxIQSample;
+
+  // Scale -pi...pi to -4096...4096
+  d *= 4096.0F / M_PI;
+
+  txSample = self->m_delayedTXBuffer->process(txSample);
+
+  float rssi = 100000000.0F * std::norm(rxIQSample);
+  if (rssi > 65535.0F)
+    rssi = 65535.0F;
+
+  RXSample rxSample = {
+    .m_sample  = q15_t(d + 0.5F),
+    .m_rssi    = uint16_t(rssi),
+    .m_control = txSample.m_control
+  };
+
+  self->m_rxBuffer.addData(rxSample);
+
+  return txIQSample;
+}
+
 void CIO::processIQBlock()
 {
   assert(m_fdudc != nullptr);
@@ -565,7 +603,8 @@ void CIO::processIQBlock()
   }
 
   // Insert a channel filter here
-
+  m_fdudc->process(m_buffer, processIQSampleInt, this);
+  /*
   m_fdudc->process(m_buffer, [this](std::complex<float> rxIQSample) {
     std::complex<float> txIQSample = {0.0F, 0.0F};
     TXSample txSample = {0, MARK_NONE};
@@ -600,6 +639,7 @@ void CIO::processIQBlock()
 
     return txIQSample;
   });
+  */
 }
 
 void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
