@@ -140,7 +140,6 @@ private:
   bool                 m_pocsag;
 
   void processIQBlock();
-  static std::complex<float> processIQSampleInt(std::complex<float> rxIQSample, void* pData);
   void setTXFrequency(bool pocsag);
 };
 

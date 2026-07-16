@@ -7,8 +7,6 @@
 #include <functional>
 #include <vector>
 
-class CFDUDC;
-typedef std::complex<float> (*ProcessSampleFP)(std::complex<float>, void* pData);
 class CFDUDC {
 public:
     CFDUDC(
@@ -33,9 +31,7 @@ public:
 
     void process(
         std::vector<std::complex<float>> &buffer,
-        // std::function<std::complex<float>(std::complex<float>)> process_sample
-        ProcessSampleFP process_sample, void* pData
-    );
+        std::function<std::complex<float>(std::complex<float>)> process_sample);
 private:
     // Numerator of sample rate ratio
     // This determines the interpolation factor for DDC
