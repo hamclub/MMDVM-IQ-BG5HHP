@@ -327,6 +327,9 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
 
+    // Increase the audio(12bit) level x 2
+    currentSample = currentSample * 2;
+
     // Decrease the CTCSS(16bit) level / 4
     currentSample += (m_ctcssTX.getAudio(m_reverseTimer.isRunning()) >> 2);
 
