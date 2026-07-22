@@ -25,7 +25,7 @@
 #include "Config.h"
 #include "IO.h"
 
-#include "IOSoapy.h"
+#include "SDRSoapy.h"
 #include "SDRMulti.h"
 
 #include <cstdio>
@@ -474,7 +474,7 @@ uint8_t CIO::setParameters()
 
 void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
 {
-  CIOSoapy* soapy = new CIOSoapy();
+  CSDRSoapy* soapy = new CSDRSoapy();
   assert(soapy);
   soapy->setDeviceInfo(type, uri, rxGain, txGain);
 

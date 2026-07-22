@@ -24,7 +24,7 @@
 #include "Globals.h"
 #include "Config.h"
 
-#include "IOSoapy.h"
+#include "SDRSoapy.h"
 
 #include <cstdio>
 #include <cassert>
@@ -49,7 +49,7 @@ const q15_t LEVEL_100PC         =  255 * 128;
 const unsigned int SAMPLES_TO_NETWORK = 720U;
 const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
-CIOSoapy::CIOSoapy() :
+CSDRSoapy::CSDRSoapy() :
 m_trace(false),
 m_started(false),
 m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
@@ -80,11 +80,11 @@ m_pocsag(false)
 {
 }
 
-CIOSoapy::~CIOSoapy()
+CSDRSoapy::~CSDRSoapy()
 {
 }
 
-bool CIOSoapy::start(bool trace)
+bool CSDRSoapy::start(bool trace)
 {
   if (m_started)
     return true;
@@ -98,7 +98,7 @@ bool CIOSoapy::start(bool trace)
   return true;
 }
 
-void CIOSoapy::stop()
+void CSDRSoapy::stop()
 {
   delete m_fdudc;
   m_fdudc = nullptr;
@@ -128,7 +128,7 @@ void CIOSoapy::stop()
   m_soapyInit = false;
 }
 
-int CIOSoapy::readRXSamples(RXSample* rxSamples) {
+int CSDRSoapy::readRXSamples(RXSample* rxSamples) {
   if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       m_rxBuffer.getData(*(rxSamples + i));
@@ -139,7 +139,7 @@ int CIOSoapy::readRXSamples(RXSample* rxSamples) {
   return 0;
 }
 
-void CIOSoapy::process()
+void CSDRSoapy::process()
 {
   if (!m_started)
     return;
@@ -228,7 +228,7 @@ void CIOSoapy::process()
   // IO.cpp will call the getRXSamples()
 }
 
-void CIOSoapy::processIQBlock()
+void CSDRSoapy::processIQBlock()
 {
   assert(m_fdudc != nullptr);
   assert(m_delayedTXBuffer != nullptr);
@@ -277,7 +277,7 @@ void CIOSoapy::processIQBlock()
   });
 }
 
-int CIOSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control) {
+int CSDRSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control) {
   RXSample rxSamples[2];
 
   if (this->readRXSamples(rxSamples) == RX_BLOCK_SIZE) {
@@ -293,7 +293,7 @@ int CIOSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* co
   return 0;
 }
 
-void CIOSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
+void CSDRSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
   assert(samples != nullptr);
   assert(length > 0U);
@@ -340,12 +340,12 @@ void CIOSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, co
   }
 }
 
-uint16_t CIOSoapy::getSpace() const
+uint16_t CSDRSoapy::getSpace() const
 {
   return m_txBuffer.freeSpace();
 }
 
-void CIOSoapy::setTXFrequency(bool pocsag)
+void CSDRSoapy::setTXFrequency(bool pocsag)
 {
   if (m_device != nullptr) {
     if (pocsag && !m_pocsag) {
@@ -362,7 +362,7 @@ void CIOSoapy::setTXFrequency(bool pocsag)
   }
 }
 
-uint8_t CIOSoapy::setParameters()
+uint8_t CSDRSoapy::setParameters()
 {
   stop();
 
@@ -550,7 +550,7 @@ uint8_t CIOSoapy::setParameters()
   return 0U;
 }
 
-void CIOSoapy::setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
+void CSDRSoapy::setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
 {
   m_soapyDeviceType = type;
   m_soapyDeviceURI  = uri;
@@ -559,7 +559,7 @@ void CIOSoapy::setDeviceInfo(const std::string& type, const std::string& uri, un
   m_txGain = float(txGain);
 }
 
-uint8_t CIOSoapy::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
+uint8_t CSDRSoapy::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
   if ((txFreq < MIN_RF_FREQUENCY) || (txFreq > MAX_RF_FREQUENCY))
     return 4U;

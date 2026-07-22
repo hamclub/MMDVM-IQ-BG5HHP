@@ -17,8 +17,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(IOSOAPY_H)
-#define  IOSOAPY_H
+#if !defined(SDR_SOAPY_H)
+#define  SDR_SOAPY_H
 
 #include "IO.h"
 #include "SDRDevice.h"
@@ -33,10 +33,10 @@
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 
-class CIOSoapy : public ISDRDevice{
+class CSDRSoapy : public ISDRDevice{
 public:
-  CIOSoapy();
-  virtual ~CIOSoapy();
+  CSDRSoapy();
+  virtual ~CSDRSoapy();
 
   bool start(bool trace);
 
