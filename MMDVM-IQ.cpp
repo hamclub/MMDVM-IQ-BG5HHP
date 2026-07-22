@@ -345,7 +345,5 @@ int CMMDVMIQ::run()
     io.stop();
     serial.stop();
 
-    ::LogFinalise();
-
     return 0;
 }
