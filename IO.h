@@ -44,8 +44,6 @@ public:
   CIO();
   ~CIO();
 
-  bool startMultiNetwork(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort) { return true; };
-
   bool start(bool trace);
 
   void process(bool networkData=false);

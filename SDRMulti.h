@@ -52,8 +52,6 @@ public:
 
 private:
   bool                  m_trace = false;
-  CRingBuffer<RXSample> m_rxBuffer;
-  CRingBuffer<TXSample> m_txBuffer;
   CRingBuffer<RXSample> m_rxNetworkBuffer;
   CRingBuffer<TXSample> m_txNetworkBuffer;
 

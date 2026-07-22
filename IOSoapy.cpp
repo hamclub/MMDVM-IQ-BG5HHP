@@ -93,6 +93,8 @@ bool CIOSoapy::start(bool trace)
 
   m_started = true;
 
+  LogMessage("Soapy SDR started");
+
   return true;
 }
 
@@ -127,7 +129,7 @@ void CIOSoapy::stop()
 }
 
 int CIOSoapy::readRXSamples(RXSample* rxSamples) {
-  if (m_rxBuffer.dataSize() > RX_BLOCK_SIZE) {
+  if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       m_rxBuffer.getData(*(rxSamples + i));
     }

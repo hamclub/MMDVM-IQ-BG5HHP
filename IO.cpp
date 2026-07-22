@@ -241,7 +241,7 @@ void CIO::process(bool networkData)
   uint8_t  control[RX_BLOCK_SIZE];
   uint16_t rssi[RX_BLOCK_SIZE];
 
-  while (m_sdrDevice->read(m_modemState, samples, rssi, control) == RX_BLOCK_SIZE) { 
+  while (m_sdrDevice->read(m_modemState, samples, rssi, control) == RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       q31_t res2 = samples[i] * LEVEL_50PC_INVERTED;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));

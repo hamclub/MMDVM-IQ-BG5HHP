@@ -40,8 +40,6 @@ const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
 CSDRMulti::CSDRMulti() :
 m_trace(false),
-m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
-m_txBuffer(TX_RINGBUFFER_SIZE, "IO TX Buffer"),
 m_rxNetworkBuffer(721U, "MMDVM-Multi RX Buffer"),
 m_txNetworkBuffer(721U, "MMDVM-Multi TX Buffer"),
 m_multiModemSocket(),
@@ -77,9 +75,13 @@ bool CSDRMulti::start(bool trace)
 
   assert(m_myPort > 0);
   assert(m_modemPort > 0);
+
+  LogDebug("Opening SDRMulti socket my(%u) <--> multi(%u)", m_myPort, m_modemPort);
   bool res = m_multiModemSocket.open(m_myAddress, m_myPort, m_modemAddress, m_modemPort);
   if (!res)
     return false;
+
+  LogMessage("SDRMulti started");
 
   return true;
 }
@@ -90,9 +92,9 @@ void CSDRMulti::stop()
 }
 
 int CSDRMulti::readRXSamples(RXSample* rxSamples) {
-  if (m_rxBuffer.dataSize() > RX_BLOCK_SIZE) {
+  if (m_rxNetworkBuffer.dataSize() >= RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
-      m_rxBuffer.getData(*(rxSamples + i));
+      m_rxNetworkBuffer.getData(*(rxSamples + i));
     }
     return RX_BLOCK_SIZE;
   }
@@ -103,26 +105,14 @@ int CSDRMulti::readRXSamples(RXSample* rxSamples) {
 void CSDRMulti::process()
 {
   // process local buffer
-  if (m_txBuffer.hasData() && !m_tx) {
+  if (m_txNetworkBuffer.hasData() && !m_tx) {
     LogMessage("TX OFF");
-    m_txBuffer.clear(); // clear off partial DMR timeslot data so good timing info is present in packet
-    m_txNetworkBuffer.clear();
+    m_txNetworkBuffer.clear();  // clear off partial DMR timeslot data so good timing info is present in packet
   }
 
-  if (!m_txBuffer.hasData() && m_tx) {
+  if (!m_txNetworkBuffer.hasData() && m_tx) {
     m_tx = false;
     LogMessage("TX OFF");
-    m_txNetworkBuffer.clear();
-  }
-
-  unsigned int tx_available = m_txBuffer.dataSize();
-
-  // TODO - use single txBuffer when everything is ok
-  while (((m_txNetworkBuffer.freeSpace() - 1U) >= 1U) && (tx_available >= 1U)) {
-    TXSample sample;
-    m_txBuffer.getData(sample);
-    m_txNetworkBuffer.addData(sample);
-    tx_available = m_txBuffer.dataSize();
   }
 
   uint32_t num_send_items = SAMPLES_TO_NETWORK;
@@ -179,19 +169,6 @@ void CSDRMulti::process()
       m_rxNetworkBuffer.addData(rx_sample);
     }
   }
-
-  // TODO - use single rxBuffer when everything is ok
-  unsigned int rx_available = m_rxBuffer.freeSpace() - 1U;
-  while ((rx_available >= 1U) && (m_rxNetworkBuffer.hasData())) {
-    RXSample sample;
-    m_rxNetworkBuffer.getData(sample);
-    m_rxBuffer.addData(sample);
-
-    if (m_rxBuffer.dataSize() % RX_BLOCK_SIZE == 0U)
-      process();
-
-    rx_available = m_rxBuffer.freeSpace() - 1U;
-  }
 }
 
 int CSDRMulti::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control) {
@@ -239,15 +216,15 @@ void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
     if (control == nullptr)
-      m_txBuffer.addData({res2, MARK_NONE});
+      m_txNetworkBuffer.addData({res2, MARK_NONE});
     else
-      m_txBuffer.addData({res2, control[i]});
+      m_txNetworkBuffer.addData({res2, control[i]});
   }
 }
 
 uint16_t CSDRMulti::getSpace() const
 {
-  return m_txBuffer.freeSpace();
+  return m_txNetworkBuffer.freeSpace();
 }
 
 void CSDRMulti::setTXFrequency(bool pocsag)
