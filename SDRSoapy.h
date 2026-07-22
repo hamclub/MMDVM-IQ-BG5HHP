@@ -20,6 +20,8 @@
 #if !defined(SDR_SOAPY_H)
 #define  SDR_SOAPY_H
 
+#if defined(USE_SOAPY)
+
 #include "IO.h"
 #include "SDRDevice.h"
 
@@ -33,7 +35,7 @@
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 
-class CSDRSoapy : public ISDRDevice{
+class CSDRSoapy : public ISDRDevice {
 public:
   CSDRSoapy();
   virtual ~CSDRSoapy();
@@ -101,5 +103,7 @@ private:
   void processIQBlock();
   void setTXFrequency(bool pocsag);
 };
+
+#endif
 
 #endif

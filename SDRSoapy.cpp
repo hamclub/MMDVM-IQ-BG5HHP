@@ -21,6 +21,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_SOAPY)
+
 #include "Globals.h"
 #include "Config.h"
 
@@ -577,3 +579,5 @@ uint8_t CSDRSoapy::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq,
 
   return 0U;
 }
+
+#endif

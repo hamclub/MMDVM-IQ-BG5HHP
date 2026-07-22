@@ -1,9 +1,18 @@
 #
-
+# To compile with a SoapySDR interface and access to MMDVM-Multi then use the following lines
+#
 CXX      = c++
-CXXFLAGS += -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI -Wno-narrowing -Wno-strict-aliasing
+CXXFLAGS += -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DUSE_SOAPY -DARM_MATH_RPI -Wno-narrowing -Wno-strict-aliasing
 LIBS     += -lpthread -lmosquitto -lSoapySDR
 LDFLAGS  += -g -L/usr/local/lib
+
+#
+# To compile without a SoapySDR interface but still with access to MMDVM-Multi then use the following lines
+#
+#CXX      = c++
+#CXXFLAGS += -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI -Wno-narrowing -Wno-strict-aliasing
+#LIBS     += -lpthread -lmosquitto
+#LDFLAGS  += -g -L/usr/local/lib
 
 ifeq ($(shell uname -s),Darwin)
 	CFLAGS+= -I/opt/homebrew/include -Wno-c++11-narrowing

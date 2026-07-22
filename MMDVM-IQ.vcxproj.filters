@@ -167,6 +167,15 @@
     <ClInclude Include="arm_math_rpi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SDRDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDRMulti.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDRSoapy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CWIdTX.cpp">
@@ -284,6 +293,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="arm_math_rpi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SDRMulti.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SDRSoapy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
