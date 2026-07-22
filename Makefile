@@ -1,7 +1,7 @@
 #
 
 CXX      = c++
-CXXFLAGS += -g -O2 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI -Wno-narrowing -Wno-strict-aliasing
+CXXFLAGS += -g -O3 -Wall -std=c++11 -fpermissive -MMD -MD -pthread -DARM_MATH_RPI -Wno-narrowing -Wno-strict-aliasing
 LIBS     += -lpthread -lmosquitto -lSoapySDR
 LDFLAGS  += -g -L/usr/local/lib
 

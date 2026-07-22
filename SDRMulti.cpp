@@ -1,8 +1,5 @@
 /*
  *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
- *   Copyright (C) 2023 by Tatu Peltola OH2EAT
- *   Copyright (C) 2016 by Colin Durbridge G4EML
- *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
  *   Copyright (C) 2026 by Adrian Musceac YO8RZZ
  *   Copyright (C) 2026 by Shawn Chain BG5HHP
  *
