@@ -26,10 +26,7 @@
 
 #include <vector>
 
-#include <SoapySDR/Device.hpp>
-#include <SoapySDR/Logger.hpp>
-
-class CIOSoapy;
+class ISDRDevice;
 
 struct TXSample {
   volatile q15_t   m_sample;
@@ -69,7 +66,7 @@ public:
   uint8_t setParameters();
 
 private:
-  CIOSoapy*             m_ioSoapy;
+  ISDRDevice*           m_sdrDevice;
   bool                  m_trace;
   bool                  m_started;
 

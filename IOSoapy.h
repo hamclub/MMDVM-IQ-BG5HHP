@@ -20,6 +20,7 @@
 #define  IOSOAPY_H
 
 #include "IO.h"
+#include "SDRDevice.h"
 
 #include "DelayBuffer.h"
 #include "RingBuffer.h"
@@ -31,10 +32,10 @@
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 
-class CIOSoapy {
+class CIOSoapy : public ISDRDevice{
 public:
   CIOSoapy();
-  ~CIOSoapy();
+  virtual ~CIOSoapy();
 
   bool start(bool trace);
 
@@ -43,15 +44,16 @@ public:
   void stop();
 
   void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
+  int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control);
+
+  int readRXSamples(RXSample* rxSamples);
 
   uint16_t getSpace() const;
 
-  void setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain);
+  void setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain);
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();
-
-  int getRXSamples(RXSample* rxSamples);
 
 private:
   bool                  m_trace = false;

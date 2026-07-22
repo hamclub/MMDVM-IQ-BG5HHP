@@ -97,7 +97,7 @@ const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
 
 CIO::CIO() :
-m_ioSoapy(nullptr),
+m_sdrDevice(nullptr),
 m_trace(false),
 m_started(false),
 #if defined(USE_DCBLOCKER)
@@ -138,8 +138,8 @@ m_pocsagFreq(0U),
 m_rxGain(50.0F),
 m_txGain(30.0F)
 {
-  m_ioSoapy = new CIOSoapy();
-  assert(m_ioSoapy);
+  m_sdrDevice = new CIOSoapy();
+  assert(m_sdrDevice);
 
 #if defined(USE_DCBLOCKER)
   ::memset(m_dcState, 0x00U, 4U * sizeof(q31_t));
@@ -200,7 +200,7 @@ m_txGain(30.0F)
 
 CIO::~CIO()
 {
-  delete m_ioSoapy;
+  delete m_sdrDevice;
 }
 
 bool CIO::start(bool trace)
@@ -212,7 +212,7 @@ bool CIO::start(bool trace)
 
   m_started = true;
 
-  m_ioSoapy->start(trace);
+  m_sdrDevice->start(trace);
 
   setMode(MMDVM_STATE::IDLE);
 
@@ -221,7 +221,7 @@ bool CIO::start(bool trace)
 
 void CIO::stop()
 {
-  m_ioSoapy->stop();
+  m_sdrDevice->stop();
 }
 
 void CIO::process(bool networkData)
@@ -229,20 +229,15 @@ void CIO::process(bool networkData)
   if (!m_started)
     return;
 
-  m_ioSoapy->process();
+  m_sdrDevice->process();
 
-  RXSample rxSamples[RX_BLOCK_SIZE];
+  q15_t    samples[RX_BLOCK_SIZE];
+  uint8_t  control[RX_BLOCK_SIZE];
+  uint16_t rssi[RX_BLOCK_SIZE];
 
-  while (m_ioSoapy->getRXSamples(rxSamples) == RX_BLOCK_SIZE) { 
-    q15_t    samples[RX_BLOCK_SIZE];
-    uint8_t  control[RX_BLOCK_SIZE];
-    uint16_t rssi[RX_BLOCK_SIZE];
-
+  while (m_sdrDevice->read(m_modemState, samples, rssi, control) == RX_BLOCK_SIZE) { 
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
-      control[i] = rxSamples[i].m_control;
-      rssi[i]    = rxSamples[i].m_rssi;
-
-      q31_t res2 = rxSamples[i].m_sample * LEVEL_50PC_INVERTED;
+      q31_t res2 = samples[i] * LEVEL_50PC_INVERTED;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
     }
 
@@ -452,12 +447,12 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_started)
     return;
 
-  m_ioSoapy->write(mode, samples, length, control);
+  m_sdrDevice->write(mode, samples, length, control);
 }
 
 uint16_t CIO::getSpace() const
 {
-  return m_ioSoapy->getSpace();
+  return m_sdrDevice->getSpace();
 }
 
 void CIO::setMode(MMDVM_STATE state)
@@ -467,15 +462,15 @@ void CIO::setMode(MMDVM_STATE state)
 
 uint8_t CIO::setParameters()
 {
-  return m_ioSoapy->setParameters();
+  return m_sdrDevice->setParameters();
 }
 
 void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
 {
-  m_ioSoapy->setSoapyDeviceInfo(type, uri, rxGain, txGain);
+  m_sdrDevice->setDeviceInfo(type, uri, rxGain, txGain);
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-  return m_ioSoapy->setFrequency(power, txFreq, rxFreq, pocsagFreq);
+  return m_sdrDevice->setFrequency(power, txFreq, rxFreq, pocsagFreq);
 }
