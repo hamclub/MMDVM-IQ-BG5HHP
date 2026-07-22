@@ -265,16 +265,11 @@ int CMMDVMIQ::run()
     }
 
     bool modeMulti = m_conf.getMultiModem();
-    if (modeMulti) {
-        bool ret = io.startMultiNetwork(m_conf.getMultiModemLocalAddress(), m_conf.getMultiModemLocalPort(),
+    if (modeMulti)
+        io.setMultiModemAddress(m_conf.getMultiModemLocalAddress(), m_conf.getMultiModemLocalPort(),
                                      m_conf.getMultiModemAddress(), m_conf.getMultiModemPort());
-        if (!ret) {
-            LogError("Unable to open the MMDVM-Multi network connection");
-            return 1;
-        }
-    }
-
-    io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI(), m_conf.getRxGain(), m_conf.getTxGain());
+    else
+        io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI(), m_conf.getRxGain(), m_conf.getTxGain());
 
     ret = io.start(m_conf.getModemTrace());
     if (!ret) {
@@ -289,9 +284,6 @@ int CMMDVMIQ::run()
         serial.process();
 
         io.process();
-
-        if (modeMulti)
-            io.processMultiNetwork();
 
         // The following are for transmitting
 #if defined(MODE_DSTAR)

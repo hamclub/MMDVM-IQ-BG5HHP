@@ -1,6 +1,5 @@
 /*
  *   Copyright (C) 2015,2016,2017,2018,2020,2021,2025,2026 by Jonathan Naylor G4KLX
- *   Copyright (C) 2026 by Shawn Chain BG5HHP
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -17,32 +16,27 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(IOSOAPY_H)
-#define  IOSOAPY_H
+#if !defined(IOSDR_UDP_H)
+#define  IOSDR_UDP_H
 
 #include "IO.h"
 #include "SDRDevice.h"
 
-#include "DelayBuffer.h"
-#include "RingBuffer.h"
-#include "Socket.h"
-#include "FDUDC.h"
-
 #include <vector>
+#include <string>
 
-#include <SoapySDR/Device.hpp>
-#include <SoapySDR/Logger.hpp>
-
-class CIOSoapy : public ISDRDevice{
+class CSDRMulti : public ISDRDevice{
 public:
-  CIOSoapy();
-  virtual ~CIOSoapy();
+  CSDRMulti();
+  virtual ~CSDRMulti();
 
   bool start(bool trace);
 
   void process();
 
   void stop();
+
+  void setAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort);
 
   void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
   int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control);
@@ -58,11 +52,17 @@ public:
 
 private:
   bool                  m_trace = false;
-
-  bool                  m_started = false;
   CRingBuffer<RXSample> m_rxBuffer;
   CRingBuffer<TXSample> m_txBuffer;
+  CRingBuffer<RXSample> m_rxNetworkBuffer;
+  CRingBuffer<TXSample> m_txNetworkBuffer;
 
+  CSocket              m_multiModemSocket;
+
+  std::string          m_myAddress;
+  unsigned short       m_myPort;
+  std::string          m_modemAddress;
+  unsigned short       m_modemPort;
 
   float                m_power;
   uint32_t             m_txFreq;
@@ -71,34 +71,8 @@ private:
   float                m_rxGain;
   float                m_txGain;
 
-  // Frequencies as used by SoapySDR
-  double               m_soapyTXFreq;
-  double               m_soapyRXFreq;
-  double               m_soapyPocsagFreq;
-
-  bool                 m_soapyInit;
-
-  bool                 m_timestamped;
-  long long            m_latencyNs;
-
-  uint32_t             m_phase;
-  std::complex<float>  m_prevRXIQSample;
-  CDelayBuffer<TXSample>* m_delayedTXBuffer;
-
-  std::vector<std::complex<float>> m_buffer;
-
-  CFDUDC*              m_fdudc;
-
-  std::string          m_soapyDeviceType;
-  std::string          m_soapyDeviceURI;
-
-  SoapySDR::Device*    m_device;
-  SoapySDR::Stream*    m_rxStream;
-  SoapySDR::Stream*    m_txStream;
-
   bool                 m_pocsag;
 
-  void processIQBlock();
   void setTXFrequency(bool pocsag);
 };
 

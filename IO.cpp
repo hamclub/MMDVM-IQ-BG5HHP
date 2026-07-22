@@ -4,6 +4,7 @@
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
  *   Copyright (C) 2026 by Adrian Musceac YO8RZZ
+ *   Copyright (C) 2026 by Shawn Chain BG5HHP
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,6 +26,7 @@
 #include "IO.h"
 
 #include "IOSoapy.h"
+#include "SDRMulti.h"
 
 #include <cstdio>
 #include <cassert>
@@ -138,9 +140,6 @@ m_pocsagFreq(0U),
 m_rxGain(50.0F),
 m_txGain(30.0F)
 {
-  m_sdrDevice = new CIOSoapy();
-  assert(m_sdrDevice);
-
 #if defined(USE_DCBLOCKER)
   ::memset(m_dcState, 0x00U, 4U * sizeof(q31_t));
   m_dcFilter.numStages = DC_FILTER_STAGES;
@@ -210,23 +209,30 @@ bool CIO::start(bool trace)
 
   m_trace = trace;
 
-  m_started = true;
+  if (!m_sdrDevice)
+    return false;
 
-  m_sdrDevice->start(trace);
+  m_started = m_sdrDevice->start(trace);;
 
   setMode(MMDVM_STATE::IDLE);
 
-  return true;
+  return m_started;
 }
 
 void CIO::stop()
 {
-  m_sdrDevice->stop();
+  if (m_sdrDevice)
+    m_sdrDevice->stop();
+
+  m_started = false;
 }
 
 void CIO::process(bool networkData)
 {
   if (!m_started)
+    return;
+
+  if (!m_sdrDevice)
     return;
 
   m_sdrDevice->process();
@@ -447,12 +453,13 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
   if (!m_started)
     return;
 
-  m_sdrDevice->write(mode, samples, length, control);
+  if (m_sdrDevice)
+    m_sdrDevice->write(mode, samples, length, control);
 }
 
 uint16_t CIO::getSpace() const
 {
-  return m_sdrDevice->getSpace();
+  return m_sdrDevice ? m_sdrDevice->getSpace() : 0;
 }
 
 void CIO::setMode(MMDVM_STATE state)
@@ -462,15 +469,28 @@ void CIO::setMode(MMDVM_STATE state)
 
 uint8_t CIO::setParameters()
 {
-  return m_sdrDevice->setParameters();
+  return m_sdrDevice ? m_sdrDevice->setParameters() : 0;
 }
 
 void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
 {
-  m_sdrDevice->setDeviceInfo(type, uri, rxGain, txGain);
+  CIOSoapy* soapy = new CIOSoapy();
+  assert(soapy);
+  soapy->setDeviceInfo(type, uri, rxGain, txGain);
+
+  delete m_sdrDevice;
+  m_sdrDevice = soapy;
+}
+
+void CIO::setMultiModemAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort) {
+  CSDRMulti* multi = new CSDRMulti();
+  multi->setAddress(myAddress, myPort, modemAddress, modemPort);
+
+  delete m_sdrDevice;
+  m_sdrDevice = multi;
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-  return m_sdrDevice->setFrequency(power, txFreq, rxFreq, pocsagFreq);
+  return m_sdrDevice ? m_sdrDevice->setFrequency(power, txFreq, rxFreq, pocsagFreq) : 0;
 }

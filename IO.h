@@ -61,6 +61,7 @@ public:
   void setMode(MMDVM_STATE state);
 
   void setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain);
+  void setMultiModemAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort);
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();

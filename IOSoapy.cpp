@@ -4,6 +4,7 @@
  *   Copyright (C) 2016 by Colin Durbridge G4EML
  *   Copyright (C) 2015 by Jim Mclaughlin KI6ZUM
  *   Copyright (C) 2026 by Adrian Musceac YO8RZZ
+ *   Copyright (C) 2026 by Shawn Chain BG5HHP
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
