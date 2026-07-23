@@ -269,7 +269,9 @@ int CMMDVMIQ::run()
         return 1;
     }
 
-    serial.setVersion(m_conf.getModemVersion());
+    uint8_t ver = m_conf.getModemVersion();
+    LogMessage("Modem version: %u", ver);
+    serial.setVersion(ver);
 
     bool modeMulti = m_conf.getMultiModem();
     if (modeMulti)
