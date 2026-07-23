@@ -1,18 +1,24 @@
 #
 
 USE_MQTT ?= 0
+USE_SOAPY ?= 1
 DEBUG ?= 0
 
 CC       ?= cc
 CXX      ?= c++
 CFLAGS   += -Wall -std=c11 -MMD -pthread -DARM_MATH_RPI
 CXXFLAGS += -Wall -std=c++11 -fpermissive -MMD -pthread -DARM_MATH_RPI -fno-strict-aliasing
-LIBS     += -lpthread -lSoapySDR
+LIBS     += -lpthread
 LDFLAGS  += -L/usr/local/lib
 
 ifeq ($(USE_MQTT), 1)
 	CXXFLAGS+= -DUSE_MQTT=1
-	LDFLAGS+= -lmosquitto
+	LIBS+= -lSoapySDR
+endif
+
+ifeq ($(USE_SOAPY), 1)
+	CXXFLAGS+= -DUSE_SOAPY=1
+	LIBS+= -lmosquitto
 endif
 
 ifeq ($(DEBUG), 1)

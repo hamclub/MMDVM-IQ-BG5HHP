@@ -256,7 +256,13 @@ void CDMRTX::setStart(bool start)
 {
   m_state = start ? DMRTXSTATE::SLOT1 : DMRTXSTATE::IDLE;
 
-  m_frameCount = 0U;
+  if (!start) { // abort current transmission (timed beacons) to avoid tail getting appended to next slot
+    m_poLen = 0;
+    m_poPtr = 0;
+    m_tx    = false;
+  }
+
+  m_frameCount     = 0U;
   m_abortCount[0U] = 0U;
   m_abortCount[1U] = 0U;
 

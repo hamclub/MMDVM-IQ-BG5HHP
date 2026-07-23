@@ -59,11 +59,18 @@ public:
 	unsigned char getModemVersion() const;
 
 	// The MMDVMHost section
-	std::string  getNetworkHostAddress() const;
+	std::string    getNetworkHostAddress() const;
 	unsigned short getNetworkHostPort() const;
-	std::string  getNetworkLocalAddress() const;
+	std::string    getNetworkLocalAddress() const;
 	unsigned short getNetworkLocalPort() const;
-	bool         getNetworkTrace() const;
+	bool           getNetworkTrace() const;
+
+	// The MMDVM Multi section
+	std::string    getMultiModemAddress() const;
+	unsigned short getMultiModemPort() const;
+	std::string    getMultiModemLocalAddress() const;
+	unsigned short getMultiModemLocalPort() const;
+	bool           getMultiModem() const;
 
 private:
 	std::string m_file;
@@ -97,6 +104,12 @@ private:
 	std::string  m_networkLocalAddress;
 	unsigned short m_networkLocalPort;
 	bool         m_networkTrace;
+
+	bool         m_multiModem;
+	std::string  m_multiModemAddress;
+	unsigned short m_multiModemPort;
+	std::string  m_multiModemLocalAddress;
+	unsigned short m_multiModemLocalPort;
 };
 
 #endif

@@ -21,12 +21,12 @@
 
 #include "DelayBuffer.h"
 #include "RingBuffer.h"
+#include "Socket.h"
 #include "FDUDC.h"
 
 #include <vector>
 
-#include <SoapySDR/Device.hpp>
-#include <SoapySDR/Logger.hpp>
+class ISDRDevice;
 
 struct TXSample {
   volatile q15_t   m_sample;
@@ -46,7 +46,9 @@ public:
 
   bool start(bool trace);
 
-  void process();
+  void process(bool networkData=false);
+
+  void processMultiNetwork() {};
 
   void stop();
 
@@ -57,16 +59,15 @@ public:
   void setMode(MMDVM_STATE state);
 
   void setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain);
+  void setMultiModemAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort);
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();
 
 private:
+  ISDRDevice*           m_sdrDevice;
   bool                  m_trace;
-
   bool                  m_started;
-  CRingBuffer<RXSample> m_rxBuffer;
-  CRingBuffer<TXSample> m_txBuffer;
 
 #if defined(USE_DCBLOCKER)
   arm_biquad_casd_df1_inst_q31 m_dcFilter;
@@ -111,36 +112,6 @@ private:
   uint32_t             m_pocsagFreq;
   float                m_rxGain;
   float                m_txGain;
-
-  // Frequencies as used by SoapySDR
-  double               m_soapyTXFreq;
-  double               m_soapyRXFreq;
-  double               m_soapyPocsagFreq;
-
-  bool                 m_soapyInit;
-
-  bool                 m_timestamped;
-  long long            m_latencyNs;
-
-  uint32_t             m_phase;
-  std::complex<float>  m_prevRXIQSample;
-  CDelayBuffer<TXSample>* m_delayedTXBuffer;
-
-  std::vector<std::complex<float>> m_buffer;
-
-  CFDUDC*              m_fdudc;
-
-  std::string          m_soapyDeviceType;
-  std::string          m_soapyDeviceURI;
-
-  SoapySDR::Device*    m_device;
-  SoapySDR::Stream*    m_rxStream;
-  SoapySDR::Stream*    m_txStream;
-
-  bool                 m_pocsag;
-
-  void processIQBlock();
-  void setTXFrequency(bool pocsag);
 };
 
 #endif

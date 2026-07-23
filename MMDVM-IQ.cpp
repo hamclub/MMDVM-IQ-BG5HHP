@@ -22,6 +22,7 @@
 #include "Config.h"
 #include "Globals.h"
 #include "Version.h"
+#include "Thread.h"
 #include "Log.h"
 #include "GitVersion.h"
 
@@ -253,7 +254,7 @@ int CMMDVMIQ::run()
     if (!ret) {
         ::fprintf(stderr, "MMDVM-IQ: unable to start the MQTT Publisher\n");
         delete m_mqtt;
-        return 1;
+        m_mqtt = nullptr;
     }
 #else
     bool logUTC = false;
@@ -269,7 +270,13 @@ int CMMDVMIQ::run()
     }
 
     serial.setVersion(m_conf.getModemVersion());
-    io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI(), m_conf.getRxGain(), m_conf.getTxGain());
+
+    bool modeMulti = m_conf.getMultiModem();
+    if (modeMulti)
+        io.setMultiModemAddress(m_conf.getMultiModemLocalAddress(), m_conf.getMultiModemLocalPort(),
+                                     m_conf.getMultiModemAddress(), m_conf.getMultiModemPort());
+    else
+        io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI(), m_conf.getRxGain(), m_conf.getTxGain());
 
     ret = io.start(m_conf.getModemTrace());
     if (!ret) {
@@ -327,14 +334,15 @@ int CMMDVMIQ::run()
 
         if (m_modemState == MMDVM_STATE::IDLE)
             cwIdTX.process();
+
+        if (modeMulti)
+            CThread::sleep(1U);
     }
 
     LogInfo("MMDVM-IQ is stopping");
 
     io.stop();
     serial.stop();
-
-    ::LogFinalise();
 
     return 0;
 }

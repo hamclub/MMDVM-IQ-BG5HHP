@@ -23,6 +23,8 @@
 #include <cstring>
 #endif
 
+#include <cassert>
+
 #include "Log.h"
 
 const unsigned int BUFFER_LENGTH = 3000U;
@@ -30,7 +32,7 @@ const unsigned int BUFFER_LENGTH = 3000U;
 CSocket::CSocket() :
 m_address(),
 m_addressLength(0U),
-m_socket(NULL),
+m_socket(nullptr),
 m_buffer(BUFFER_LENGTH, "UDP Socket Buffer")
 {
 }
@@ -62,6 +64,8 @@ bool CSocket::open(const std::string& myAddress, unsigned short myPort, const st
 
 bool CSocket::available()
 {
+	assert(m_socket != nullptr);
+
 	uint16_t n = m_buffer.dataSize();
 	if (n > 0U)
 		return true;
@@ -87,14 +91,31 @@ uint8_t CSocket::read()
 	return c;
 }
 
+int CSocket::readDatagram(uint8_t* buffer, uint16_t length)
+{
+	assert(buffer != nullptr);
+	assert(length > 0U);
+	assert(m_socket != nullptr);
+
+	sockaddr_storage address;
+	unsigned int addr_length = 0U;
+	return m_socket->read(buffer, length, address, addr_length);
+}
+
 bool CSocket::write(const uint8_t* buffer, uint16_t length)
 {
+	assert(buffer != nullptr);
+	assert(length > 0U);
+	assert(m_socket != nullptr);
+
 	return m_socket->write(buffer, length, m_address, m_addressLength);
 }
 
 void CSocket::close()
 {
+	assert(m_socket != nullptr);
+
 	m_socket->close();
 	delete m_socket;
-	m_socket = NULL;
+	m_socket = nullptr;
 }

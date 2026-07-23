@@ -95,7 +95,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;mosquitto.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
       <Command>"$(ProjectDir)prebuild.cmd" $(ProjectDir)</Command>
@@ -118,7 +118,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;mosquitto.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
       <Command>"$(ProjectDir)prebuild.cmd" $(ProjectDir)</Command>
@@ -137,7 +137,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;mosquitto.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
       <Command>"$(ProjectDir)prebuild.cmd" $(ProjectDir)</Command>
@@ -160,7 +160,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;mosquitto.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\mosquitto\devel;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
       <Command>"$(ProjectDir)prebuild.cmd" $(ProjectDir)</Command>
@@ -209,8 +209,12 @@
     <ClInclude Include="P25TX.h" />
     <ClInclude Include="POCSAGTX.h" />
     <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="SDRDevice.h" />
+    <ClInclude Include="SDRMulti.h" />
+    <ClInclude Include="SDRSoapy.h" />
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Socket.h" />
+    <ClInclude Include="Thread.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="UDPSocket.h" />
     <ClInclude Include="Utils.h" />
@@ -251,8 +255,11 @@
     <ClCompile Include="P25RX.cpp" />
     <ClCompile Include="P25TX.cpp" />
     <ClCompile Include="POCSAGTX.cpp" />
+    <ClCompile Include="SDRMulti.cpp" />
+    <ClCompile Include="SDRSoapy.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Socket.cpp" />
+    <ClCompile Include="Thread.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="UDPSocket.cpp" />
     <ClCompile Include="Utils.cpp" />

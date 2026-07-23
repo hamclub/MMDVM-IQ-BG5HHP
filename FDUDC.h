@@ -3,6 +3,9 @@
  *
  */
 
+#if !defined(FDUDC_H)
+#define FDUDC_H
+
 #include <complex>
 #include <functional>
 #include <vector>
@@ -63,3 +66,4 @@ private:
     // Upconversion sine table
     std::vector<std::complex<float>> m_duc_sine;
 };
+#endif
