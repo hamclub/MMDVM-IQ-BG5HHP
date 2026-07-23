@@ -464,7 +464,8 @@ uint8_t CSDRSoapy::setParameters()
     iqHWDelay = 10U;
 
     devArgs["driver"] = "sx";
-    devArgs["RF_PROFILE"] = "TETRA_CLEAN";
+    // hacked sx1255 soapy driver parameter
+    devArgs["RF_PROFILE"] = "TETRA_CLEAN"
 
     m_timestamped = true;
 
