@@ -38,12 +38,13 @@ const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 CSDRMulti::CSDRMulti() :
 m_trace(false),
 m_rxNetworkBuffer(721U, "MMDVM-Multi RX Buffer"),
-m_txNetworkBuffer(721U, "MMDVM-Multi TX Buffer"),
+m_txNetworkBuffer(722U, "MMDVM-Multi TX Buffer"),
 m_multiModemSocket(),
 m_myAddress("127.0.0.1"),
 m_myPort(48100),
 m_modemAddress("127.0.0.1"),
 m_modemPort(48200),
+m_txTimeout(1000, 0, 250),
 m_power(0.0F),
 m_txFreq(0U),
 m_rxFreq(0U),
@@ -56,7 +57,6 @@ m_pocsag(false)
 
 CSDRMulti::~CSDRMulti()
 {
-  stop();
 }
 
 void CSDRMulti::setAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort) {
@@ -86,6 +86,7 @@ bool CSDRMulti::start(bool trace)
 void CSDRMulti::stop()
 {
   m_multiModemSocket.close();
+  LogMessage("SDRMulti stopped");
 }
 
 int CSDRMulti::readRXSamples(RXSample* rxSamples) {
@@ -101,7 +102,13 @@ int CSDRMulti::readRXSamples(RXSample* rxSamples) {
 
 void CSDRMulti::process()
 {
-  // process local buffer
+  // TX flag reset timer
+  m_txTimeout.clock();
+  if (m_tx && m_txTimeout.hasExpired()) {
+    m_txTimeout.stop();
+    m_tx = false;
+  }
+
   if (m_txNetworkBuffer.hasData() && !m_tx) {
     LogMessage("TX OFF");
     m_txNetworkBuffer.clear();  // clear off partial DMR timeslot data so good timing info is present in packet
@@ -112,6 +119,13 @@ void CSDRMulti::process()
     LogMessage("TX OFF");
   }
 
+  // Keep the trace code for later debug
+  if (m_trace) {
+    unsigned int ds = m_txNetworkBuffer.dataSize();
+    if (ds > 0)
+      LogDebug("SDRMulti - tx buffered data remaining %u", ds);
+  }
+
   uint32_t num_send_items = SAMPLES_TO_NETWORK;
   unsigned char recv_message[MULTIMODEM_PACKET_SIZE];
   ::memset(recv_message, 0U, MULTIMODEM_PACKET_SIZE);
@@ -119,6 +133,8 @@ void CSDRMulti::process()
   int num_bytes = m_multiModemSocket.readDatagram(recv_message, MULTIMODEM_PACKET_SIZE);
   if (num_bytes == MULTIMODEM_PACKET_SIZE) {
     if ((m_txNetworkBuffer.hasData()) && (m_txNetworkBuffer.dataSize() >= num_send_items)) {
+      m_txTimeout.start();
+
       TXSample samples[SAMPLES_TO_NETWORK];
       m_txNetworkBuffer.getData(samples, num_send_items);
       unsigned char reply[MULTIMODEM_PACKET_SIZE];
@@ -192,12 +208,13 @@ void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
   if (!m_tx) {
       m_tx = true;
       LogMessage("TX ON");
+
+      m_txTimeout.start();
   }
 
   // TODO - Set the correct transmit frequency for the mode if needed, even in the middle of a transmission
   // setTXFrequency(mode == MMDVM_STATE::POCSAG);
 
-  // FIXME - direct write to the net tx buffer ?
   q15_t txLevel;
   switch (mode) {
     case MMDVM_STATE::FM:
@@ -217,6 +234,8 @@ void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
     else
       m_txNetworkBuffer.addData({res2, control[i]});
   }
+
+  // LogDebug("SDRMulti - write %u mode data %u, space left %u", (int)mode, length, m_txNetworkBuffer.freeSpace());
 }
 
 uint16_t CSDRMulti::getSpace() const
