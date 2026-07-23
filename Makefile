@@ -13,12 +13,12 @@ LDFLAGS  += -L/usr/local/lib
 
 ifeq ($(USE_MQTT), 1)
 	CXXFLAGS+= -DUSE_MQTT=1
-	LIBS+= -lSoapySDR
+	LIBS+= -lmosquitto
 endif
 
 ifeq ($(USE_SOAPY), 1)
 	CXXFLAGS+= -DUSE_SOAPY=1
-	LIBS+= -lmosquitto
+	LIBS+= -lSoapySDR
 endif
 
 ifeq ($(DEBUG), 1)
