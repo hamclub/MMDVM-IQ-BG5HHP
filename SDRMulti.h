@@ -23,6 +23,7 @@
 
 #include "IO.h"
 #include "SDRDevice.h"
+#include "Timer.h"
 
 #include <vector>
 #include <string>
@@ -63,6 +64,8 @@ private:
   unsigned short       m_myPort;
   std::string          m_modemAddress;
   unsigned short       m_modemPort;
+
+  CTimer               m_txTimeout;
 
   float                m_power;
   uint32_t             m_txFreq;
