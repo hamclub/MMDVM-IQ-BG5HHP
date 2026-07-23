@@ -63,7 +63,7 @@ m_extEnabled(false),
 m_txLevel(128 * 128),
 m_rxLevel(1),
 m_inputRFRB(2401U, "FM Input Buffer"),   // 100ms of audio + 1 sample
-m_outputRFRB(2400U, "FM Output Buffer"),  // 100ms of audio
+m_outputRFRB(4800U, "FM Output Buffer"),  // 200ms of audio
 m_inputExtRB(),
 m_rfSignal(false),
 m_extSignal(false),
