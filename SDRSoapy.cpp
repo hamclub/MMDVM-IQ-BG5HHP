@@ -465,7 +465,7 @@ uint8_t CSDRSoapy::setParameters()
 
     devArgs["driver"] = "sx";
     // hacked sx1255 soapy driver parameter
-    devArgs["RF_PROFILE"] = "TETRA_CLEAN"
+    devArgs["RF_PROFILE"] = "TETRA_CLEAN";
 
     m_timestamped = true;
 
