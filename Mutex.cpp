@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,44 +16,50 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(THREAD_H)
-#define	THREAD_H
+#include "Mutex.h"
 
 #if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
 
-class CThread
+CMutex::CMutex() :
+m_handle()
 {
-public:
-  CThread();
-  virtual ~CThread();
+	m_handle = ::CreateMutex(nullptr, FALSE, nullptr);
+}
 
-  virtual bool run();
+CMutex::~CMutex()
+{
+	::CloseHandle(m_handle);
+}
 
-  virtual void entry() = 0;
+void CMutex::lock()
+{
+	::WaitForSingleObject(m_handle, INFINITE);
+}
 
-  virtual void wait();
+void CMutex::unlock()
+{
+	::ReleaseMutex(m_handle);
+}
 
-  static void sleep(unsigned int ms);
-
-  static void sleepMilli(unsigned int ms);
-  static void sleepNano(unsigned int ns);
-
-private:
-#if defined(_WIN32) || defined(_WIN64)
-  HANDLE    m_handle;
 #else
-  pthread_t m_thread;
-#endif
 
-#if defined(_WIN32) || defined(_WIN64)
-  static DWORD __stdcall helper(LPVOID arg);
-#else
-  static void* helper(void* arg);
-#endif
-};
+CMutex::CMutex() :
+m_mutex(PTHREAD_MUTEX_INITIALIZER)
+{
+}
+
+CMutex::~CMutex()
+{
+}
+
+void CMutex::lock()
+{
+	::pthread_mutex_lock(&m_mutex);
+}
+
+void CMutex::unlock()
+{
+	::pthread_mutex_unlock(&m_mutex);
+}
 
 #endif

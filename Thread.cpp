@@ -59,6 +59,25 @@ void CThread::sleep(unsigned int ms)
 	::Sleep(ms);
 }
 
+void CThread::sleepNano(unsigned int ns)
+{
+	struct timeval tv;
+
+	tv.tv_sec  = 0L;
+
+	if (ns < 1000U)
+		tv.tv_usec = 1;
+	else
+		tv.tv_usec = ns / 1000L;
+
+	::select(0, nullptr, nullptr, nullptr, &tv);
+}
+
+void CThread::sleepMilli(unsigned int ms)
+{
+	::Sleep(ms);
+}
+
 #else
 
 #include <unistd.h>
@@ -103,5 +122,24 @@ void CThread::sleep(unsigned int ms)
 	::nanosleep(&ts, nullptr);
 }
 
+void CThread::sleepMilli(unsigned int ms)
+{
+	struct timespec ts;
+
+	ts.tv_sec  = ms / 1000U;
+	ts.tv_nsec = (ms % 1000U) * 1000000U;
+
+	::nanosleep(&ts, nullptr);
+}
+
+void CThread::sleepNano(unsigned int ns)
+{
+	struct timespec ts;
+
+	ts.tv_sec  = 0U;
+	ts.tv_nsec = ns;
+
+	::nanosleep(&ts, nullptr);
+}
 #endif
 

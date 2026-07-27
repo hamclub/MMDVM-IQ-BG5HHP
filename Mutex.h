@@ -16,8 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(THREAD_H)
-#define	THREAD_H
+#if !defined(MUTEX_H)
+#define	MUTEX_H
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -25,34 +25,20 @@
 #include <pthread.h>
 #endif
 
-class CThread
+class CMutex
 {
 public:
-  CThread();
-  virtual ~CThread();
+	CMutex();
+	~CMutex();
 
-  virtual bool run();
-
-  virtual void entry() = 0;
-
-  virtual void wait();
-
-  static void sleep(unsigned int ms);
-
-  static void sleepMilli(unsigned int ms);
-  static void sleepNano(unsigned int ns);
+	void lock();
+	void unlock();
 
 private:
 #if defined(_WIN32) || defined(_WIN64)
-  HANDLE    m_handle;
+	HANDLE          m_handle;
 #else
-  pthread_t m_thread;
-#endif
-
-#if defined(_WIN32) || defined(_WIN64)
-  static DWORD __stdcall helper(LPVOID arg);
-#else
-  static void* helper(void* arg);
+	pthread_mutex_t m_mutex;
 #endif
 };
 
