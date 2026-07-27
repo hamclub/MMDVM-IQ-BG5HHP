@@ -28,17 +28,6 @@
 
 class ISDRDevice;
 
-struct TXSample {
-  volatile q15_t   m_sample;
-  volatile uint8_t m_control;
-};
-
-struct RXSample {
-  volatile q15_t    m_sample;
-  volatile uint16_t m_rssi;
-  volatile uint8_t  m_control;
-};
-
 class CIO {
 public:
   CIO();

@@ -142,4 +142,15 @@ extern CCWIdTX cwIdTX;
 extern CMQTTConnection* m_mqtt;
 #endif
 
+struct TXSample {
+  volatile int16_t  m_sample;
+  volatile uint8_t  m_control;
+};
+
+struct RXSample {
+  volatile int16_t  m_sample;
+  volatile uint16_t m_rssi;
+  volatile uint8_t  m_control;
+};
+
 #endif
