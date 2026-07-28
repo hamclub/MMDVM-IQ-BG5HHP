@@ -24,6 +24,7 @@
 #include "Globals.h"
 #include "Config.h"
 #include "IO.h"
+#include "Conf.h"
 
 #include "SDRSoapy.h"
 #include "SDRMulti.h"
@@ -209,10 +210,9 @@ bool CIO::start(bool trace)
 
   m_trace = trace;
 
-  if (!m_sdrDevice)
-    return false;
+  assert(m_sdrDevice);
 
-  m_started = m_sdrDevice->start(trace);;
+  m_started = m_sdrDevice->start(trace);
 
   setMode(MMDVM_STATE::IDLE);
 
@@ -445,6 +445,30 @@ void CIO::process(bool networkData)
   }
 }
 
+void CIO::createModemDevice(CConf* conf) {
+  if (conf->getMultiModem()) {
+    CSDRMulti* multi = new CSDRMulti;
+    multi->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
+                      conf->getMultiModemAddress(), conf->getMultiModemPort());
+
+    delete m_sdrDevice;
+    m_sdrDevice = multi;
+
+    return;
+  }
+
+#if defined(USE_SOAPY)
+  CSDRSoapy* soapy = new CSDRSoapy(conf);
+  delete m_sdrDevice;
+  m_sdrDevice = soapy;
+
+#else
+  ::LogFatal("The SoapySDR interface isn't supported in this build");
+  assert(m_sdrDevice);
+
+#endif
+}
+
 void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
   assert(samples != nullptr);
@@ -470,30 +494,6 @@ void CIO::setMode(MMDVM_STATE state)
 uint8_t CIO::setParameters()
 {
   return m_sdrDevice ? m_sdrDevice->setParameters() : 0;
-}
-
-#if defined(USE_SOAPY)
-void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
-{
-  CSDRSoapy* soapy = new CSDRSoapy;
-  soapy->setDeviceInfo(type, uri, rxGain, txGain);
-
-  delete m_sdrDevice;
-  m_sdrDevice = soapy;
-}
-#else
-void CIO::setSoapyDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
-{
-    ::LogFatal("The SoapySDR interface isn't supported in this build");
-}
-#endif
-
-void CIO::setMultiModemAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort) {
-  CSDRMulti* multi = new CSDRMulti;
-  multi->setAddress(myAddress, myPort, modemAddress, modemPort);
-
-  delete m_sdrDevice;
-  m_sdrDevice = multi;
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)

@@ -273,12 +273,7 @@ int CMMDVMIQ::run()
     LogMessage("Modem version: %u", ver);
     serial.setVersion(ver);
 
-    bool modeMulti = m_conf.getMultiModem();
-    if (modeMulti)
-        io.setMultiModemAddress(m_conf.getMultiModemLocalAddress(), m_conf.getMultiModemLocalPort(),
-                                     m_conf.getMultiModemAddress(), m_conf.getMultiModemPort());
-    else
-        io.setSoapyDeviceInfo(m_conf.getModemType(), m_conf.getModemURI(), m_conf.getRxGain(), m_conf.getTxGain());
+    io.createModemDevice(&m_conf);
 
     ret = io.start(m_conf.getModemTrace());
     if (!ret) {
@@ -337,8 +332,7 @@ int CMMDVMIQ::run()
         if (m_modemState == MMDVM_STATE::IDLE)
             cwIdTX.process();
 
-        if (modeMulti)
-            CThread::sleep(1U);
+        CThread::sleep(1U);
     }
 
     LogInfo("MMDVM-IQ is stopping");

@@ -27,6 +27,7 @@
 #include "Config.h"
 
 #include "SDRSoapy.h"
+#include "Conf.h"
 
 #include <cstdio>
 #include <cassert>
@@ -51,7 +52,7 @@ const q15_t LEVEL_100PC         =  255 * 128;
 const unsigned int SAMPLES_TO_NETWORK = 720U;
 const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
-CSDRSoapy::CSDRSoapy() :
+CSDRSoapy::CSDRSoapy(CConf* conf) :
 m_trace(false),
 m_started(false),
 m_rxBuffer(RX_RINGBUFFER_SIZE, "IO RX Buffer"),
@@ -80,6 +81,11 @@ m_rxStream(nullptr),
 m_txStream(nullptr),
 m_pocsag(false)
 {
+  m_soapyDeviceType = conf->getModemType();
+  m_soapyDeviceURI  = conf->getModemURI();
+
+  m_rxGain = float(conf->getRxGain());
+  m_txGain = float(conf->getTxGain());
 }
 
 CSDRSoapy::~CSDRSoapy()
@@ -128,17 +134,6 @@ void CSDRSoapy::stop()
   m_device   = nullptr;
 
   m_soapyInit = false;
-}
-
-int CSDRSoapy::readRXSamples(RXSample* rxSamples) {
-  if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
-    for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
-      m_rxBuffer.getData(*(rxSamples + i));
-    }
-    return RX_BLOCK_SIZE;
-  }
-
-  return 0;
 }
 
 void CSDRSoapy::process()
@@ -280,13 +275,13 @@ void CSDRSoapy::processIQBlock()
 }
 
 int CSDRSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control) {
-  RXSample rxSamples[2];
-
-  if (this->readRXSamples(rxSamples) == RX_BLOCK_SIZE) {
-    for (unsigned int i = 0; i < RX_BLOCK_SIZE; i++) {
-      samples[i] = rxSamples[i].m_sample;
-      rssi[i] = rxSamples->m_rssi;
-      control[i] = rxSamples[i].m_control;
+  if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
+    for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
+      RXSample rxSample;
+      m_rxBuffer.getData(rxSample);
+      samples[i] = rxSample.m_sample;
+      rssi[i] = rxSample.m_rssi;
+      control[i] = rxSample.m_control;
     }
 
     return RX_BLOCK_SIZE;
@@ -567,15 +562,6 @@ uint8_t CSDRSoapy::setParameters()
   }
 
   return 0U;
-}
-
-void CSDRSoapy::setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
-{
-  m_soapyDeviceType = type;
-  m_soapyDeviceURI  = uri;
-
-  m_rxGain = float(rxGain);
-  m_txGain = float(txGain);
 }
 
 uint8_t CSDRSoapy::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
