@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cassert>
 #include <cstring>
+#include <string>
 
 template<class T> class CRingBuffer {
 public:
@@ -50,7 +51,7 @@ public:
 	bool addData(const T& buffer)
 	{
 		if (1U >= freeSpace()) {
-			LogError("%s buffer overflow, clearing the buffer. (1 >= %u)", m_name, freeSpace());
+			LogError("%s buffer overflow, clearing the buffer. (1 >= %u)", m_name.c_str(), freeSpace());
 			clear();
 			return false;
 		}
@@ -66,7 +67,7 @@ public:
 	bool addData(const T* buffer, unsigned int nSamples)
 	{
 		if (nSamples >= freeSpace()) {
-			LogError("%s buffer overflow, clearing the buffer. (%u >= %u)", m_name, nSamples, freeSpace());
+			LogError("%s buffer overflow, clearing the buffer. (%u >= %u)", m_name.c_str(), nSamples, freeSpace());
 			clear();
 			return false;
 		}
@@ -122,7 +123,7 @@ public:
 	bool peek(T* buffer, unsigned int nSamples)
 	{
 		if (dataSize() < nSamples) {
-			LogError("**** Underflow peek in %s ring buffer, %u < %u", m_name, dataSize(), nSamples);
+			LogError("**** Underflow peek in %s ring buffer, %u < %u", m_name.c_str(), dataSize(), nSamples);
 			return false;
 		}
 
@@ -177,7 +178,7 @@ public:
 
 private:
 	unsigned int m_length;
-	const char*  m_name;
+	std::string  m_name;
 	T*           m_buffer;
 	unsigned int m_iPtr;
 	unsigned int m_oPtr;
