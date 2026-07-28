@@ -80,6 +80,10 @@ public:
 			m_timer += ticks;
 	}
 
+	static unsigned long long getCurrentTimeMillis();
+
+	static unsigned long long getCurrentClockMillis();
+
 private:
 	unsigned int m_ticksPerSec;
 	unsigned int m_timeout;

@@ -18,6 +18,9 @@
 
 #include "Timer.h"
 
+#include <sys/time.h>
+#include <time.h>
+
 #include <cstdio>
 #include <cassert>
 
@@ -65,4 +68,30 @@ unsigned int CTimer::getTimer() const
 		return 0U;
 
 	return (m_timer - 1U) / m_ticksPerSec;
+}
+
+unsigned long long CTimer::getCurrentTimeMillis() {
+	struct timeval now;
+	gettimeofday(&now, NULL);
+
+	return now.tv_sec * 1000ULL + now.tv_usec / 1000ULL;
+}
+
+unsigned long long CTimer::getCurrentClockMillis() {
+	struct timespec tms;
+    int ret;
+
+    ret = clock_gettime(CLOCK_MONOTONIC, &tms);
+    if (ret != 0)
+        return 0;
+
+    // seconds, multiplied with 1 million
+    unsigned long long millis = tms.tv_sec * 1000UL + tms.tv_nsec/1000000;
+
+    // round up if necessary
+    if (tms.tv_nsec % 1000000 >= 500000) {
+        ++millis;
+    }
+
+    return millis;
 }
