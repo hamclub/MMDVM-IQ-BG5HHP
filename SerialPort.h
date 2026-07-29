@@ -21,7 +21,7 @@
 
 #include "Config.h"
 #include "Globals.h"
-#include "RingBuffer.h"
+
 #include "Socket.h"
 
 class CIO;

@@ -51,44 +51,44 @@ bool m_duplex = true;
 bool m_tx  = false;
 bool m_dcd = false;
 
-#if defined(MODE_DSTAR)
-CDStarRX dstarRX;
-CDStarTX dstarTX;
-#endif
+// #if defined(MODE_DSTAR)
+// CDStarRX dstarRX;
+// CDStarTX dstarTX;
+// #endif
 
-#if defined(MODE_DMR)
-CDMRIdleRX dmrIdleRX;
-CDMRRX dmrRX;
-CDMRTX dmrTX;
+// #if defined(MODE_DMR)
+// CDMRIdleRX dmrIdleRX;
+// CDMRRX dmrRX;
+// CDMRTX dmrTX;
 
-CDMRDMORX dmrDMORX;
-CDMRDMOTX dmrDMOTX;
-#endif
+// CDMRDMORX dmrDMORX;
+// CDMRDMOTX dmrDMOTX;
+// #endif
 
-#if defined(MODE_YSF)
-CYSFRX ysfRX;
-CYSFTX ysfTX;
-#endif
+// #if defined(MODE_YSF)
+// CYSFRX ysfRX;
+// CYSFTX ysfTX;
+// #endif
 
-#if defined(MODE_P25)
-CP25RX p25RX;
-CP25TX p25TX;
-#endif
+// #if defined(MODE_P25)
+// CP25RX p25RX;
+// CP25TX p25TX;
+// #endif
 
-#if defined(MODE_NXDN)
-CNXDNRX nxdnRX;
-CNXDNTX nxdnTX;
-#endif
+// #if defined(MODE_NXDN)
+// CNXDNRX nxdnRX;
+// CNXDNTX nxdnTX;
+// #endif
 
-#if defined(MODE_POCSAG)
-CPOCSAGTX  pocsagTX;
-#endif
+// #if defined(MODE_POCSAG)
+// CPOCSAGTX  pocsagTX;
+// #endif
 
-#if defined(MODE_FM)
-CFM    fm;
-#endif
+// #if defined(MODE_FM)
+// CFM    fm;
+// #endif
 
-CCWIdTX cwIdTX;
+// CCWIdTX cwIdTX;
 
 // CSerialPort serial;
 // CIO io;
@@ -184,42 +184,42 @@ CMMDVMIQ::~CMMDVMIQ()
 }
 
 static void setupIO(CIO* io) {
-    cwIdTX.setIO(io);
+    io->getModem().cwIdTX.setIO(io);
 
 #if defined(MODE_DMR)
-    dmrDMORX.setIO(io);
-    dmrDMOTX.setIO(io);
-    dmrRX.setIO(io);
-    dmrTX.setIO(io);
-    dmrIdleRX.setIO(io);
+    io->getModem().dmrDMORX.setIO(io);
+    io->getModem().dmrDMOTX.setIO(io);
+    io->getModem().dmrRX.setIO(io);
+    io->getModem().dmrTX.setIO(io);
+    io->getModem().dmrIdleRX.setIO(io);
 #endif
 
 #if defined(MODE_DSTAR)
-    dstarRX.setIO(io);
-    dstarTX.setIO(io);
+    io->getModem().dstarRX.setIO(io);
+    io->getModem().dstarTX.setIO(io);
 #endif
 
 #if defined(MODE_YSF)
-    ysfRX.setIO(io);
-    ysfTX.setIO(io);
+    io->getModem().ysfRX.setIO(io);
+    io->getModem().ysfTX.setIO(io);
 #endif
 
 #if defined(MODE_P25)
-    p25RX.setIO(io);
-    p25TX.setIO(io);
+    io->getModem().p25RX.setIO(io);
+    io->getModem().p25TX.setIO(io);
 #endif
 
 #if defined(MODE_NXDN)
-    nxdnRX.setIO(io);
-    nxdnTX.setIO(io);
+    io->getModem().nxdnRX.setIO(io);
+    io->getModem().nxdnTX.setIO(io);
 #endif
 
 #if defined(MODE_FM)
-    fm.setIO(io);
+    io->getModem().fm.setIO(io);
 #endif
 
 #if defined(MODE_POCSAG)
-    pocsagTX.setIO(io);
+    io->getModem().pocsagTX.setIO(io);
 #endif
 }
 
@@ -344,45 +344,45 @@ int CMMDVMIQ::run()
         // The following are for transmitting
 #if defined(MODE_DSTAR)
         if (m_dstarEnable && m_modemState == MMDVM_STATE::DSTAR)
-            dstarTX.process();
+            io->getModem().dstarTX.process();
 #endif
 
 #if defined(MODE_DMR)
         if (m_dmrEnable && m_modemState == MMDVM_STATE::DMR) {
             if (m_duplex)
-                dmrTX.process();
+                io->getModem().dmrTX.process();
             else
-                dmrDMOTX.process();
+                io->getModem().dmrDMOTX.process();
         }
 #endif
 
 #if defined(MODE_YSF)
         if (m_ysfEnable && m_modemState == MMDVM_STATE::YSF)
-            ysfTX.process();
+            io->getModem().ysfTX.process();
 #endif
 
 #if defined(MODE_P25)
         if (m_p25Enable && m_modemState == MMDVM_STATE::P25)
-            p25TX.process();
+            io->getModem().p25TX.process();
 #endif
 
 #if defined(MODE_NXDN)
         if (m_nxdnEnable && m_modemState == MMDVM_STATE::NXDN)
-           nxdnTX.process();
+           io->getModem().nxdnTX.process();
 #endif
 
 #if defined(MODE_POCSAG)
-        if (m_pocsagEnable && (m_modemState == MMDVM_STATE::POCSAG || pocsagTX.busy()))
-           pocsagTX.process();
+        if (m_pocsagEnable && (m_modemState == MMDVM_STATE::POCSAG || io->getModem().pocsagTX.busy()))
+           io->getModem().pocsagTX.process();
 #endif
 
 #if defined(MODE_FM)
         if (m_fmEnable && m_modemState == MMDVM_STATE::FM)
-           fm.process();
+           io->getModem().fm.process();
 #endif
 
         if (m_modemState == MMDVM_STATE::IDLE)
-            cwIdTX.process();
+            io->getModem().cwIdTX.process();
 
         CThread::sleep(1U);
     }

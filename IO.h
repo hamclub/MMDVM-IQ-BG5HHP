@@ -19,16 +19,12 @@
 #if !defined(IO_H)
 #define  IO_H
 
-#include "DelayBuffer.h"
-#include "RingBuffer.h"
-
-#include "Modem.h"
-#include "SerialPort.h"
-#include "SDRDevice.h"
-
 #include <vector>
 
 class CConf;
+class CModem;
+class ISDRDevice;
+class CSerialPort;
 
 class CIO {
 public:

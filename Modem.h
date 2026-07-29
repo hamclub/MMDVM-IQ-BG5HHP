@@ -22,23 +22,10 @@
 
 #include "Config.h"
 
-#include <cstdint>
+#include "Globals.h"
 
-enum class MMDVM_STATE : uint8_t {
-  IDLE   = 0U,
-  DSTAR  = 1U,
-  DMR    = 2U,
-  YSF    = 3U,
-  P25    = 4U,
-  NXDN   = 5U,
-  POCSAG = 6U,
-  FM     = 10U,
-
-  // Dummy states start at 90
-  CWID   = 97U
-};
-
-struct CModem {
+class CModem {
+public:
     //
     // Modem shared states
     ///////////////////////////////////////////////////////////////////////////
@@ -58,6 +45,45 @@ struct CModem {
 
     bool m_tx  = false;
     bool m_dcd = false;
+
+#if defined(MODE_DSTAR)
+    CDStarRX dstarRX;
+    CDStarTX dstarTX;
+#endif
+
+#if defined(MODE_DMR)
+    CDMRIdleRX dmrIdleRX;
+    CDMRRX dmrRX;
+    CDMRTX dmrTX;
+
+    CDMRDMORX dmrDMORX;
+    CDMRDMOTX dmrDMOTX;
+#endif
+
+#if defined(MODE_YSF)
+    CYSFRX ysfRX;
+    CYSFTX ysfTX;
+#endif
+
+#if defined(MODE_P25)
+    CP25RX p25RX;
+    CP25TX p25TX;
+#endif
+
+#if defined(MODE_NXDN)
+    CNXDNRX nxdnRX;
+    CNXDNTX nxdnTX;
+#endif
+
+#if defined(MODE_POCSAG)
+    CPOCSAGTX  pocsagTX;
+#endif
+
+#if defined(MODE_FM)
+    CFM    fm;
+#endif
+
+    CCWIdTX cwIdTX;
 
     ///////////////////////////////////////////////////////////////////////////
 

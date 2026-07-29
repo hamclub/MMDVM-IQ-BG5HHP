@@ -25,6 +25,7 @@
 #include "Config.h"
 #include "IO.h"
 #include "Conf.h"
+#include "Modem.h"
 
 #include "SDRSoapy.h"
 #include "SDRMulti.h"
@@ -279,7 +280,7 @@ void CIO::process(bool networkData)
 #else
             ::arm_fir_fast_q15(&m_gaussianFilter, samples, GMSKVals, RX_BLOCK_SIZE);
 #endif
-            dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
+            getModem().dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
@@ -291,7 +292,7 @@ void CIO::process(bool networkData)
 #else
             ::arm_fir_fast_q15(&m_boxcar5Filter, samples, P25Vals, RX_BLOCK_SIZE);
 #endif
-            p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
+            getModem().p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
@@ -313,7 +314,7 @@ void CIO::process(bool networkData)
 #endif
             ::arm_fir_fast_q15(&m_nxdnISincFilter, NXDNValsTmp, NXDNVals, RX_BLOCK_SIZE);
 #endif
-            nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
+            getModem().nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
@@ -323,9 +324,9 @@ void CIO::process(bool networkData)
             ::arm_fir_fast_q15(&m_rrc02Filter1, samples, DMRVals, RX_BLOCK_SIZE);
 
             if (m_duplex)
-                dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
+                getModem().dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
             else
-                dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
+                getModem().dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
@@ -337,16 +338,16 @@ void CIO::process(bool networkData)
 #else
             ::arm_fir_fast_q15(&m_rrc02Filter2, samples, YSFVals, RX_BLOCK_SIZE);
 #endif
-            ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
+            getModem().ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
 #if defined(MODE_FM)
       if (m_fmEnable) {
 #if defined(USE_DCBLOCKER)
-        fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
+        getModem().fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-        fm.samples(samples, rssi, RX_BLOCK_SIZE);
+        getModem().fm.samples(samples, rssi, RX_BLOCK_SIZE);
 #endif
       }
 #endif
@@ -361,7 +362,7 @@ void CIO::process(bool networkData)
 #else
         ::arm_fir_fast_q15(&m_gaussianFilter, samples, GMSKVals, RX_BLOCK_SIZE);
 #endif
-        dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
+        getModem().dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
@@ -375,11 +376,11 @@ void CIO::process(bool networkData)
         if (m_duplex) {
           // If the transmitter isn't on, use the DMR idle RX to detect the wakeup CSBKs
           if (m_tx)
-            dmrRX.samples(DMRVals, rssi, control, RX_BLOCK_SIZE);
+            getModem().dmrRX.samples(DMRVals, rssi, control, RX_BLOCK_SIZE);
           else
-            dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
+            getModem().dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
         } else {
-          dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
+          getModem().dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
         }
       }
     }
@@ -394,7 +395,7 @@ void CIO::process(bool networkData)
 #else
         ::arm_fir_fast_q15(&m_rrc02Filter2, samples, YSFVals, RX_BLOCK_SIZE);
 #endif
-        ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
+        getModem().ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
@@ -408,7 +409,7 @@ void CIO::process(bool networkData)
 #else
         ::arm_fir_fast_q15(&m_boxcar5Filter, samples, P25Vals, RX_BLOCK_SIZE);
 #endif
-        p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
+        getModem().p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
@@ -432,7 +433,7 @@ void CIO::process(bool networkData)
 #endif
         ::arm_fir_fast_q15(&m_nxdnISincFilter, NXDNValsTmp, NXDNVals, RX_BLOCK_SIZE);
 #endif
-        nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
+        getModem().nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
@@ -440,9 +441,9 @@ void CIO::process(bool networkData)
 #if defined(MODE_FM)
     else if (m_modemState == MMDVM_STATE::FM) {
 #if defined(USE_DCBLOCKER)
-      fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
+      getModem().fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-      fm.samples(samples, rssi, RX_BLOCK_SIZE);
+      getModem().fm.samples(samples, rssi, RX_BLOCK_SIZE);
 #endif
     }
 #endif

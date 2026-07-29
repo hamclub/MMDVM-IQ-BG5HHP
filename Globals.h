@@ -32,7 +32,19 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "Modem.h"
+enum class MMDVM_STATE : uint8_t {
+  IDLE   = 0U,
+  DSTAR  = 1U,
+  DMR    = 2U,
+  YSF    = 3U,
+  P25    = 4U,
+  NXDN   = 5U,
+  POCSAG = 6U,
+  FM     = 10U,
+
+  // Dummy states start at 90
+  CWID   = 97U
+};
 
 #include "MQTTConnection.h"
 #include "SerialPort.h"
@@ -87,44 +99,44 @@ extern bool m_dcd;
 // extern CSerialPort serial;
 // extern CIO io;
 
-#if defined(MODE_DSTAR)
-extern CDStarRX dstarRX;
-extern CDStarTX dstarTX;
-#endif
+// #if defined(MODE_DSTAR)
+// extern CDStarRX dstarRX;
+// extern CDStarTX dstarTX;
+// #endif
 
-#if defined(MODE_DMR)
-extern CDMRIdleRX dmrIdleRX;
-extern CDMRRX dmrRX;
-extern CDMRTX dmrTX;
+// #if defined(MODE_DMR)
+// extern CDMRIdleRX dmrIdleRX;
+// extern CDMRRX dmrRX;
+// extern CDMRTX dmrTX;
 
-extern CDMRDMORX dmrDMORX;
-extern CDMRDMOTX dmrDMOTX;
-#endif
+// extern CDMRDMORX dmrDMORX;
+// extern CDMRDMOTX dmrDMOTX;
+// #endif
 
-#if defined(MODE_YSF)
-extern CYSFRX ysfRX;
-extern CYSFTX ysfTX;
-#endif
+// #if defined(MODE_YSF)
+// extern CYSFRX ysfRX;
+// extern CYSFTX ysfTX;
+// #endif
 
-#if defined(MODE_P25)
-extern CP25RX p25RX;
-extern CP25TX p25TX;
-#endif
+// #if defined(MODE_P25)
+// extern CP25RX p25RX;
+// extern CP25TX p25TX;
+// #endif
 
-#if defined(MODE_NXDN)
-extern CNXDNRX nxdnRX;
-extern CNXDNTX nxdnTX;
-#endif
+// #if defined(MODE_NXDN)
+// extern CNXDNRX nxdnRX;
+// extern CNXDNTX nxdnTX;
+// #endif
 
-#if defined(MODE_POCSAG)
-extern CPOCSAGTX  pocsagTX;
-#endif
+// #if defined(MODE_POCSAG)
+// extern CPOCSAGTX  pocsagTX;
+// #endif
 
-#if defined(MODE_FM)
-extern CFM    fm;
-#endif
+// #if defined(MODE_FM)
+// extern CFM    fm;
+// #endif
 
-extern CCWIdTX cwIdTX;
+// extern CCWIdTX cwIdTX;
 
 #if defined(USE_MQTT) && USE_MQTT == 1
 extern CMQTTConnection* m_mqtt;
