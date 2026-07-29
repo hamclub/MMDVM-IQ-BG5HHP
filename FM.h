@@ -23,6 +23,8 @@
 #if !defined(FM_H)
 #define  FM_H
 
+#include "IO.h"
+
 #include "FMBlanking.h"
 #include "FMCTCSSRX.h"
 #include "FMCTCSSTX.h"
@@ -51,7 +53,7 @@ enum class FM_STATE : uint8_t {
 };
 
 
-class CFM {
+class CFM : public IOAware {
 public:
   CFM();
   ~CFM();

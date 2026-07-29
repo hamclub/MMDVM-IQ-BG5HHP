@@ -21,12 +21,13 @@
 
 #include "DelayBuffer.h"
 #include "RingBuffer.h"
-#include "Socket.h"
-#include "FDUDC.h"
+
+#include "Modem.h"
+#include "SerialPort.h"
+#include "SDRDevice.h"
 
 #include <vector>
 
-class ISDRDevice;
 class CConf;
 
 class CIO {
@@ -48,12 +49,21 @@ public:
 
   void setMode(MMDVM_STATE state);
 
-  void createModemDevice(CConf* conf);
+  void setSerial(CSerialPort* serial) { m_serial = serial; };
+  void setModem(CModem* modem) { m_modem = modem; };
+
+  CSerialPort& getSerial() { return *m_serial; };
+  CModem& getModem() { return *m_modem; };
+
+  void createSDRDevice(CConf* conf);
+  ISDRDevice& getSDRDevice() { return *m_sdrDevice; };
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();
 
 private:
+  CModem*               m_modem = nullptr;
+  CSerialPort*          m_serial = nullptr;
   ISDRDevice*           m_sdrDevice;
   bool                  m_trace;
   bool                  m_started;
@@ -101,6 +111,25 @@ private:
   uint32_t             m_pocsagFreq;
   float                m_rxGain;
   float                m_txGain;
+};
+
+class IOAware {
+public:
+    virtual ~IOAware() {};
+
+    CIO& getIO() {
+        return *m_io;
+    }
+
+    void setIO(CIO* io) {
+        m_io = io;
+    }
+
+    CSerialPort& getSerial() {
+      return m_io->getSerial();
+    }
+
+    CIO* m_io = nullptr;
 };
 
 #endif

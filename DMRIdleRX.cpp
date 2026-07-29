@@ -163,7 +163,7 @@ void CDMRIdleRX::processSample(q15_t sample)
 
     if (colorCode == m_colorCode && dataType == DT_CSBK) {
       frame[0U] = CONTROL_IDLE | CONTROL_DATA | DT_CSBK;
-      serial.writeDMRData(false, frame, DMR_FRAME_LENGTH_BYTES + 1U);
+      getSerial().writeDMRData(false, frame, DMR_FRAME_LENGTH_BYTES + 1U);
     }
 
     m_endPtr  = NOENDPTR;

@@ -75,7 +75,7 @@ void CPOCSAGTX::process()
   }
 
   if (m_poLen > 0U) {
-    uint16_t space = io.getSpace();
+    uint16_t space = getIO().getSpace();
     
     while (space > (8U * POCSAG_RADIO_SYMBOL_LENGTH)) {
       uint8_t c = m_poBuffer[m_poPtr++];
@@ -135,7 +135,7 @@ void CPOCSAGTX::writeByte(uint8_t c)
 
   ::arm_fir_fast_q15(&m_modFilter, inBuffer, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
 
-  io.write(MMDVM_STATE::POCSAG, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
+  getIO().write(MMDVM_STATE::POCSAG, outBuffer, POCSAG_RADIO_SYMBOL_LENGTH * 8U);
 }
 
 void CPOCSAGTX::setTXDelay(uint8_t delay)

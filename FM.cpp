@@ -342,7 +342,7 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
 void CFM::process()
 {
-  uint16_t space  = io.getSpace();
+  uint16_t space  = getIO().getSpace();
   uint16_t length = m_outputRFRB.dataSize();
 
   if (space > 10U && length >= FM_TX_BLOCK_SIZE ) {
@@ -358,7 +358,7 @@ void CFM::process()
 
     m_outputRFRB.getData(samples, length);
 
-    io.write(MMDVM_STATE::FM, samples, length);
+    getIO().write(MMDVM_STATE::FM, samples, length);
   }
 
   if (m_extEnabled) {
@@ -373,7 +373,7 @@ void CFM::process()
       for (uint16_t j = 0U; j < length; j++)
         m_downSampler.getPackedData(serialSamples[j]);
 
-      serial.writeFMData((uint8_t*)serialSamples, length * sizeof(TSamplePairPack));
+      getSerial().writeFMData((uint8_t*)serialSamples, length * sizeof(TSamplePairPack));
     }
   }
 }
@@ -616,7 +616,7 @@ void CFM::listeningStateDuplex(bool validRFSignal, bool validExtSignal)
     if (m_kerchunkTimer.getTimeout() > 0U) {
       LogMessage("FM: state to KERCHUNK_RF");
       m_state = FM_STATE::KERCHUNK_RF;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_kerchunkTimer.start();
       if (m_callsignAtStart && !m_callsignAtLatch)
@@ -624,7 +624,7 @@ void CFM::listeningStateDuplex(bool validRFSignal, bool validExtSignal)
     } else {
       LogMessage("FM: state to RELAYING_RF");
       m_state = FM_STATE::RELAYING_RF;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
@@ -645,7 +645,7 @@ void CFM::listeningStateDuplex(bool validRFSignal, bool validExtSignal)
     if (m_kerchunkTimer.getTimeout() > 0U) {
       LogMessage("FM: state to KERCHUNK_EXT");
       m_state = FM_STATE::KERCHUNK_EXT;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_kerchunkTimer.start();
       if (m_callsignAtStart && !m_callsignAtLatch)
@@ -653,7 +653,7 @@ void CFM::listeningStateDuplex(bool validRFSignal, bool validExtSignal)
     } else {
       LogMessage("FM: state to RELAYING_EXT");
       m_state = FM_STATE::RELAYING_EXT;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       if (m_callsignAtStart)
         sendCallsign();
@@ -675,14 +675,14 @@ void CFM::listeningStateSimplex(bool validRFSignal, bool validExtSignal)
   if (validRFSignal) {
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_timeoutTimer.start();
     m_reverseTimer.stop();
   } else if (validExtSignal) {
     LogMessage("FM: state to RELAYING_EXT");
     m_state = FM_STATE::RELAYING_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     insertSilence(50U);
 
@@ -697,7 +697,7 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
     if (m_kerchunkTimer.hasExpired()) {
       LogMessage("FM: state to RELAYING_RF");
       m_state = FM_STATE::RELAYING_RF;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
@@ -711,7 +711,7 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
   } else {
     LogMessage("FM: state to LISTENING");
     m_state = FM_STATE::LISTENING;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_kerchunkTimer.stop();
     m_timeoutTimer.stop();
@@ -719,7 +719,7 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
     m_callsignTimer.stop();
     m_needReverse = true;
     if (m_extEnabled)
-      serial.writeFMEOT();
+      getSerial().writeFMEOT();
   }
 }
 
@@ -728,7 +728,7 @@ void CFM::relayingRFStateDuplex(bool validSignal)
   if (validSignal) {
     if (m_rssiCount >= 24000U) {
       uint16_t rssi = m_rssiAccum / m_rssiCount;
-      serial.writeFMRSSI(rssi);
+      getSerial().writeFMRSSI(rssi);
 
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
@@ -737,24 +737,24 @@ void CFM::relayingRFStateDuplex(bool validSignal)
     if (m_timeoutTimer.isRunning() && m_timeoutTimer.hasExpired()) {
       LogMessage("FM: state to TIMEOUT_RF");
       m_state = FM_STATE::TIMEOUT_RF;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_ackMinTimer.stop();
       m_timeoutTimer.stop();
       m_timeoutTone.start();
 
       if (m_extEnabled)
-        serial.writeFMEOT();
+        getSerial().writeFMEOT();
     }
   } else {
     LogMessage("FM: state to RELAYING_WAIT_RF");
     m_state = FM_STATE::RELAYING_WAIT_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
 
     if (m_extEnabled)
-      serial.writeFMEOT();
+      getSerial().writeFMEOT();
   }
 
   if (m_callsignTimer.isRunning() && m_callsignTimer.hasExpired()) {
@@ -769,22 +769,22 @@ void CFM::relayingRFStateSimplex(bool validSignal)
     if (m_timeoutTimer.isRunning() && m_timeoutTimer.hasExpired()) {
       LogMessage("FM: state to TIMEOUT_RF");
       m_state = FM_STATE::TIMEOUT_RF;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_timeoutTimer.stop();
 
       if (m_extEnabled)
-        serial.writeFMEOT();
+        getSerial().writeFMEOT();
     }
   } else {
     LogMessage("FM: state to RELAYING_WAIT_RF");
     m_state = FM_STATE::RELAYING_WAIT_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
 
     if (m_extEnabled)
-      serial.writeFMEOT();
+      getSerial().writeFMEOT();
   }
 }
 
@@ -793,7 +793,7 @@ void CFM::relayingRFWaitStateDuplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_rssiAccum = 0U;
     m_rssiCount = 0U;
@@ -803,7 +803,7 @@ void CFM::relayingRFWaitStateDuplex(bool validSignal)
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to HANG");
       m_state = FM_STATE::HANG;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       if (m_ackMinTimer.isRunning()) {
         if (m_ackMinTimer.hasExpired()) {
@@ -834,14 +834,14 @@ void CFM::relayingRFWaitStateSimplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -855,7 +855,7 @@ void CFM::kerchunkExtStateDuplex(bool validSignal)
     if (m_kerchunkTimer.hasExpired()) {
       LogMessage("FM: state to RELAYING_EXT");
       m_state = FM_STATE::RELAYING_EXT;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_kerchunkTimer.stop();
       if (m_callsignAtStart && m_callsignAtLatch) {
@@ -866,7 +866,7 @@ void CFM::kerchunkExtStateDuplex(bool validSignal)
   } else {
     LogMessage("FM: state to LISTENING");
     m_state = FM_STATE::LISTENING;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_kerchunkTimer.stop();
     m_timeoutTimer.stop();
@@ -882,7 +882,7 @@ void CFM::relayingExtStateDuplex(bool validSignal)
     if (m_timeoutTimer.isRunning() && m_timeoutTimer.hasExpired()) {
       LogMessage("FM: state to TIMEOUT_EXT");
       m_state = FM_STATE::TIMEOUT_EXT;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_ackMinTimer.stop();
       m_timeoutTimer.stop();
@@ -891,7 +891,7 @@ void CFM::relayingExtStateDuplex(bool validSignal)
   } else {
     LogMessage("FM: state to RELAYING_WAIT_EXT");
     m_state = FM_STATE::RELAYING_WAIT_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
   }
@@ -908,14 +908,14 @@ void CFM::relayingExtStateSimplex(bool validSignal)
     if (m_timeoutTimer.isRunning() && m_timeoutTimer.hasExpired()) {
       LogMessage("FM: state to TIMEOUT_EXT");
       m_state = FM_STATE::TIMEOUT_EXT;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_timeoutTimer.stop();
     }
   } else {
     LogMessage("FM: state to RELAYING_WAIT_EXT");
     m_state = FM_STATE::RELAYING_WAIT_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
   }
@@ -926,14 +926,14 @@ void CFM::relayingExtWaitStateDuplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to RELAYING_EXT");
     m_state = FM_STATE::RELAYING_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to HANG");
       m_state = FM_STATE::HANG;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       if (m_ackMinTimer.isRunning()) {
         if (m_ackMinTimer.hasExpired()) {
@@ -964,14 +964,14 @@ void CFM::relayingExtWaitStateSimplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to RELAYING_EXT");
     m_state = FM_STATE::RELAYING_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -985,7 +985,7 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
   if (validRFSignal) {
     LogMessage("FM: state to RELAYING_RF");
     m_state = FM_STATE::RELAYING_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_rssiAccum = 0U;
     m_rssiCount = 0U;
@@ -997,7 +997,7 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
   } else if (validExtSignal) {
     LogMessage("FM: state to RELAYING_EXT");
     m_state = FM_STATE::RELAYING_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
     
     LogMessage("FM stop ACK");
     m_rfAck.stop();
@@ -1007,7 +1007,7 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
     if (m_hangTimer.isRunning() && m_hangTimer.hasExpired()) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_hangTimer.stop();
 
@@ -1030,7 +1030,7 @@ void CFM::timeoutRFStateDuplex(bool validSignal)
   if (!validSignal) {
     LogMessage("FM: state to TIMEOUT_WAIT_RF");
     m_state = FM_STATE::TIMEOUT_WAIT_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     if (m_callsignAtEnd)
         sendCallsign();
@@ -1049,7 +1049,7 @@ void CFM::timeoutRFStateSimplex(bool validSignal)
   if (!validSignal) {
     LogMessage("FM: state to TIMEOUT_WAIT_RF");
     m_state = FM_STATE::TIMEOUT_WAIT_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
   }
@@ -1060,14 +1060,14 @@ void CFM::timeoutRFWaitStateDuplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to TIMEOUT_RF");
     m_state = FM_STATE::TIMEOUT_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to HANG");
       m_state = FM_STATE::HANG;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       LogMessage("FM send RF ACK");
       m_timeoutTone.stop();
@@ -1090,14 +1090,14 @@ void CFM::timeoutRFWaitStateSimplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to TIMEOUT_RF");
     m_state = FM_STATE::TIMEOUT_RF;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -1110,7 +1110,7 @@ void CFM::timeoutExtStateDuplex(bool validSignal)
   if (!validSignal) {
     LogMessage("FM: state to TIMEOUT_WAIT_EXT");
     m_state = FM_STATE::TIMEOUT_WAIT_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
   }
@@ -1126,7 +1126,7 @@ void CFM::timeoutExtStateSimplex(bool validSignal)
   if (!validSignal) {
     LogMessage("FM: state to TIMEOUT_WAIT_EXT");
     m_state = FM_STATE::TIMEOUT_WAIT_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.start();
   }
@@ -1137,14 +1137,14 @@ void CFM::timeoutExtWaitStateDuplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to TIMEOUT_EXT");
     m_state = FM_STATE::TIMEOUT_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to HANG");
       m_state = FM_STATE::HANG;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       LogMessage("FM send Ext ACK");
       m_timeoutTone.stop();
@@ -1167,14 +1167,14 @@ void CFM::timeoutExtWaitStateSimplex(bool validSignal)
   if (validSignal) {
     LogMessage("FM: state to TIMEOUT_EXT");
     m_state = FM_STATE::TIMEOUT_EXT;
-    serial.writeFMStatus(static_cast<uint8_t>(m_state));
+    getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
     m_ackDelayTimer.stop();
   } else {
     if (m_ackDelayTimer.isRunning() && m_ackDelayTimer.hasExpired()) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -1189,7 +1189,7 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
     if (!m_extSignal) {
       LogMessage("FM: state to RELAYING_RF");
       m_state = FM_STATE::RELAYING_RF;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
     }
 
     m_rfSignal = true;
@@ -1199,7 +1199,7 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
     if (!m_rfSignal) {
       LogMessage("FM: state to RELAYING_EXT");
       m_state = FM_STATE::RELAYING_EXT;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
     }
 
     insertSilence(50U);
@@ -1211,20 +1211,20 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
     if (!m_extSignal) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
     }
 
     m_rfSignal = false;
 
     if (m_extEnabled)
-      serial.writeFMEOT();
+      getSerial().writeFMEOT();
   }
 
   if (!validExtSignal && m_extSignal) {
     if (!m_rfSignal) {
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
-      serial.writeFMStatus(static_cast<uint8_t>(m_state));
+      getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
     }
 
     m_needReverse = true;

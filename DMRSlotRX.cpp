@@ -204,7 +204,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
       if (m_state != DMRRX_STATE::NONE) {
         m_syncCount++;
         if (m_syncCount >= MAX_SYNC_LOST_FRAMES) {
-          serial.writeDMRLost(m_slot);
+          getSerial().writeDMRLost(m_slot);
           m_state  = DMRRX_STATE::NONE;
           m_endPtr = NOENDPTR;
         }
@@ -218,7 +218,7 @@ bool CDMRSlotRX::processSample(q15_t sample, uint16_t rssi)
           frame[0U] = ++m_n;
         }
 
-        serial.writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 1U);
+        getSerial().writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 1U);
       } else if (m_state == DMRRX_STATE::DATA) {
         if (m_type != 0x00U) {
           frame[0U] = CONTROL_DATA | m_type;
@@ -401,7 +401,7 @@ void CDMRSlotRX::writeRSSIData(uint8_t* frame)
   frame[34U] = (avg >> 8) & 0xFFU;
   frame[35U] = (avg >> 0) & 0xFFU;
 
-  serial.writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 3U);
+  getSerial().writeDMRData(m_slot, frame, DMR_FRAME_LENGTH_BYTES + 3U);
 }
 
 #endif

@@ -23,6 +23,8 @@
 #if !defined(NXDNRX_H)
 #define  NXDNRX_H
 
+#include "IO.h"
+
 #include "NXDNDefines.h"
 
 enum class NXDNRX_STATE {
@@ -30,7 +32,7 @@ enum class NXDNRX_STATE {
   DATA
 };
 
-class CNXDNRX {
+class CNXDNRX : public IOAware {
 public:
   CNXDNRX();
   ~CNXDNRX();

@@ -23,9 +23,11 @@
 #if !defined(DSTARTX_H)
 #define  DSTARTX_H
 
+#include "IO.h"
+
 #include "RingBuffer.h"
 
-class CDStarTX {
+class CDStarTX : public IOAware {
 public:
   CDStarTX();
   ~CDStarTX();

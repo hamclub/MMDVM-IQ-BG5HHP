@@ -23,6 +23,8 @@
 #if !defined(DMRDMORX_H)
 #define  DMRDMORX_H
 
+#include "IO.h"
+
 #include "DMRDefines.h"
 
 const uint16_t DMO_BUFFER_LENGTH_SAMPLES = 1440U;   // 60ms at 24 kHz
@@ -33,7 +35,7 @@ enum class DMORX_STATE {
   DATA
 };
 
-class CDMRDMORX {
+class CDMRDMORX : public IOAware {
 public:
   CDMRDMORX();
   ~CDMRDMORX();

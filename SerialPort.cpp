@@ -27,6 +27,8 @@
 #include "SerialPort.h"
 #include "Version.h"
 
+#include "IO.h"
+
 #include <cassert>
 
 const uint8_t MMDVM_FRAME_START  = 0xE0U;
@@ -110,6 +112,7 @@ const int      MAX_SERIAL_DATA  = 250;
 const uint16_t MAX_SERIAL_COUNT = 100U;
 
 CSerialPort::CSerialPort() :
+m_io(nullptr),
 m_buffer(),
 m_ptr(0U),
 m_len(0U),
@@ -498,7 +501,7 @@ uint8_t CSerialPort::setFrequency(const uint8_t* data, uint16_t length)
   pocsagFreq |= (data[12U] << 16) & 0x00FF0000U;
   pocsagFreq |= (data[13U] << 24) & 0xFF000000U;
 
-  return io.setFrequency(power, txFreq, rxFreq, pocsagFreq);
+  return getIO().setFrequency(power, txFreq, rxFreq, pocsagFreq);
 }
 
 uint8_t CSerialPort::setConfig1(const uint8_t* data, uint16_t length)
@@ -708,7 +711,7 @@ uint8_t CSerialPort::setConfig1(const uint8_t* data, uint16_t length)
   // (void)rxDCOffset;
   // (void)nxdnTXLevel;
 
-  return io.setParameters();
+  return getIO().setParameters();
 }
 
 uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
@@ -877,7 +880,7 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
   fm.setTXLevel(fmTXLevel);
 #endif
 
-  return io.setParameters();
+  return getIO().setParameters();
 }
 
 #if defined(MODE_FM)
@@ -1131,7 +1134,7 @@ void CSerialPort::setMode(MMDVM_STATE modemState)
 
   cwIdTX.reset();
 
-  io.setMode(modemState);
+  getIO().setMode(modemState);
 }
 
 bool CSerialPort::start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort, bool debug)

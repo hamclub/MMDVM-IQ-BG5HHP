@@ -87,7 +87,7 @@ void CYSFTX::process()
 
   if (m_poLen > 0U) {
     // Transmit YSF data.
-    uint16_t space = io.getSpace();
+    uint16_t space = getIO().getSpace();
 
     while (space > (4U * YSF_RADIO_SYMBOL_LENGTH)) {
       uint8_t c = m_poBuffer[m_poPtr++];
@@ -106,7 +106,7 @@ void CYSFTX::process()
     }
   } else if (m_txCount > 0U) {
     // Transmit silence until the hang timer has expired.
-    uint16_t space = io.getSpace();
+    uint16_t space = getIO().getSpace();
 
     while (space > (4U * YSF_RADIO_SYMBOL_LENGTH)) {
       writeSilence();
@@ -160,7 +160,7 @@ void CYSFTX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write(MMDVM_STATE::YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
+  getIO().write(MMDVM_STATE::YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CYSFTX::writeSilence()
@@ -170,7 +170,7 @@ void CYSFTX::writeSilence()
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write(MMDVM_STATE::YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
+  getIO().write(MMDVM_STATE::YSF, outBuffer, YSF_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 void CYSFTX::setTXDelay(uint8_t delay)

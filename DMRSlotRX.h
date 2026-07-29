@@ -23,6 +23,8 @@
 #if !defined(DMRSLOTRX_H)
 #define  DMRSLOTRX_H
 
+#include "IO.h"
+
 #include "DMRDefines.h"
 
 enum class DMRRX_STATE {
@@ -31,7 +33,7 @@ enum class DMRRX_STATE {
   DATA
 };
 
-class CDMRSlotRX {
+class CDMRSlotRX : public IOAware {
 public:
   CDMRSlotRX(bool slot);
   ~CDMRSlotRX();

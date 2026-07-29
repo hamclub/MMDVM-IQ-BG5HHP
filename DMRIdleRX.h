@@ -23,9 +23,11 @@
 #if !defined(DMRIDLERX_H)
 #define  DMRIDLERX_H
 
+#include "IO.h"
+
 #include "DMRDefines.h"
 
-class CDMRIdleRX {
+class CDMRIdleRX : public IOAware {
 public:
   CDMRIdleRX();
   ~CDMRIdleRX();

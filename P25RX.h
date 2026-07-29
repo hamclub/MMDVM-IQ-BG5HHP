@@ -24,6 +24,8 @@
 #if !defined(P25RX_H)
 #define  P25RX_H
 
+#include "IO.h"
+
 #include "P25Defines.h"
 
 enum class P25RX_STATE {
@@ -32,7 +34,7 @@ enum class P25RX_STATE {
   LDU
 };
 
-class CP25RX {
+class CP25RX : public IOAware {
 public:
   CP25RX();
   ~CP25RX();

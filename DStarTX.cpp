@@ -270,7 +270,7 @@ void CDStarTX::process()
   }
 
   if (m_poLen > 0U) {
-    uint16_t space = io.getSpace();
+    uint16_t space = getIO().getSpace();
     
     while (space > (8U * DSTAR_RADIO_SYMBOL_LENGTH)) {
       uint8_t c = m_poBuffer[m_poPtr++];
@@ -433,7 +433,7 @@ void CDStarTX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 8U);
   
-  io.write(MMDVM_STATE::DSTAR, outBuffer, DSTAR_RADIO_SYMBOL_LENGTH * 8U);
+  getIO().write(MMDVM_STATE::DSTAR, outBuffer, DSTAR_RADIO_SYMBOL_LENGTH * 8U);
 }
 
 void CDStarTX::setTXDelay(uint8_t delay)

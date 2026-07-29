@@ -32,19 +32,7 @@
 #pragma GCC diagnostic pop
 #endif
 
-enum class MMDVM_STATE : uint8_t {
-  IDLE   = 0U,
-  DSTAR  = 1U,
-  DMR    = 2U,
-  YSF    = 3U,
-  P25    = 4U,
-  NXDN   = 5U,
-  POCSAG = 6U,
-  FM     = 10U,
-
-  // Dummy states start at 90
-  CWID   = 97U
-};
+#include "Modem.h"
 
 #include "MQTTConnection.h"
 #include "SerialPort.h"
@@ -96,8 +84,8 @@ extern bool m_duplex;
 extern bool m_tx;
 extern bool m_dcd;
 
-extern CSerialPort serial;
-extern CIO io;
+// extern CSerialPort serial;
+// extern CIO io;
 
 #if defined(MODE_DSTAR)
 extern CDStarRX dstarRX;

@@ -23,9 +23,11 @@
 #if !defined(YSFTX_H)
 #define  YSFTX_H
 
+#include "IO.h"
+
 #include "RingBuffer.h"
 
-class CYSFTX {
+class CYSFTX : public IOAware {
 public:
   CYSFTX();
   ~CYSFTX();

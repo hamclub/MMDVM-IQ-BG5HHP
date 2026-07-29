@@ -25,6 +25,8 @@
 #if !defined(DMRTX_H)
 #define  DMRTX_H
 
+#include "IO.h"
+
 #include "DMRDefines.h"
 
 #include "RingBuffer.h"
@@ -37,7 +39,7 @@ enum class DMRTXSTATE {
   CACH2
 };
 
-class CDMRTX {
+class CDMRTX : public IOAware {
 public:
   CDMRTX();
   ~CDMRTX();

@@ -104,14 +104,14 @@ void CCWIdTX::process()
   if (m_poLen == 0U)
     return;
 
-  uint16_t space = io.getSpace();
+  uint16_t space = getIO().getSpace();
     
   while (space > CYCLE_LENGTH) {
     bool b = READ_BIT1(m_poBuffer, m_poPtr);
     if (b)
-      io.write(MMDVM_STATE::CWID, TONE, CYCLE_LENGTH);
+      getIO().write(MMDVM_STATE::CWID, TONE, CYCLE_LENGTH);
     else
-      io.write(MMDVM_STATE::CWID, SILENCE, CYCLE_LENGTH);
+      getIO().write(MMDVM_STATE::CWID, SILENCE, CYCLE_LENGTH);
 
     space -= CYCLE_LENGTH;
 

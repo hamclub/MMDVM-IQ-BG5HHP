@@ -399,7 +399,7 @@ void CDStarRX::processData()
   if (countBits64((m_bitBuffer[m_bitPtr] & DSTAR_END_SYNC_MASK) ^ DSTAR_END_SYNC_DATA) <= END_SYNC_ERRS) {
     LogMessage("DStarRX: Found end sync in Data");
 
-    serial.writeDStarEOT();
+    getSerial().writeDStarEOT();
 
     m_maxFrameCorr = 0;
     m_maxDataCorr  = 0;
@@ -421,7 +421,7 @@ void CDStarRX::processData()
   if (m_frameCount >= MAX_FRAMES) {
     LogMessage("DStarRX: data sync timed out, lost lock");
 
-    serial.writeDStarLost();
+    getSerial().writeDStarLost();
 
     m_maxFrameCorr = 0;
     m_maxDataCorr  = 0;
@@ -445,7 +445,7 @@ void CDStarRX::processData()
 
       writeRSSIData(buffer);
     } else {
-      serial.writeDStarData(buffer, DSTAR_DATA_LENGTH_BYTES);
+      getSerial().writeDStarData(buffer, DSTAR_DATA_LENGTH_BYTES);
     }
 
     m_frameCount++;
@@ -463,9 +463,9 @@ void CDStarRX::writeRSSIHeader(unsigned char* header)
     header[41U] = (rssi >> 8) & 0xFFU;
     header[42U] = (rssi >> 0) & 0xFFU;
 
-    serial.writeDStarHeader(header, DSTAR_HEADER_LENGTH_BYTES + 2U);
+    getSerial().writeDStarHeader(header, DSTAR_HEADER_LENGTH_BYTES + 2U);
   } else {
-    serial.writeDStarHeader(header, DSTAR_HEADER_LENGTH_BYTES + 0U);
+    getSerial().writeDStarHeader(header, DSTAR_HEADER_LENGTH_BYTES + 0U);
   }
 
   m_rssiAccum = 0U;
@@ -480,9 +480,9 @@ void CDStarRX::writeRSSIData(unsigned char* data)
     data[12U] = (rssi >> 8) & 0xFFU;
     data[13U] = (rssi >> 0) & 0xFFU;
 
-    serial.writeDStarData(data, DSTAR_DATA_LENGTH_BYTES + 2U);
+    getSerial().writeDStarData(data, DSTAR_DATA_LENGTH_BYTES + 2U);
   } else {
-    serial.writeDStarData(data, DSTAR_DATA_LENGTH_BYTES + 0U);
+    getSerial().writeDStarData(data, DSTAR_DATA_LENGTH_BYTES + 0U);
   }
 
   m_rssiAccum = 0U;

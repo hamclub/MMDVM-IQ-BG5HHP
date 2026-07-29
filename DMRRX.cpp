@@ -24,6 +24,7 @@
 #include "DMRRX.h"
 
 CDMRRX::CDMRRX() :
+m_io(nullptr),
 m_slot1RX(false),
 m_slot2RX(true)
 {
@@ -31,6 +32,18 @@ m_slot2RX(true)
 
 CDMRRX::~CDMRRX()
 {
+}
+
+CIO& CDMRRX::getIO()
+{
+  return *m_io;
+}
+
+void CDMRRX::setIO(CIO* io)
+{
+  m_io = io;
+  m_slot1RX.setIO(io);
+  m_slot2RX.setIO(io);
 }
 
 void CDMRRX::samples(const q15_t* samples, const uint16_t* rssi, const uint8_t* control, uint8_t length)

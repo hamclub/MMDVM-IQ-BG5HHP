@@ -188,7 +188,7 @@ void CYSFRX::processData(q15_t sample)
     if (m_lostCount == 0U) {
       LogMessage("YSFRX: sync timed out, lost lock");
 
-      serial.writeYSFLost();
+      getSerial().writeYSFLost();
 
       m_state      = YSFRX_STATE::NONE;
       m_endPtr     = NOENDPTR;
@@ -391,9 +391,9 @@ void CYSFRX::writeRSSIData(uint8_t* data)
     data[121U] = (rssi >> 8) & 0xFFU;
     data[122U] = (rssi >> 0) & 0xFFU;
 
-    serial.writeYSFData(data, YSF_FRAME_LENGTH_BYTES + 3U);
+    getSerial().writeYSFData(data, YSF_FRAME_LENGTH_BYTES + 3U);
   } else {
-    serial.writeYSFData(data, YSF_FRAME_LENGTH_BYTES + 1U);
+    getSerial().writeYSFData(data, YSF_FRAME_LENGTH_BYTES + 1U);
   }
 
   m_rssiAccum = 0U;

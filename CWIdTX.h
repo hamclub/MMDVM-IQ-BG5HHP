@@ -21,8 +21,9 @@
 #define  CWIDTX_H
 
 #include "Config.h"
+#include "IO.h"
 
-class CCWIdTX {
+class CCWIdTX : public IOAware {
 public:
   CCWIdTX();
   ~CCWIdTX();

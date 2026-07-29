@@ -188,7 +188,7 @@ void CNXDNRX::processData(q15_t sample)
     if (m_lostCount == 0U) {
       LogMessage("NXDNRX: sync timed out, lost lock");
 
-      serial.writeNXDNLost();
+      getSerial().writeNXDNLost();
 
       m_state      = NXDNRX_STATE::NONE;
       m_endPtr     = NOENDPTR;
@@ -391,9 +391,9 @@ void CNXDNRX::writeRSSIData(uint8_t* data)
     data[49U] = (rssi >> 8) & 0xFFU;
     data[50U] = (rssi >> 0) & 0xFFU;
 
-    serial.writeNXDNData(data, NXDN_FRAME_LENGTH_BYTES + 3U);
+    getSerial().writeNXDNData(data, NXDN_FRAME_LENGTH_BYTES + 3U);
   } else {
-    serial.writeNXDNData(data, NXDN_FRAME_LENGTH_BYTES + 1U);
+    getSerial().writeNXDNData(data, NXDN_FRAME_LENGTH_BYTES + 1U);
   }
 
   m_rssiAccum = 0U;

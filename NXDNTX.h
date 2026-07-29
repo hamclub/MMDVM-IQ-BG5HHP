@@ -23,9 +23,11 @@
 #if !defined(NXDNTX_H)
 #define  NXDNTX_H
 
+#include "IO.h"
+
 #include "RingBuffer.h"
 
-class CNXDNTX {
+class CNXDNTX : public IOAware {
 public:
   CNXDNTX();
   ~CNXDNTX();

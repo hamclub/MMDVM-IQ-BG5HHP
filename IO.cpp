@@ -29,6 +29,10 @@
 #include "SDRSoapy.h"
 #include "SDRMulti.h"
 
+#if defined(USE_SOAPY_MULTI)
+#include "SDRSoapyMulti.h"
+#endif
+
 #include <cstdio>
 #include <cassert>
 
@@ -445,7 +449,7 @@ void CIO::process(bool networkData)
   }
 }
 
-void CIO::createModemDevice(CConf* conf) {
+void CIO::createSDRDevice(CConf* conf) {
   if (conf->getMultiModem()) {
     CSDRMulti* multi = new CSDRMulti;
     multi->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
@@ -457,7 +461,12 @@ void CIO::createModemDevice(CConf* conf) {
     return;
   }
 
-#if defined(USE_SOAPY)
+#if defined(USE_SOAPY_MULTI)
+  CSDRSoapyMulti* soapy = new CSDRSoapyMulti(conf);
+  delete m_sdrDevice;
+  m_sdrDevice = soapy;
+
+#elif defined(USE_SOAPY)
   CSDRSoapy* soapy = new CSDRSoapy(conf);
   delete m_sdrDevice;
   m_sdrDevice = soapy;

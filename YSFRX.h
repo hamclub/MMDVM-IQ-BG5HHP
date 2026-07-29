@@ -23,6 +23,8 @@
 #if !defined(YSFRX_H)
 #define  YSFRX_H
 
+#include "IO.h"
+
 #include "YSFDefines.h"
 
 enum class YSFRX_STATE {
@@ -30,7 +32,7 @@ enum class YSFRX_STATE {
   DATA
 };
 
-class CYSFRX {
+class CYSFRX : public IOAware {
 public:
   CYSFRX();
   ~CYSFRX();

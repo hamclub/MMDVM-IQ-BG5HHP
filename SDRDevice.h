@@ -20,7 +20,19 @@
 #if !defined(SDRDEVICE_H)
 #define  SDRDEVICE_H
 
-#include "Globals.h"
+#include "Modem.h"
+
+#include <cstdint>
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#endif
+
+#include "arm_math_rpi.h"
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 class ISDRDevice {
 public:

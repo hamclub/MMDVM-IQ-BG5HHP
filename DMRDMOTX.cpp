@@ -92,7 +92,7 @@ void CDMRDMOTX::process()
   }
 
   if (m_poLen > 0U) {
-    uint16_t space = io.getSpace();
+    uint16_t space = getIO().getSpace();
     
     while (space > (4U * DMR_RADIO_SYMBOL_LENGTH)) {
       uint8_t c = m_poBuffer[m_poPtr++];
@@ -150,7 +150,7 @@ void CDMRDMOTX::writeByte(uint8_t c)
 
   ::arm_fir_interpolate_q15(&m_modFilter, inBuffer, outBuffer, 4U);
 
-  io.write(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U);
+  getIO().write(MMDVM_STATE::DMR, outBuffer, DMR_RADIO_SYMBOL_LENGTH * 4U);
 }
 
 uint8_t CDMRDMOTX::getSpace() const

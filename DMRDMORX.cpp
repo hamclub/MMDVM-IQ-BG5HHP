@@ -197,7 +197,7 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
       if (m_state != DMORX_STATE::NONE) {
         m_syncCount++;
         if (m_syncCount >= MAX_SYNC_LOST_FRAMES) {
-          serial.writeDMRLost(true);
+          getSerial().writeDMRLost(true);
           reset();
         }
       }
@@ -210,7 +210,7 @@ bool CDMRDMORX::processSample(q15_t sample, uint16_t rssi)
           frame[0U] = ++m_n;
         }
 
-        serial.writeDMRData(true, frame, DMR_FRAME_LENGTH_BYTES + 1U);
+        getSerial().writeDMRData(true, frame, DMR_FRAME_LENGTH_BYTES + 1U);
       } else if (m_state == DMORX_STATE::DATA) {
         if (m_type != 0x00U) {
           frame[0U] = CONTROL_DATA | m_type;
@@ -422,7 +422,7 @@ void CDMRDMORX::writeRSSIData(uint8_t* frame)
   frame[34U] = (avg >> 8) & 0xFFU;
   frame[35U] = (avg >> 0) & 0xFFU;
 
-  serial.writeDMRData(true, frame, DMR_FRAME_LENGTH_BYTES + 3U);
+  getSerial().writeDMRData(true, frame, DMR_FRAME_LENGTH_BYTES + 3U);
 }
 
 #endif

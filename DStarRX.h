@@ -23,6 +23,8 @@
 #if !defined(DSTARRX_H)
 #define  DSTARRX_H
 
+#include "IO.h"
+
 #include "DStarDefines.h"
 
 enum class DSRX_STATE {
@@ -31,7 +33,7 @@ enum class DSRX_STATE {
   DATA
 };
 
-class CDStarRX {
+class CDStarRX : public IOAware {
 public:
   CDStarRX();
   ~CDStarRX();

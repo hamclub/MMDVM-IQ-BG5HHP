@@ -23,9 +23,11 @@
 #if !defined(POCSAGTX_H)
 #define  POCSAGTX_H
 
+#include "IO.h"
+
 #include "RingBuffer.h"
 
-class CPOCSAGTX {
+class CPOCSAGTX : public IOAware {
 public:
   CPOCSAGTX();
   ~CPOCSAGTX();

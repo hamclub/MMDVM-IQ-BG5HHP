@@ -23,9 +23,11 @@
 #if !defined(P25TX_H)
 #define  P25TX_H
 
+#include "IO.h"
+
 #include "RingBuffer.h"
 
-class CP25TX {
+class CP25TX : public IOAware {
 public:
   CP25TX();
   ~CP25TX();

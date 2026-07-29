@@ -24,11 +24,13 @@
 #if !defined(DMRDMOTX_H)
 #define  DMRDMOTX_H
 
+#include "IO.h"
+
 #include "DMRDefines.h"
 
 #include "RingBuffer.h"
 
-class CDMRDMOTX {
+class CDMRDMOTX : public IOAware {
 public:
   CDMRDMOTX();
   ~CDMRDMOTX();

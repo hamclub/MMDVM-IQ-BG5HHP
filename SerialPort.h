@@ -24,6 +24,7 @@
 #include "RingBuffer.h"
 #include "Socket.h"
 
+class CIO;
 
 class CSerialPort {
 public:
@@ -71,9 +72,13 @@ public:
   void writeFMEOT();
 #endif
 
+  void setIO(CIO* io) { m_io = io; };
+  CIO& getIO() { return *m_io; };
+
   void setVersion(unsigned char version) { m_version = version; };
 
 private:
+  CIO*      m_io;
   uint8_t   m_buffer[512U];
   uint16_t  m_ptr;
   uint16_t  m_len;

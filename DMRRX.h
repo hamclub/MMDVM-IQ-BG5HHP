@@ -23,6 +23,8 @@
 #if !defined(DMRRX_H)
 #define  DMRRX_H
 
+#include "IO.h"
+
 #include "DMRSlotRX.h"
 
 class CDMRRX {
@@ -35,9 +37,14 @@ public:
   void setColorCode(uint8_t colorCode);
   void setDelay(uint8_t delay);
 
+  CIO& getIO();
+
+  void setIO(CIO* io);
+
   void reset();
 
 private:
+  CIO*       m_io;
   CDMRSlotRX m_slot1RX;
   CDMRSlotRX m_slot2RX;
 };

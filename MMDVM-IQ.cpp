@@ -19,6 +19,7 @@
  */
 
 #include "MMDVM-IQ.h"
+#include "Modem.h"
 #include "Config.h"
 #include "Globals.h"
 #include "Version.h"
@@ -89,8 +90,8 @@ CFM    fm;
 
 CCWIdTX cwIdTX;
 
-CSerialPort serial;
-CIO io;
+// CSerialPort serial;
+// CIO io;
 
 #if defined(_WIN32) || defined(_WIN64)
 const char* DEFAULT_INI_FILE = "MMDVM-IQ.ini";
@@ -182,6 +183,46 @@ CMMDVMIQ::~CMMDVMIQ()
 {
 }
 
+static void setupIO(CIO* io) {
+    cwIdTX.setIO(io);
+
+#if defined(MODE_DMR)
+    dmrDMORX.setIO(io);
+    dmrDMOTX.setIO(io);
+    dmrRX.setIO(io);
+    dmrTX.setIO(io);
+    dmrIdleRX.setIO(io);
+#endif
+
+#if defined(MODE_DSTAR)
+    dstarRX.setIO(io);
+    dstarTX.setIO(io);
+#endif
+
+#if defined(MODE_YSF)
+    ysfRX.setIO(io);
+    ysfTX.setIO(io);
+#endif
+
+#if defined(MODE_P25)
+    p25RX.setIO(io);
+    p25TX.setIO(io);
+#endif
+
+#if defined(MODE_NXDN)
+    nxdnRX.setIO(io);
+    nxdnTX.setIO(io);
+#endif
+
+#if defined(MODE_FM)
+    fm.setIO(io);
+#endif
+
+#if defined(MODE_POCSAG)
+    pocsagTX.setIO(io);
+#endif
+}
+
 int CMMDVMIQ::run()
 {
     bool ret = m_conf.read();
@@ -261,7 +302,18 @@ int CMMDVMIQ::run()
     ::LogInitialiseFile(m_conf.getDaemon(), m_conf.getLogFilePath().c_str(), m_conf.getLogFileRoot().c_str(), m_conf.getLogFileLevel(), m_conf.getLogDisplayLevel(), logUTC);
 #endif
 
-    ret = serial.start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
+    CIO* io = new CIO;
+
+    CModem* modem = new CModem;
+    io->setModem(modem);
+
+    CSerialPort *serial = new CSerialPort;
+    io->setSerial(serial);
+    serial->setIO(io);
+
+    setupIO(io);
+
+    ret = serial->start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
                             m_conf.getNetworkHostAddress(), m_conf.getNetworkHostPort(),
                             m_conf.getNetworkTrace());
     if (!ret) {
@@ -271,11 +323,11 @@ int CMMDVMIQ::run()
 
     uint8_t ver = m_conf.getModemVersion();
     LogMessage("Modem version: %u", ver);
-    serial.setVersion(ver);
+    serial->setVersion(ver);
 
-    io.createModemDevice(&m_conf);
+    io->createSDRDevice(&m_conf);
 
-    ret = io.start(m_conf.getModemTrace());
+    ret = io->start(m_conf.getModemTrace());
     if (!ret) {
         LogError("Unable to open the modem");
         return 1;
@@ -285,9 +337,9 @@ int CMMDVMIQ::run()
     LogInfo("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
 
     while (!m_killed) {
-        serial.process();
+        serial->process();
 
-        io.process();
+        io->process();
 
         // The following are for transmitting
 #if defined(MODE_DSTAR)
@@ -337,8 +389,12 @@ int CMMDVMIQ::run()
 
     LogInfo("MMDVM-IQ is stopping");
 
-    io.stop();
-    serial.stop();
+    io->stop();
+    serial->stop();
+
+    delete io;
+    delete serial;
+    delete modem;
 
     return 0;
 }
