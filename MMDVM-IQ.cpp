@@ -22,7 +22,9 @@
 #include "Modem.h"
 #include "SDRMulti.h"
 #include "SDRSoapy.h"
+#if defined(USE_SOAPY_MULTI)
 #include "SDRSoapyMulti.h"
+#endif
 #include "Config.h"
 #include "Globals.h"
 #include "Version.h"
