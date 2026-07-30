@@ -30,7 +30,7 @@
 
 #include "RingBuffer.h"
 
-class CDMRDMOTX : public IOAware {
+class CDMRDMOTX : public IOHolder {
 public:
   CDMRDMOTX();
   ~CDMRDMOTX();

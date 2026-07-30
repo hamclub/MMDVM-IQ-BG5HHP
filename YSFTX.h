@@ -27,7 +27,7 @@
 
 #include "RingBuffer.h"
 
-class CYSFTX : public IOAware {
+class CYSFTX : public IOHolder {
 public:
   CYSFTX();
   ~CYSFTX();

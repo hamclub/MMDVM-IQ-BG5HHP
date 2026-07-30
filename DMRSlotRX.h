@@ -33,7 +33,7 @@ enum class DMRRX_STATE {
   DATA
 };
 
-class CDMRSlotRX : public IOAware {
+class CDMRSlotRX : public IOHolder {
 public:
   CDMRSlotRX(bool slot);
   ~CDMRSlotRX();

@@ -32,7 +32,7 @@ enum class YSFRX_STATE {
   DATA
 };
 
-class CYSFRX : public IOAware {
+class CYSFRX : public IOHolder {
 public:
   CYSFRX();
   ~CYSFRX();

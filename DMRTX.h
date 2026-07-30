@@ -39,7 +39,7 @@ enum class DMRTXSTATE {
   CACH2
 };
 
-class CDMRTX : public IOAware {
+class CDMRTX : public IOHolder {
 public:
   CDMRTX();
   ~CDMRTX();

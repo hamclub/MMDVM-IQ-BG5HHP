@@ -33,7 +33,7 @@ enum class DSRX_STATE {
   DATA
 };
 
-class CDStarRX : public IOAware {
+class CDStarRX : public IOHolder {
 public:
   CDStarRX();
   ~CDStarRX();

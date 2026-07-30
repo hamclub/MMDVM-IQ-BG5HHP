@@ -35,7 +35,7 @@ enum class DMORX_STATE {
   DATA
 };
 
-class CDMRDMORX : public IOAware {
+class CDMRDMORX : public IOHolder {
 public:
   CDMRDMORX();
   ~CDMRDMORX();

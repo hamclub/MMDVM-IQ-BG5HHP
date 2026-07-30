@@ -27,7 +27,7 @@
 
 #include "RingBuffer.h"
 
-class CPOCSAGTX : public IOAware {
+class CPOCSAGTX : public IOHolder {
 public:
   CPOCSAGTX();
   ~CPOCSAGTX();

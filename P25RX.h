@@ -34,7 +34,7 @@ enum class P25RX_STATE {
   LDU
 };
 
-class CP25RX : public IOAware {
+class CP25RX : public IOHolder {
 public:
   CP25RX();
   ~CP25RX();

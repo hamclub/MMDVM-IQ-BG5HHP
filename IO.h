@@ -108,9 +108,9 @@ private:
   float                m_txGain;
 };
 
-class IOAware {
+class IOHolder {
 public:
-    virtual ~IOAware() {};
+    virtual ~IOHolder() {};
 
     CIO& getIO() {
         return *m_io;

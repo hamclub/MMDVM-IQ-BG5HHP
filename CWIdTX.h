@@ -23,7 +23,7 @@
 #include "Config.h"
 #include "IO.h"
 
-class CCWIdTX : public IOAware {
+class CCWIdTX : public IOHolder {
 public:
   CCWIdTX();
   ~CCWIdTX();

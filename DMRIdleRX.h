@@ -27,7 +27,7 @@
 
 #include "DMRDefines.h"
 
-class CDMRIdleRX : public IOAware {
+class CDMRIdleRX : public IOHolder {
 public:
   CDMRIdleRX();
   ~CDMRIdleRX();

@@ -37,7 +37,7 @@
 
 class CConf;
 
-class CSDRSoapy : public ISDRDevice, public IOAware {
+class CSDRSoapy : public ISDRDevice, public IOHolder {
 public:
   CSDRSoapy(CConf* conf);
   virtual ~CSDRSoapy();

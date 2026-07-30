@@ -53,7 +53,7 @@ enum class FM_STATE : uint8_t {
 };
 
 
-class CFM : public IOAware {
+class CFM : public IOHolder {
 public:
   CFM();
   ~CFM();

@@ -27,7 +27,7 @@
 
 #include "RingBuffer.h"
 
-class CDStarTX : public IOAware {
+class CDStarTX : public IOHolder {
 public:
   CDStarTX();
   ~CDStarTX();

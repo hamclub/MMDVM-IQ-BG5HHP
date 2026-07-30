@@ -27,7 +27,7 @@
 
 #include "RingBuffer.h"
 
-class CNXDNTX : public IOAware {
+class CNXDNTX : public IOHolder {
 public:
   CNXDNTX();
   ~CNXDNTX();

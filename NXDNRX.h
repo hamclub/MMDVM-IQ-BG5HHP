@@ -32,7 +32,7 @@ enum class NXDNRX_STATE {
   DATA
 };
 
-class CNXDNRX : public IOAware {
+class CNXDNRX : public IOHolder {
 public:
   CNXDNRX();
   ~CNXDNRX();

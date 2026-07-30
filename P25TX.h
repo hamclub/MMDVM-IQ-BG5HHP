@@ -27,7 +27,7 @@
 
 #include "RingBuffer.h"
 
-class CP25TX : public IOAware {
+class CP25TX : public IOHolder {
 public:
   CP25TX();
   ~CP25TX();
