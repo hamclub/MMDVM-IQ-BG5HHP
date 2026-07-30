@@ -81,62 +81,6 @@ const uint16_t TX_RINGBUFFER_SIZE = 240U;
 
 const uint16_t TX_BUFFER_LEN = 4000U;
 
-// extern MMDVM_STATE m_modemState;
-
-// extern bool m_dstarEnable;
-// extern bool m_dmrEnable;
-// extern bool m_ysfEnable;
-// extern bool m_p25Enable;
-// extern bool m_nxdnEnable;
-// extern bool m_pocsagEnable;
-// extern bool m_fmEnable;
-
-// extern bool m_duplex;
-
-// extern bool m_tx;
-// extern bool m_dcd;
-
-// extern CSerialPort serial;
-// extern CIO io;
-
-// #if defined(MODE_DSTAR)
-// extern CDStarRX dstarRX;
-// extern CDStarTX dstarTX;
-// #endif
-
-// #if defined(MODE_DMR)
-// extern CDMRIdleRX dmrIdleRX;
-// extern CDMRRX dmrRX;
-// extern CDMRTX dmrTX;
-
-// extern CDMRDMORX dmrDMORX;
-// extern CDMRDMOTX dmrDMOTX;
-// #endif
-
-// #if defined(MODE_YSF)
-// extern CYSFRX ysfRX;
-// extern CYSFTX ysfTX;
-// #endif
-
-// #if defined(MODE_P25)
-// extern CP25RX p25RX;
-// extern CP25TX p25TX;
-// #endif
-
-// #if defined(MODE_NXDN)
-// extern CNXDNRX nxdnRX;
-// extern CNXDNTX nxdnTX;
-// #endif
-
-// #if defined(MODE_POCSAG)
-// extern CPOCSAGTX  pocsagTX;
-// #endif
-
-// #if defined(MODE_FM)
-// extern CFM    fm;
-// #endif
-
-// extern CCWIdTX cwIdTX;
 
 #if defined(USE_MQTT) && USE_MQTT == 1
 extern CMQTTConnection* m_mqtt;

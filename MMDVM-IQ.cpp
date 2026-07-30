@@ -35,64 +35,6 @@
 #include <pwd.h>
 #endif
 
-// Global variables
-// MMDVM_STATE m_modemState = MMDVM_STATE::IDLE;
-
-// bool m_dstarEnable  = true;
-// bool m_dmrEnable    = true;
-// bool m_ysfEnable    = true;
-// bool m_p25Enable    = true;
-// bool m_nxdnEnable   = true;
-// bool m_pocsagEnable = true;
-// bool m_fmEnable     = true;
-
-// bool m_duplex = true;
-
-// bool m_tx  = false;
-// bool m_dcd = false;
-
-// #if defined(MODE_DSTAR)
-// CDStarRX dstarRX;
-// CDStarTX dstarTX;
-// #endif
-
-// #if defined(MODE_DMR)
-// CDMRIdleRX dmrIdleRX;
-// CDMRRX dmrRX;
-// CDMRTX dmrTX;
-
-// CDMRDMORX dmrDMORX;
-// CDMRDMOTX dmrDMOTX;
-// #endif
-
-// #if defined(MODE_YSF)
-// CYSFRX ysfRX;
-// CYSFTX ysfTX;
-// #endif
-
-// #if defined(MODE_P25)
-// CP25RX p25RX;
-// CP25TX p25TX;
-// #endif
-
-// #if defined(MODE_NXDN)
-// CNXDNRX nxdnRX;
-// CNXDNTX nxdnTX;
-// #endif
-
-// #if defined(MODE_POCSAG)
-// CPOCSAGTX  pocsagTX;
-// #endif
-
-// #if defined(MODE_FM)
-// CFM    fm;
-// #endif
-
-// CCWIdTX cwIdTX;
-
-// CSerialPort serial;
-// CIO io;
-
 #if defined(_WIN32) || defined(_WIN64)
 const char* DEFAULT_INI_FILE = "MMDVM-IQ.ini";
 #else
@@ -183,48 +125,6 @@ CMMDVMIQ::~CMMDVMIQ()
 {
 }
 
-static void setupIO(CIO* io) {
-    CModem& modem = io->getModem();
-
-    modem.cwIdTX.setIO(io);
-
-#if defined(MODE_DMR)
-    modem.dmrDMORX.setIO(io);
-    modem.dmrDMOTX.setIO(io);
-    modem.dmrRX.setIO(io);
-    modem.dmrTX.setIO(io);
-    modem.dmrIdleRX.setIO(io);
-#endif
-
-#if defined(MODE_DSTAR)
-    modem.dstarRX.setIO(io);
-    modem.dstarTX.setIO(io);
-#endif
-
-#if defined(MODE_YSF)
-    modem.ysfRX.setIO(io);
-    modem.ysfTX.setIO(io);
-#endif
-
-#if defined(MODE_P25)
-    modem.p25RX.setIO(io);
-    modem.p25TX.setIO(io);
-#endif
-
-#if defined(MODE_NXDN)
-    modem.nxdnRX.setIO(io);
-    modem.nxdnTX.setIO(io);
-#endif
-
-#if defined(MODE_FM)
-    modem.fm.setIO(io);
-#endif
-
-#if defined(MODE_POCSAG)
-    modem.pocsagTX.setIO(io);
-#endif
-}
-
 int CMMDVMIQ::run()
 {
     bool ret = m_conf.read();
@@ -306,14 +206,9 @@ int CMMDVMIQ::run()
 
     CIO* io = new CIO;
 
-    CModem* modem = new CModem;
-    io->setModem(modem);
-
     CSerialPort *serial = new CSerialPort;
     io->setSerial(serial);
     serial->setIO(io);
-
-    setupIO(io);
 
     ret = serial->start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
                             m_conf.getNetworkHostAddress(), m_conf.getNetworkHostPort(),
@@ -343,48 +238,50 @@ int CMMDVMIQ::run()
 
         io->process();
 
+        CModem& modem = io->getModem();
+
         // The following are for transmitting
 #if defined(MODE_DSTAR)
-        if (modem->m_dstarEnable && modem->m_modemState == MMDVM_STATE::DSTAR)
-            modem->dstarTX.process();
+        if (modem.m_dstarEnable && modem.m_modemState == MMDVM_STATE::DSTAR)
+            modem.dstarTX.process();
 #endif
 
 #if defined(MODE_DMR)
-        if (modem->m_dmrEnable && modem->m_modemState == MMDVM_STATE::DMR) {
-            if (modem->m_duplex)
-                modem->dmrTX.process();
+        if (modem.m_dmrEnable && modem.m_modemState == MMDVM_STATE::DMR) {
+            if (modem.m_duplex)
+                modem.dmrTX.process();
             else
-                modem->dmrDMOTX.process();
+                modem.dmrDMOTX.process();
         }
 #endif
 
 #if defined(MODE_YSF)
-        if (modem->m_ysfEnable && modem->m_modemState == MMDVM_STATE::YSF)
-            modem->ysfTX.process();
+        if (modem.m_ysfEnable && modem.m_modemState == MMDVM_STATE::YSF)
+            modem.ysfTX.process();
 #endif
 
 #if defined(MODE_P25)
-        if (modem->m_p25Enable && modem->m_modemState == MMDVM_STATE::P25)
-            modem->p25TX.process();
+        if (modem.m_p25Enable && modem.m_modemState == MMDVM_STATE::P25)
+            modem.p25TX.process();
 #endif
 
 #if defined(MODE_NXDN)
-        if (modem->m_nxdnEnable && modem->m_modemState == MMDVM_STATE::NXDN)
-           modem->nxdnTX.process();
+        if (modem.m_nxdnEnable && modem.m_modemState == MMDVM_STATE::NXDN)
+           modem.nxdnTX.process();
 #endif
 
 #if defined(MODE_POCSAG)
-        if (modem->m_pocsagEnable && (modem->m_modemState == MMDVM_STATE::POCSAG || modem->pocsagTX.busy()))
-           modem->pocsagTX.process();
+        if (modem.m_pocsagEnable && (modem.m_modemState == MMDVM_STATE::POCSAG || modem.pocsagTX.busy()))
+           modem.pocsagTX.process();
 #endif
 
 #if defined(MODE_FM)
-        if (modem->m_fmEnable && modem->m_modemState == MMDVM_STATE::FM)
-           modem->fm.process();
+        if (modem.m_fmEnable && modem.m_modemState == MMDVM_STATE::FM)
+           modem.fm.process();
 #endif
 
-        if (modem->m_modemState == MMDVM_STATE::IDLE)
-            modem->cwIdTX.process();
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
+            modem.cwIdTX.process();
 
         CThread::sleep(1U);
     }
@@ -394,9 +291,8 @@ int CMMDVMIQ::run()
     io->stop();
     serial->stop();
 
-    delete io;
     delete serial;
-    delete modem;
+    delete io;
 
     return 0;
 }

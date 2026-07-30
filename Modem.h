@@ -86,10 +86,45 @@ public:
     CCWIdTX cwIdTX;
 
     ///////////////////////////////////////////////////////////////////////////
+    //
+    CModem(CIO* io) {
+#if defined(MODE_DMR)
+        this->dmrDMORX.setIO(io);
+        this->dmrDMOTX.setIO(io);
+        this->dmrRX.setIO(io);
+        this->dmrTX.setIO(io);
+        this->dmrIdleRX.setIO(io);
+#endif
 
-    // CIO* m_io = nullptr;
+#if defined(MODE_DSTAR)
+        this->dstarRX.setIO(io);
+        this->dstarTX.setIO(io);
+#endif
 
-    CModem() {
+#if defined(MODE_YSF)
+        this->ysfRX.setIO(io);
+        this->ysfTX.setIO(io);
+#endif
+
+#if defined(MODE_P25)
+        this->p25RX.setIO(io);
+        this->p25TX.setIO(io);
+#endif
+
+#if defined(MODE_NXDN)
+        this->nxdnRX.setIO(io);
+        this->nxdnTX.setIO(io);
+#endif
+
+#if defined(MODE_FM)
+        this->fm.setIO(io);
+#endif
+
+#if defined(MODE_POCSAG)
+        this->pocsagTX.setIO(io);
+#endif
+
+        this->cwIdTX.setIO(io);
     }
 
     ~CModem() {
@@ -107,6 +142,7 @@ public:
         return m_modemState == state;
     }
 
+#if 0
     void setModeEnable(MMDVM_STATE mode, bool enabled) {
         switch (mode) {
             case MMDVM_STATE::DSTAR:
@@ -169,6 +205,8 @@ public:
                 return false;
         }
     }
+#endif
+
 };
 
 #endif

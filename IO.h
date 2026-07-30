@@ -46,10 +46,9 @@ public:
   void setMode(MMDVM_STATE state);
 
   void setSerial(CSerialPort* serial) { m_serial = serial; };
-  void setModem(CModem* modem) { m_modem = modem; };
 
   CSerialPort& getSerial() { return *m_serial; };
-  CModem& getModem() { return *m_modem; };
+  CModem& getModem() { return *m_modemCtx; };
 
   void createSDRDevice(CConf* conf);
   ISDRDevice& getSDRDevice() { return *m_sdrDevice; };
@@ -58,7 +57,7 @@ public:
   uint8_t setParameters();
 
 private:
-  CModem*               m_modem = nullptr;
+  CModem*               m_modemCtx;
   CSerialPort*          m_serial = nullptr;
   ISDRDevice*           m_sdrDevice;
   bool                  m_trace;

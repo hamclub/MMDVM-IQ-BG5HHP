@@ -105,6 +105,7 @@ const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
 
 CIO::CIO() :
+m_modemCtx(nullptr),
 m_sdrDevice(nullptr),
 m_trace(false),
 m_started(false),
@@ -146,6 +147,9 @@ m_pocsagFreq(0U),
 m_rxGain(50.0F),
 m_txGain(30.0F)
 {
+  // context for current modem's states
+  m_modemCtx = new CModem(this);
+
 #if defined(USE_DCBLOCKER)
   ::memset(m_dcState, 0x00U, 4U * sizeof(q31_t));
   m_dcFilter.numStages = DC_FILTER_STAGES;
@@ -206,6 +210,7 @@ m_txGain(30.0F)
 CIO::~CIO()
 {
   delete m_sdrDevice;
+  delete m_modemCtx;
 }
 
 bool CIO::start(bool trace)
