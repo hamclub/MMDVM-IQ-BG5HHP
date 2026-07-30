@@ -20,6 +20,9 @@
 
 #include "MMDVM-IQ.h"
 #include "Modem.h"
+#include "SDRMulti.h"
+#include "SDRSoapy.h"
+#include "SDRSoapyMulti.h"
 #include "Config.h"
 #include "Globals.h"
 #include "Version.h"
@@ -44,6 +47,8 @@ const char* DEFAULT_INI_FILE = "/etc/MMDVM-IQ.ini";
 static bool m_killed = false;
 static int  m_signal = 0;
 static bool m_reload = false;
+
+static const uint8_t  MAX_MMDVM_MODEMS = 4;     // max 4 mmdvm-iq modems currently
 
 #if !defined(_WIN32) && !defined(_WIN64)
 static void sigHandler1(int signum)
@@ -204,95 +209,106 @@ int CMMDVMIQ::run()
     ::LogInitialiseFile(m_conf.getDaemon(), m_conf.getLogFilePath().c_str(), m_conf.getLogFileRoot().c_str(), m_conf.getLogFileLevel(), m_conf.getLogDisplayLevel(), logUTC);
 #endif
 
-    CIO* io = new CIO;
-
-    CSerialPort *serial = new CSerialPort;
-    io->setSerial(serial);
-    serial->setIO(io);
-
-    ret = serial->start(m_conf.getNetworkLocalAddress(), m_conf.getNetworkLocalPort(),
-                            m_conf.getNetworkHostAddress(), m_conf.getNetworkHostPort(),
-                            m_conf.getNetworkTrace());
-    if (!ret) {
-        LogError("Unable to open the host network connection");
-        return 1;
-    }
-
     uint8_t ver = m_conf.getModemVersion();
     LogMessage("Modem version: %u", ver);
-    serial->setVersion(ver);
 
-    io->createSDRDevice(&m_conf);
+    // Create the SDR device singleton
+    unsigned int activeModems = 1;
 
-    ret = io->start(m_conf.getModemTrace());
-    if (!ret) {
-        LogError("Unable to open the modem");
+    ISDRDevice *sdrDevice = nullptr;
+
+    if (m_conf.getMultiModem()) {
+        LogDebug("MultiModem network mode enabled");
+        activeModems = 1;
+        sdrDevice = new CSDRMulti(&m_conf);
+    } else {
+#if defined(USE_SOAPY_MULTI)
+        activeModems = m_conf.getActiveChannels();
+        if (activeModems > MAX_MMDVM_MODEMS)
+            activeModems = MAX_MMDVM_MODEMS;
+
+        if (activeModems < 1)
+            activeModems = 1;
+
+        sdrDevice = new CSDRSoapyMulti(&m_conf);
+
+#elif defined(USE_SOAPY)
+        activeModems = 1;
+        sdrDevice = new CSDRSoapy(&m_conf);
+
+#else
+        ::LogFatal("The SoapySDR interface isn't supported in this build");
         return 1;
+#endif
+    }
+
+    if (activeModems > 1)
+        LogInfo("Multi Channels/Modems: %u", activeModems);
+
+    // Create multi modem instances
+    CIO* modems[MAX_MMDVM_MODEMS];
+    ::memset(modems, 0, sizeof(modems));
+
+    for (unsigned int i = 0; i < activeModems; i++) {
+        CIO* io = new CIO(i);
+
+        // start serial/host
+        CSerialPort& serial = io->getSerial();
+        serial.setVersion(ver);
+
+        std::string localAddress = m_conf.getNetworkLocalAddress();
+        unsigned short localPort = m_conf.getNetworkLocalPort() + i;
+        std::string hostAddress  = m_conf.getNetworkHostAddress();
+        unsigned short hostPort  = m_conf.getNetworkHostPort() + i;
+
+        ret = serial.start(localAddress, localPort, hostAddress, hostPort, m_conf.getNetworkTrace());
+
+        if (!ret) {
+            LogError("Unable to open the host network connection for modem[%u]", i);
+            return 1;
+        }
+
+        // start io/sdr
+        sdrDevice->setIO(io, i);
+        io->setSDRDevice(sdrDevice);
+
+        ret = io->start(m_conf.getModemTrace());
+        if (!ret) {
+            LogError("Unable to open the modem");
+            return 1;
+        }
+
+        modems[i] = io;
     }
 
     LogInfo("MMDVM-IQ-%s is starting", VERSION);
     LogInfo("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
 
     while (!m_killed) {
-        serial->process();
 
-        io->process();
+      for (unsigned int i = 0; i < activeModems; i ++) {
+        modems[i]->process();
+      }
 
-        CModem& modem = io->getModem();
-
-        // The following are for transmitting
-#if defined(MODE_DSTAR)
-        if (modem.m_dstarEnable && modem.m_modemState == MMDVM_STATE::DSTAR)
-            modem.dstarTX.process();
-#endif
-
-#if defined(MODE_DMR)
-        if (modem.m_dmrEnable && modem.m_modemState == MMDVM_STATE::DMR) {
-            if (modem.m_duplex)
-                modem.dmrTX.process();
-            else
-                modem.dmrDMOTX.process();
-        }
-#endif
-
-#if defined(MODE_YSF)
-        if (modem.m_ysfEnable && modem.m_modemState == MMDVM_STATE::YSF)
-            modem.ysfTX.process();
-#endif
-
-#if defined(MODE_P25)
-        if (modem.m_p25Enable && modem.m_modemState == MMDVM_STATE::P25)
-            modem.p25TX.process();
-#endif
-
-#if defined(MODE_NXDN)
-        if (modem.m_nxdnEnable && modem.m_modemState == MMDVM_STATE::NXDN)
-           modem.nxdnTX.process();
-#endif
-
-#if defined(MODE_POCSAG)
-        if (modem.m_pocsagEnable && (modem.m_modemState == MMDVM_STATE::POCSAG || modem.pocsagTX.busy()))
-           modem.pocsagTX.process();
-#endif
-
-#if defined(MODE_FM)
-        if (modem.m_fmEnable && modem.m_modemState == MMDVM_STATE::FM)
-           modem.fm.process();
-#endif
-
-        if (modem.m_modemState == MMDVM_STATE::IDLE)
-            modem.cwIdTX.process();
-
-        CThread::sleep(1U);
+      CThread::sleep(1U);
     }
 
     LogInfo("MMDVM-IQ is stopping");
 
-    io->stop();
-    serial->stop();
+    for (unsigned int i = 0; i < activeModems; i++) {
+        CIO* io = modems[i];
+        io->stop();
+    }
 
-    delete serial;
-    delete io;
+    CThread::sleep(250U);
+
+    for (unsigned int i = 0; i < activeModems; i++) {
+        CIO* io = modems[i];
+        delete io;
+        modems[i] = nullptr;
+    }
+
+    delete sdrDevice;
 
     return 0;
 }

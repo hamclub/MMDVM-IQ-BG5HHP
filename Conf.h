@@ -52,8 +52,11 @@ public:
 	// The Modem section
 	std::string  getModemType() const;
 	std::string  getModemURI() const;
+	std::string  getRxAntenna() const;
+	std::string  getTxAntenna() const;
 	unsigned int getRxGain() const;
 	unsigned int getTxGain() const;
+	unsigned int getActiveChannels() const;
 	bool         getModemTrace() const;
 
 	unsigned char getModemVersion() const;
@@ -94,8 +97,11 @@ private:
 
 	std::string  m_modemType;
 	std::string  m_modemURI;
+	std::string  m_rxAntenna;
+	std::string  m_txAntenna;
 	unsigned int m_rxGain;
 	unsigned int m_txGain;
+	unsigned int m_activeChannels;
 	bool         m_modemTrace;
     unsigned char m_modemVersion;
 

@@ -53,6 +53,11 @@ m_mqttUsername(),
 m_mqttPassword(),
 m_modemType("sx"),
 m_modemURI(),
+m_rxAntenna(),
+m_txAntenna(),
+m_rxGain(0),
+m_txGain(0),
+m_activeChannels(1),
 m_modemTrace(false),
 m_modemVersion(1),
 m_networkHostAddress("127.0.0.1"),
@@ -167,10 +172,16 @@ bool CConf::read()
 				m_modemType = value;
 			else if (::strcmp(key, "URI") == 0)
 				m_modemURI = value;
+			else if (::strcmp(key, "RxAntenna") == 0)
+				m_rxAntenna = value;
+			else if (::strcmp(key, "TxAntenna") == 0)
+				m_txAntenna = value;
 			else if (::strcmp(key, "RxGain") == 0)
 				m_rxGain = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "TxGain") == 0)
 				m_txGain = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "ActiveChannels") == 0)
+				m_activeChannels = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Version") == 0)
 				m_modemVersion = ::atoi(value);
 		} else if (section == SECTION::MMDVM_HOST) {
@@ -278,6 +289,16 @@ std::string CConf::getModemURI() const
 	return m_modemURI;
 }
 
+std::string CConf::getRxAntenna() const
+{
+	return m_rxAntenna;
+}
+
+std::string CConf::getTxAntenna() const
+{
+	return m_txAntenna;
+}
+
 unsigned int CConf::getRxGain() const
 {
 	return m_rxGain;
@@ -286,6 +307,10 @@ unsigned int CConf::getRxGain() const
 unsigned int CConf::getTxGain() const
 {
 	return m_txGain;
+}
+
+unsigned int CConf::getActiveChannels() const {
+	return m_activeChannels;
 }
 
 unsigned char CConf::getModemVersion() const

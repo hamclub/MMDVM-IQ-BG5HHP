@@ -104,7 +104,7 @@ const unsigned int SAMPLES_TO_NETWORK = 720U;
 const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
 
-CIO::CIO() :
+CIO::CIO(unsigned int ch) :
 m_modemCtx(nullptr),
 m_sdrDevice(nullptr),
 m_trace(false),
@@ -149,6 +149,9 @@ m_txGain(30.0F)
 {
   // context for current modem's states
   m_modemCtx = new CModem(this);
+  m_modemCtx->m_channel = ch;
+
+  m_serial = new CSerialPort(this);
 
 #if defined(USE_DCBLOCKER)
   ::memset(m_dcState, 0x00U, 4U * sizeof(q31_t));
@@ -209,7 +212,7 @@ m_txGain(30.0F)
 
 CIO::~CIO()
 {
-  delete m_sdrDevice;
+  delete m_serial;
   delete m_modemCtx;
 }
 
@@ -222,7 +225,7 @@ bool CIO::start(bool trace)
 
   assert(m_sdrDevice);
 
-  m_started = m_sdrDevice->start(trace);
+  m_started = (m_modemCtx->m_channel == 0) ? m_sdrDevice->start(trace) : true;
 
   setMode(MMDVM_STATE::IDLE);
 
@@ -231,13 +234,78 @@ bool CIO::start(bool trace)
 
 void CIO::stop()
 {
-  if (m_sdrDevice)
+  this->stopSDR();
+
+  if (m_serial)
+    m_serial->stop();
+}
+
+void CIO::stopSDR()
+{
+  assert(m_sdrDevice);
+
+  if (m_modemCtx->m_channel == 0)
     m_sdrDevice->stop();
 
   m_started = false;
 }
 
-void CIO::process(bool networkData)
+void CIO::process()
+{
+  CSerialPort& serial = this->getSerial();
+  CModem& modem = this->getModem();
+
+  // Polling udp data from MMDVMhost
+  serial.process();
+
+  // Processing demod
+  this->processSDR();
+
+  // The following are for transmitting
+#if defined(MODE_DSTAR)
+  if (modem.m_dstarEnable && modem.m_modemState == MMDVM_STATE::DSTAR)
+      modem.dstarTX.process();
+#endif
+
+#if defined(MODE_DMR)
+  if (modem.m_dmrEnable && modem.m_modemState == MMDVM_STATE::DMR) {
+      if (modem.m_duplex)
+          modem.dmrTX.process();
+      else
+          modem.dmrDMOTX.process();
+  }
+#endif
+
+#if defined(MODE_YSF)
+  if (modem.m_ysfEnable && modem.m_modemState == MMDVM_STATE::YSF)
+      modem.ysfTX.process();
+#endif
+
+#if defined(MODE_P25)
+  if (modem.m_p25Enable && modem.m_modemState == MMDVM_STATE::P25)
+      modem.p25TX.process();
+#endif
+
+#if defined(MODE_NXDN)
+  if (modem.m_nxdnEnable && modem.m_modemState == MMDVM_STATE::NXDN)
+      modem.nxdnTX.process();
+#endif
+
+#if defined(MODE_POCSAG)
+  if (modem.m_pocsagEnable && (modem.m_modemState == MMDVM_STATE::POCSAG || modem.pocsagTX.busy()))
+      modem.pocsagTX.process();
+#endif
+
+#if defined(MODE_FM)
+  if (modem.m_fmEnable && modem.m_modemState == MMDVM_STATE::FM)
+      modem.fm.process();
+#endif
+
+  if (modem.m_modemState == MMDVM_STATE::IDLE)
+      modem.cwIdTX.process();
+}
+
+void CIO::processSDR()
 {
   if (!m_started)
     return;
@@ -245,7 +313,7 @@ void CIO::process(bool networkData)
   if (!m_sdrDevice)
     return;
 
-  m_sdrDevice->process();
+  m_sdrDevice->process(m_modemCtx->m_channel);
 
   q15_t    samples[RX_BLOCK_SIZE];
   uint8_t  control[RX_BLOCK_SIZE];
@@ -253,7 +321,7 @@ void CIO::process(bool networkData)
 
   CModem& modem = getModem();
 
-  while (m_sdrDevice->read(modem.m_modemState, samples, rssi, control) == RX_BLOCK_SIZE) {
+  while (m_sdrDevice->read(modem.m_modemState, samples, rssi, control, modem.m_channel) == RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       q31_t res2 = samples[i] * LEVEL_50PC_INVERTED;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
@@ -457,37 +525,6 @@ void CIO::process(bool networkData)
   }
 }
 
-void CIO::createSDRDevice(CConf* conf) {
-  if (conf->getMultiModem()) {
-    CSDRMulti* multi = new CSDRMulti;
-    multi->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
-                      conf->getMultiModemAddress(), conf->getMultiModemPort());
-    multi->setIO(this);
-    delete m_sdrDevice;
-    m_sdrDevice = multi;
-
-    return;
-  }
-
-#if defined(USE_SOAPY_MULTI)
-  CSDRSoapyMulti* soapy = new CSDRSoapyMulti(conf);
-  soapy->setIO(this);
-  delete m_sdrDevice;
-  m_sdrDevice = soapy;
-
-#elif defined(USE_SOAPY)
-  CSDRSoapy* soapy = new CSDRSoapy(conf);
-  soapy->setIO(this);
-  delete m_sdrDevice;
-  m_sdrDevice = soapy;
-
-#else
-  ::LogFatal("The SoapySDR interface isn't supported in this build");
-  assert(m_sdrDevice);
-
-#endif
-}
-
 void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
 {
   assert(samples != nullptr);
@@ -497,12 +534,15 @@ void CIO::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const u
     return;
 
   if (m_sdrDevice)
-    m_sdrDevice->write(mode, samples, length, control);
+    m_sdrDevice->write(mode, samples, length, control, m_modemCtx->m_channel);
 }
 
 uint16_t CIO::getSpace() const
 {
-  return m_sdrDevice ? m_sdrDevice->getSpace() : 0;
+  if (!m_sdrDevice)
+    return 0;
+
+  return m_sdrDevice->getTXSpace(m_modemCtx->m_channel);
 }
 
 void CIO::setMode(MMDVM_STATE state)
@@ -512,10 +552,16 @@ void CIO::setMode(MMDVM_STATE state)
 
 uint8_t CIO::setParameters()
 {
-  return m_sdrDevice ? m_sdrDevice->setParameters() : 0;
+  assert(m_sdrDevice);
+
+  // only apply parameters on channel 0
+  return (m_modemCtx->m_channel == 0) ? m_sdrDevice->setParameters() : 0;
 }
 
 uint8_t CIO::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-  return m_sdrDevice ? m_sdrDevice->setFrequency(power, txFreq, rxFreq, pocsagFreq) : 0;
+  assert(m_sdrDevice);
+
+  // only setup frequency on channel 0
+  return (m_modemCtx->m_channel == 0) ? m_sdrDevice->setFrequency(power, txFreq, rxFreq, pocsagFreq) : 0;
 }

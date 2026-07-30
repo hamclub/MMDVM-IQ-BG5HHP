@@ -28,7 +28,7 @@ class CIO;
 
 class CSerialPort {
 public:
-  CSerialPort();
+  CSerialPort(CIO* io);
   ~CSerialPort();
 
   bool start(const std::string& myAddress, unsigned short myPort, const std::string& hostAddress, unsigned short hostPort, bool debug);
@@ -72,7 +72,6 @@ public:
   void writeFMEOT();
 #endif
 
-  void setIO(CIO* io) { m_io = io; };
   CIO& getIO() { return *m_io; };
 
   void setVersion(unsigned char version) { m_version = version; };

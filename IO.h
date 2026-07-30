@@ -28,16 +28,18 @@ class CSerialPort;
 
 class CIO {
 public:
-  CIO();
+  CIO(unsigned int ch);
   ~CIO();
 
   bool start(bool trace);
 
-  void process(bool networkData=false);
+  void process();
 
-  void processMultiNetwork() {};
+  void processSDR();
 
   void stop();
+
+  void stopSDR();
 
   void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL);
 
@@ -45,12 +47,10 @@ public:
 
   void setMode(MMDVM_STATE state);
 
-  void setSerial(CSerialPort* serial) { m_serial = serial; };
-
   CSerialPort& getSerial() { return *m_serial; };
   CModem& getModem() { return *m_modemCtx; };
 
-  void createSDRDevice(CConf* conf);
+  void setSDRDevice(ISDRDevice* sdrDevice) { m_sdrDevice = sdrDevice; };
   ISDRDevice& getSDRDevice() { return *m_sdrDevice; };
   
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);

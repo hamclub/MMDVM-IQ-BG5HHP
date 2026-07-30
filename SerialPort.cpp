@@ -112,8 +112,8 @@ const uint8_t PROTOCOL_VERSION   = 2U;
 const int      MAX_SERIAL_DATA  = 250;
 const uint16_t MAX_SERIAL_COUNT = 100U;
 
-CSerialPort::CSerialPort() :
-m_io(nullptr),
+CSerialPort::CSerialPort(CIO* io) :
+m_io(io),
 m_buffer(),
 m_ptr(0U),
 m_len(0U),
@@ -1083,35 +1083,35 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 
 void CSerialPort::setMode(MMDVM_STATE modemState)
 {
-  switch (modemState) {
-    case MMDVM_STATE::DSTAR:
-      LogMessage("Mode set to D-Star");
-      break;
-    case MMDVM_STATE::DMR:
-      LogMessage("Mode set to DMR");
-      break;
-    case MMDVM_STATE::YSF:
-      LogMessage("Mode set to System Fusion");
-      break;
-    case MMDVM_STATE::P25:
-      LogMessage("Mode set to P25");
-      break;
-    case MMDVM_STATE::NXDN:
-      LogMessage("Mode set to NXDN");
-      break;
-    case MMDVM_STATE::POCSAG:
-      LogMessage("Mode set to POCSAG");
-      break;
-    case MMDVM_STATE::FM:
-      LogMessage("Mode set to FM");
-      break;
-    default:        // MMDVM_STATE::IDLE
-      LogMessage("Mode set to Idle");
-      break;
-  }
-
   CModem& modem = m_io->getModem();
 
+  switch (modemState) {
+    case MMDVM_STATE::DSTAR:
+      LogMessage("Mode set to D-Star, ch %u", modem.m_channel);
+      break;
+    case MMDVM_STATE::DMR:
+      LogMessage("Mode set to DMR, ch %u", modem.m_channel);
+      break;
+    case MMDVM_STATE::YSF:
+      LogMessage("Mode set to System Fusion, ch %u", modem.m_channel);
+      break;
+    case MMDVM_STATE::P25:
+      LogMessage("Mode set to P25, ch %u", modem.m_channel);
+      break;
+    case MMDVM_STATE::NXDN:
+      LogMessage("Mode set to NXDN, ch %u", modem.m_channel);
+      break;
+    case MMDVM_STATE::POCSAG:
+      LogMessage("Mode set to POCSAG, ch %u", modem.m_channel);
+      break;
+    case MMDVM_STATE::FM:
+      LogMessage("Mode set to FM, ch %u", modem.m_channel);
+      break;
+    default:        // MMDVM_STATE::IDLE
+      LogMessage("Mode set to Idle, ch %u", modem.m_channel);
+      break;
+  }
+  
 #if defined(MODE_DSTAR)
   if (modemState != MMDVM_STATE::DSTAR)
     modem.dstarRX.reset();
