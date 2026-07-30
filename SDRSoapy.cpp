@@ -136,8 +136,10 @@ void CSDRSoapy::stop()
   m_soapyInit = false;
 }
 
-void CSDRSoapy::process()
+void CSDRSoapy::process(unsigned int ch)
 {
+  (void) ch;
+
   if (!m_started)
     return;
 
@@ -278,7 +280,10 @@ void CSDRSoapy::processIQBlock()
   });
 }
 
-int CSDRSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control) {
+int CSDRSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch)
+{
+  (void)ch;
+
   if (m_rxBuffer.dataSize() >= RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       RXSample rxSample;
@@ -294,8 +299,9 @@ int CSDRSoapy::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* c
   return 0;
 }
 
-void CSDRSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
+void CSDRSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control, unsigned int ch)
 {
+  (void)ch;
   assert(samples != nullptr);
   assert(length > 0U);
 
@@ -343,8 +349,9 @@ void CSDRSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
   }
 }
 
-uint16_t CSDRSoapy::getSpace() const
+uint16_t CSDRSoapy::getTXSpace(unsigned int ch) const
 {
+  (void)ch;
   return m_txBuffer.freeSpace();
 }
 
@@ -363,6 +370,13 @@ void CSDRSoapy::setTXFrequency(bool pocsag)
       return;
     }
   }
+}
+
+void CSDRSoapy::setIO(CIO* io, unsigned int ch) {
+  if (ch > 0)
+    return;
+
+  m_io = io;
 }
 
 uint8_t CSDRSoapy::setParameters()

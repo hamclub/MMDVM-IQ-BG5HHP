@@ -22,6 +22,7 @@
 #include "Config.h"
 
 #include "SDRMulti.h"
+#include "Conf.h"
 
 #include <cstdio>
 #include <cassert>
@@ -35,7 +36,7 @@ const q15_t LEVEL_100PC         =  255 * 128;
 const unsigned int SAMPLES_TO_NETWORK = 720U;
 const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
-CSDRMulti::CSDRMulti() :
+CSDRMulti::CSDRMulti(CConf* conf) :
 m_trace(false),
 m_rxNetworkBuffer(721U, "MMDVM-Multi RX Buffer"),
 m_txNetworkBuffer(722U, "MMDVM-Multi TX Buffer"),
@@ -53,6 +54,8 @@ m_rxGain(50.0F),
 m_txGain(30.0F),
 m_pocsag(false)
 {
+  this->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
+                        conf->getMultiModemAddress(), conf->getMultiModemPort());
 }
 
 CSDRMulti::~CSDRMulti()
@@ -100,8 +103,10 @@ int CSDRMulti::readRXSamples(RXSample* rxSamples) {
   return 0;
 }
 
-void CSDRMulti::process()
+void CSDRMulti::process(unsigned int ch)
 {
+  (void) ch;
+
   CModem& modem = getIO().getModem();
 
   // TX flag reset timer
@@ -186,7 +191,9 @@ void CSDRMulti::process()
   }
 }
 
-int CSDRMulti::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control) {
+int CSDRMulti::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch) {
+  (void) ch;
+
   RXSample rxSamples[2];
 
   if (this->readRXSamples(rxSamples) == RX_BLOCK_SIZE) {
@@ -202,10 +209,12 @@ int CSDRMulti::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* c
   return 0;
 }
 
-void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control)
+void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control, unsigned int ch)
 {
   assert(samples != nullptr);
   assert(length > 0U);
+
+  (void) ch;
 
   CModem& modem = getIO().getModem();
 
@@ -242,8 +251,9 @@ void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
   // LogDebug("SDRMulti - write %u mode data %u, space left %u", (int)mode, length, m_txNetworkBuffer.freeSpace());
 }
 
-uint16_t CSDRMulti::getSpace() const
+uint16_t CSDRMulti::getTXSpace(unsigned int ch) const
 {
+  (void)ch;
   return m_txNetworkBuffer.freeSpace();
 }
 
@@ -257,6 +267,13 @@ void CSDRMulti::setTXFrequency(bool pocsag)
 uint8_t CSDRMulti::setParameters()
 {
   return 0U;
+}
+
+void CSDRMulti::setIO(CIO* io, unsigned int ch) {
+  if (ch > 0)
+    return;
+
+  m_io = io;
 }
 
 void CSDRMulti::setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)

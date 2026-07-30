@@ -34,20 +34,23 @@
 #pragma GCC diagnostic pop
 #endif
 
+class CIO;
 class ISDRDevice {
 public:
   virtual ~ISDRDevice() {};
 
   virtual bool start(bool trace) = 0;
 
-  virtual void process() = 0;
+  virtual void process(unsigned int ch) = 0;
 
   virtual void stop() = 0;
 
-  virtual void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL)  = 0;
-  virtual int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control)  = 0;
+  virtual void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control, unsigned int ch)  = 0;
+  virtual int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch)  = 0;
 
-  virtual uint16_t getSpace() const  = 0;
+  virtual void setIO(CIO* io, unsigned int ch) = 0;
+
+  virtual uint16_t getTXSpace(unsigned int ch) const  = 0;
 
   virtual uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)  = 0;
   virtual uint8_t setParameters()  = 0;
