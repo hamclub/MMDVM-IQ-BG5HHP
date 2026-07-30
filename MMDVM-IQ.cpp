@@ -252,27 +252,12 @@ int CMMDVMIQ::run()
     for (unsigned int i = 0; i < activeModems; i++) {
         CIO* io = new CIO(i);
 
-        // start serial/host
-        CSerialPort& serial = io->getSerial();
-        serial.setVersion(ver);
-
-        std::string localAddress = m_conf.getNetworkLocalAddress();
-        unsigned short localPort = m_conf.getNetworkLocalPort() + i;
-        std::string hostAddress  = m_conf.getNetworkHostAddress();
-        unsigned short hostPort  = m_conf.getNetworkHostPort() + i;
-
-        ret = serial.start(localAddress, localPort, hostAddress, hostPort, m_conf.getNetworkTrace());
-
-        if (!ret) {
-            LogError("Unable to open the host network connection for modem[%u]", i);
-            return 1;
-        }
-
-        // start io/sdr
+        // setup sdr device
         sdrDevice->setIO(io, i);
         io->setSDRDevice(sdrDevice);
 
-        ret = io->start(m_conf.getModemTrace());
+        // start io(serial,sdr)
+        ret = io->start(&m_conf);
         if (!ret) {
             LogError("Unable to open the modem");
             return 1;

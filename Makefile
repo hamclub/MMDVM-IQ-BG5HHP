@@ -2,6 +2,7 @@
 
 USE_MQTT ?= 0
 USE_SOAPY ?= 1
+USE_SOAPY_MULTI ?= 1
 DEBUG ?= 0
 
 CC       ?= cc
@@ -20,6 +21,12 @@ ifeq ($(USE_SOAPY), 1)
 	CXXFLAGS+= -DUSE_SOAPY=1
 	LIBS+= -lSoapySDR
 endif
+
+ifeq ($(USE_SOAPY_MULTI), 1)
+	CXXFLAGS+= -DUSE_SOAPY_MULTI=1
+	LIBS+= -lSoapySDR -lliquid
+endif
+
 
 ifeq ($(DEBUG), 1)
 	CFLAGS+= -DDEBUG -g

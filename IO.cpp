@@ -216,16 +216,31 @@ CIO::~CIO()
   delete m_modemCtx;
 }
 
-bool CIO::start(bool trace)
+bool CIO::start(CConf* conf)
 {
   if (m_started)
     return true;
 
-  m_trace = trace;
+  unsigned int ch = m_modemCtx->m_channel;
 
+  m_trace = conf->getModemTrace();
+
+  // start sdr device
   assert(m_sdrDevice);
+  m_started = (ch == 0) ? m_sdrDevice->start(m_trace) : true;
 
-  m_started = (m_modemCtx->m_channel == 0) ? m_sdrDevice->start(trace) : true;
+  // start serial
+  assert(m_serial);
+  std::string localAddress = conf->getNetworkLocalAddress();
+  unsigned short localPort = conf->getNetworkLocalPort() + ch;
+  std::string hostAddress  = conf->getNetworkHostAddress();
+  unsigned short hostPort  = conf->getNetworkHostPort() + ch;
+
+  m_serial->setVersion(conf->getModemVersion());
+
+  m_started = m_serial->start(localAddress, localPort, hostAddress, hostPort, conf->getNetworkTrace());
+  if (!m_started)
+    LogError("Unable to open the host network connection for modem[%u]", ch);
 
   setMode(MMDVM_STATE::IDLE);
 

@@ -31,7 +31,7 @@ public:
   CIO(unsigned int ch);
   ~CIO();
 
-  bool start(bool trace);
+  bool start(CConf* conf);
 
   void process();
 
