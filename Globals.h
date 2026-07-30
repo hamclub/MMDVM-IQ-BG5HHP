@@ -81,20 +81,20 @@ const uint16_t TX_RINGBUFFER_SIZE = 240U;
 
 const uint16_t TX_BUFFER_LEN = 4000U;
 
-extern MMDVM_STATE m_modemState;
+// extern MMDVM_STATE m_modemState;
 
-extern bool m_dstarEnable;
-extern bool m_dmrEnable;
-extern bool m_ysfEnable;
-extern bool m_p25Enable;
-extern bool m_nxdnEnable;
-extern bool m_pocsagEnable;
-extern bool m_fmEnable;
+// extern bool m_dstarEnable;
+// extern bool m_dmrEnable;
+// extern bool m_ysfEnable;
+// extern bool m_p25Enable;
+// extern bool m_nxdnEnable;
+// extern bool m_pocsagEnable;
+// extern bool m_fmEnable;
 
-extern bool m_duplex;
+// extern bool m_duplex;
 
-extern bool m_tx;
-extern bool m_dcd;
+// extern bool m_tx;
+// extern bool m_dcd;
 
 // extern CSerialPort serial;
 // extern CIO io;
