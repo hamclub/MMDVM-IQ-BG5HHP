@@ -22,6 +22,7 @@
 #if defined(MODE_DSTAR)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "DStarTX.h"
 
 #include "DStarDefines.h"
@@ -220,7 +221,7 @@ void CDStarTX::process()
   m_buffer.peek(type);
 
   if (type == DSTAR_HEADER && m_poLen == 0U) {
-    if (!m_tx) {
+    if (!getIO().getModem().m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = BIT_SYNC;
     } else {

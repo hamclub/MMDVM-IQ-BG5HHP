@@ -102,20 +102,22 @@ int CSDRMulti::readRXSamples(RXSample* rxSamples) {
 
 void CSDRMulti::process()
 {
+  CModem& modem = getIO().getModem();
+
   // TX flag reset timer
   m_txTimeout.clock();
-  if (m_tx && m_txTimeout.hasExpired()) {
+  if (modem.m_tx && m_txTimeout.hasExpired()) {
     m_txTimeout.stop();
-    m_tx = false;
+    modem.m_tx = false;
   }
 
-  if (m_txNetworkBuffer.hasData() && !m_tx) {
+  if (m_txNetworkBuffer.hasData() && !modem.m_tx) {
     LogMessage("TX OFF");
     m_txNetworkBuffer.clear();  // clear off partial DMR timeslot data so good timing info is present in packet
   }
 
-  if (!m_txNetworkBuffer.hasData() && m_tx) {
-    m_tx = false;
+  if (!m_txNetworkBuffer.hasData() && modem.m_tx) {
+    modem.m_tx = false;
     LogMessage("TX OFF");
   }
 
@@ -205,8 +207,10 @@ void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
   assert(samples != nullptr);
   assert(length > 0U);
 
-  if (!m_tx) {
-      m_tx = true;
+  CModem& modem = getIO().getModem();
+
+  if (!modem.m_tx) {
+      modem.m_tx = true;
       LogMessage("TX ON");
 
       m_txTimeout.start();

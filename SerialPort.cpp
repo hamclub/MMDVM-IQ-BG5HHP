@@ -168,62 +168,64 @@ void CSerialPort::getStatus1() {
 
   reply[3U]  = 0x00U;
 
+  CModem& modem = m_io->getModem();
+
 #if defined(MODE_DSTAR)
-  if (m_dstarEnable)
+  if (modem.m_dstarEnable)
     reply[3U] |= 0x01U;
 #endif
 
 #if defined(MODE_DMR)
-  if (m_dmrEnable)
+  if (modem.m_dmrEnable)
     reply[3U] |= 0x02U;
 #endif
 
 #if defined(MODE_YSF)
-  if (m_ysfEnable)
+  if (modem.m_ysfEnable)
     reply[3U] |= 0x04U;
 #endif
 
 #if defined(MODE_P25)
-  if (m_p25Enable)
+  if (modem.m_p25Enable)
     reply[3U] |= 0x08U;
 #endif
 
   #if defined(MODE_NXDN)
-  if (m_nxdnEnable)
+  if (modem.m_nxdnEnable)
     reply[3U] |= 0x10U;
   #endif
 
   #if defined(MODE_POCSAG)
-  if (m_pocsagEnable)
+  if (modem.m_pocsagEnable)
     reply[3U] |= 0x20U;
   #endif
 
   #if defined(MODE_FM)
-  if (m_fmEnable)
+  if (modem.m_fmEnable)
     reply[3U] |= 0x40U;
   #endif
 
-  reply[4U]  = uint8_t(m_modemState);
+  reply[4U]  = uint8_t(modem.m_modemState);
 
-  reply[5U]  = m_tx  ? 0x01U : 0x00U;
+  reply[5U]  = modem.m_tx  ? 0x01U : 0x00U;
 
-  reply[5U] |= m_dcd ? 0x40U : 0x00U;
+  reply[5U] |= modem.m_dcd ? 0x40U : 0x00U;
 
 #if defined(MODE_DSTAR)
-  if (m_dstarEnable)
-    reply[6U] = m_io->getModem().dstarTX.getSpace();
+  if (modem.m_dstarEnable)
+    reply[6U] = modem.dstarTX.getSpace();
   else
 #endif
     reply[6U] = 0U;
 
 #if defined(MODE_DMR)
-  if (m_dmrEnable) {
-    if (m_duplex) {
-      reply[7U] = m_io->getModem().dmrTX.getSpace1();
-      reply[8U] = m_io->getModem().dmrTX.getSpace2();
+  if (modem.m_dmrEnable) {
+    if (modem.m_duplex) {
+      reply[7U] = modem.dmrTX.getSpace1();
+      reply[8U] = modem.dmrTX.getSpace2();
     } else {
       reply[7U] = 10U;
-      reply[8U] = m_io->getModem().dmrDMOTX.getSpace();
+      reply[8U] = modem.dmrDMOTX.getSpace();
     }
   } else {
     reply[7U] = 0U;
@@ -235,22 +237,22 @@ void CSerialPort::getStatus1() {
 #endif
 
 #if defined(MODE_YSF)
-  if (m_ysfEnable)
-    reply[9U] = m_io->getModem().ysfTX.getSpace();
+  if (modem.m_ysfEnable)
+    reply[9U] = modem.ysfTX.getSpace();
   else
 #endif
     reply[9U] = 0U;
 
 #if defined(MODE_P25)
-  if (m_p25Enable)
-    reply[10U] = m_io->getModem().p25TX.getSpace();
+  if (modem.m_p25Enable)
+    reply[10U] = modem.p25TX.getSpace();
   else
 #endif
     reply[10U] = 0U;
 
 #if defined(MODE_NXDN)
-  if (m_nxdnEnable)
-    reply[11U] = m_io->getModem().nxdnTX.getSpace();
+  if (modem.m_nxdnEnable)
+    reply[11U] = modem.nxdnTX.getSpace();
   else
 #endif
     reply[11U] = 0U;
@@ -259,15 +261,15 @@ void CSerialPort::getStatus1() {
   reply[12U] = 0U;
 
 #if defined(MODE_FM)
-  if (m_fmEnable)
-    reply[13U] = m_io->getModem().fm.getSpace();
+  if (modem.m_fmEnable)
+    reply[13U] = modem.fm.getSpace();
   else
 #endif
     reply[13U] = 0U;
 
 #if defined(MODE_POCSAG)
-  if (m_pocsagEnable)
-    reply[14U] = m_io->getModem().pocsagTX.getSpace();
+  if (modem.m_pocsagEnable)
+    reply[14U] = modem.pocsagTX.getSpace();
   else
 #endif
     reply[14U] =  0U;
@@ -287,6 +289,8 @@ void CSerialPort::getStatus()
     return;
   }
 
+  CModem& modem = m_io->getModem();
+
   uint8_t reply[30U];
 
   // Send all sorts of interesting internal values
@@ -294,17 +298,17 @@ void CSerialPort::getStatus()
   reply[1U]  = 20U;
   reply[2U]  = MMDVM_GET_STATUS;
 
-  reply[3U]  = uint8_t(m_modemState);
+  reply[3U]  = uint8_t(modem.m_modemState);
 
-  reply[4U]  = m_tx ? 0x01U : 0x00U;
+  reply[4U]  = modem.m_tx ? 0x01U : 0x00U;
 
-  reply[4U] |= m_dcd ? 0x40U : 0x00U;
+  reply[4U] |= modem.m_dcd ? 0x40U : 0x00U;
 
   reply[5U] = 0x00U;
 
 #if defined(MODE_DSTAR)
-  if (m_dstarEnable)
-    reply[6U] = m_io->getModem().dstarTX.getSpace();
+  if (modem.m_dstarEnable)
+    reply[6U] = modem.dstarTX.getSpace();
   else
     reply[6U] = 0U;
 #else
@@ -312,13 +316,13 @@ void CSerialPort::getStatus()
 #endif
 
 #if defined(MODE_DMR)
-  if (m_dmrEnable) {
-    if (m_duplex) {
-      reply[7U] = m_io->getModem().dmrTX.getSpace1();
-      reply[8U] = m_io->getModem().dmrTX.getSpace2();
+  if (modem.m_dmrEnable) {
+    if (modem.m_duplex) {
+      reply[7U] = modem.dmrTX.getSpace1();
+      reply[8U] = modem.dmrTX.getSpace2();
     } else {
       reply[7U] = 10U;
-      reply[8U] = m_io->getModem().dmrDMOTX.getSpace();
+      reply[8U] = modem.dmrDMOTX.getSpace();
     }
   } else {
     reply[7U] = 0U;
@@ -330,8 +334,8 @@ void CSerialPort::getStatus()
 #endif
 
 #if defined(MODE_YSF)
-  if (m_ysfEnable)
-    reply[9U] = m_io->getModem().ysfTX.getSpace();
+  if (modem.m_ysfEnable)
+    reply[9U] = modem.ysfTX.getSpace();
   else
     reply[9U] = 0U;
 #else
@@ -339,8 +343,8 @@ void CSerialPort::getStatus()
 #endif
 
 #if defined(MODE_P25)
-  if (m_p25Enable)
-    reply[10U] = m_io->getModem().p25TX.getSpace();
+  if (modem.m_p25Enable)
+    reply[10U] = modem.p25TX.getSpace();
   else
     reply[10U] = 0U;
 #else
@@ -348,8 +352,8 @@ void CSerialPort::getStatus()
 #endif
 
 #if defined(MODE_NXDN)
-  if (m_nxdnEnable)
-    reply[11U] = m_io->getModem().nxdnTX.getSpace();
+  if (modem.m_nxdnEnable)
+    reply[11U] = modem.nxdnTX.getSpace();
   else
     reply[11U] = 0U;
 #else
@@ -359,8 +363,8 @@ void CSerialPort::getStatus()
   reply[12U] = 0U;
 
 #if defined(MODE_FM)
-  if (m_fmEnable)
-    reply[13U] = m_io->getModem().fm.getSpace();
+  if (modem.m_fmEnable)
+    reply[13U] = modem.fm.getSpace();
   else
     reply[13U] = 0U;
 #else
@@ -368,8 +372,8 @@ void CSerialPort::getStatus()
 #endif
 
 #if defined(MODE_POCSAG)
-  if (m_pocsagEnable)
-    reply[14U] = m_io->getModem().pocsagTX.getSpace();
+  if (modem.m_pocsagEnable)
+    reply[14U] = modem.pocsagTX.getSpace();
   else
     reply[14U] = 0U;
 #else
@@ -655,45 +659,47 @@ uint8_t CSerialPort::setConfig1(const uint8_t* data, uint16_t length)
 
   setMode(modemState);
 
-  m_duplex       = !simplex;
+  CModem& modem = m_io->getModem();
+
+  modem.m_duplex       = !simplex;
 
 #if defined(MODE_DSTAR)
-  m_dstarEnable  = dstarEnable;
-  m_io->getModem().dstarTX.setTXDelay(txDelay);
+  modem.m_dstarEnable  = dstarEnable;
+  modem.dstarTX.setTXDelay(txDelay);
 #endif
 #if defined(MODE_DMR)
-  m_dmrEnable    = dmrEnable;
-  m_io->getModem().dmrDMOTX.setTXDelay(txDelay);
+  modem.m_dmrEnable    = dmrEnable;
+  modem.dmrDMOTX.setTXDelay(txDelay);
 
-  m_io->getModem().dmrTX.setTrunking(trunking);
-  m_io->getModem().dmrTX.setColorCode(colorCode);
-  m_io->getModem().dmrRX.setColorCode(colorCode);
-  m_io->getModem().dmrRX.setDelay(dmrDelay);
-  m_io->getModem().dmrDMORX.setColorCode(colorCode);
-  m_io->getModem().dmrIdleRX.setColorCode(colorCode);
+  modem.dmrTX.setTrunking(trunking);
+  modem.dmrTX.setColorCode(colorCode);
+  modem.dmrRX.setColorCode(colorCode);
+  modem.dmrRX.setDelay(dmrDelay);
+  modem.dmrDMORX.setColorCode(colorCode);
+  modem.dmrIdleRX.setColorCode(colorCode);
 #endif
 #if defined(MODE_YSF)
-  m_ysfEnable    = ysfEnable;
-  m_io->getModem().ysfTX.setTXDelay(txDelay);
-  m_io->getModem().ysfTX.setParams(ysfLoDev, ysfTXHang);
+  modem.m_ysfEnable    = ysfEnable;
+  modem.ysfTX.setTXDelay(txDelay);
+  modem.ysfTX.setParams(ysfLoDev, ysfTXHang);
 #endif
 #if defined(MODE_P25)
-  m_p25Enable    = p25Enable;
-  m_io->getModem().p25TX.setTXDelay(txDelay);
-  m_io->getModem().p25TX.setParams(p25TXHang);
+  modem.m_p25Enable    = p25Enable;
+  modem.p25TX.setTXDelay(txDelay);
+  modem.p25TX.setParams(p25TXHang);
 #endif
 #if defined(MODE_NXDN)
-  m_nxdnEnable   = nxdnEnable;
-  m_io->getModem().nxdnTX.setTXDelay(txDelay);
-  m_io->getModem().nxdnTX.setParams(nxdnTXHang);
+  modem.m_nxdnEnable   = nxdnEnable;
+  modem.nxdnTX.setTXDelay(txDelay);
+  modem.nxdnTX.setParams(nxdnTXHang);
 #endif
 #if defined(MODE_POCSAG)
-  m_pocsagEnable = pocsagEnable;
-  m_io->getModem().pocsagTX.setTXDelay(txDelay);
+  modem.m_pocsagEnable = pocsagEnable;
+  modem.pocsagTX.setTXDelay(txDelay);
 #endif
 #if defined(MODE_FM)
-  m_fmEnable     = fmEnable;
-  m_io->getModem().fm.setTXLevel(fmTXLevel);
+  modem.m_fmEnable     = fmEnable;
+  modem.fm.setTXLevel(fmTXLevel);
 #endif
 
   // unused parameters
@@ -840,45 +846,47 @@ uint8_t CSerialPort::setConfig(const uint8_t* data, uint16_t length)
 
   setMode(modemState);
 
-  m_duplex       = !simplex;
+  CModem& modem = m_io->getModem();
+
+  modem.m_duplex       = !simplex;
 
 #if defined(MODE_DSTAR)
-  m_dstarEnable  = dstarEnable;
-  m_io->getModem().dstarTX.setTXDelay(txDelay);
+  modem.m_dstarEnable  = dstarEnable;
+  modem.dstarTX.setTXDelay(txDelay);
 #endif
 #if defined(MODE_DMR)
-  m_dmrEnable    = dmrEnable;
-  m_io->getModem().dmrDMOTX.setTXDelay(txDelay);
+  modem.m_dmrEnable    = dmrEnable;
+  modem.dmrDMOTX.setTXDelay(txDelay);
 
-  m_io->getModem().dmrTX.setTrunking(trunking);
-  m_io->getModem().dmrTX.setColorCode(colorCode);
-  m_io->getModem().dmrRX.setColorCode(colorCode);
-  m_io->getModem().dmrRX.setDelay(dmrDelay);
-  m_io->getModem().dmrDMORX.setColorCode(colorCode);
-  m_io->getModem().dmrIdleRX.setColorCode(colorCode);
+  modem.dmrTX.setTrunking(trunking);
+  modem.dmrTX.setColorCode(colorCode);
+  modem.dmrRX.setColorCode(colorCode);
+  modem.dmrRX.setDelay(dmrDelay);
+  modem.dmrDMORX.setColorCode(colorCode);
+  modem.dmrIdleRX.setColorCode(colorCode);
 #endif
 #if defined(MODE_YSF)
-  m_ysfEnable    = ysfEnable;
-  m_io->getModem().ysfTX.setTXDelay(txDelay);
-  m_io->getModem().ysfTX.setParams(ysfLoDev, ysfTXHang);
+  modem.m_ysfEnable    = ysfEnable;
+  modem.ysfTX.setTXDelay(txDelay);
+  modem.ysfTX.setParams(ysfLoDev, ysfTXHang);
 #endif
 #if defined(MODE_P25)
-  m_p25Enable    = p25Enable;
-  m_io->getModem().p25TX.setTXDelay(txDelay);
-  m_io->getModem().p25TX.setParams(p25TXHang);
+  modem.m_p25Enable    = p25Enable;
+  modem.p25TX.setTXDelay(txDelay);
+  modem.p25TX.setParams(p25TXHang);
 #endif
 #if defined(MODE_NXDN)
-  m_nxdnEnable   = nxdnEnable;
-  m_io->getModem().nxdnTX.setTXDelay(txDelay);
-  m_io->getModem().nxdnTX.setParams(nxdnTXHang);
+  modem.m_nxdnEnable   = nxdnEnable;
+  modem.nxdnTX.setTXDelay(txDelay);
+  modem.nxdnTX.setParams(nxdnTXHang);
 #endif
 #if defined(MODE_POCSAG)
-  m_pocsagEnable = pocsagEnable;
-  m_io->getModem().pocsagTX.setTXDelay(txDelay);
+  modem.m_pocsagEnable = pocsagEnable;
+  modem.pocsagTX.setTXDelay(txDelay);
 #endif
 #if defined(MODE_FM)
-  m_fmEnable     = fmEnable;
-  m_io->getModem().fm.setTXLevel(fmTXLevel);
+  modem.m_fmEnable     = fmEnable;
+  modem.fm.setTXLevel(fmTXLevel);
 #endif
 
   return getIO().setParameters();
@@ -1002,16 +1010,18 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
   if (length < 1U)
     return 4U;
 
+  CModem& modem = m_io->getModem();
+
   MMDVM_STATE modemState = MMDVM_STATE(data[0U]);
 
-  if (modemState == m_modemState)
+  if (modemState == modem.m_modemState)
     return 0U;
 
   if (modemState != MMDVM_STATE::IDLE && modemState != MMDVM_STATE::DSTAR && modemState != MMDVM_STATE::DMR && modemState != MMDVM_STATE::YSF && modemState != MMDVM_STATE::P25 && modemState != MMDVM_STATE::NXDN && modemState != MMDVM_STATE::POCSAG && modemState != MMDVM_STATE::FM)
     return 4U;
 
 #if defined(MODE_DSTAR)
-  if (modemState == MMDVM_STATE::DSTAR && !m_dstarEnable)
+  if (modemState == MMDVM_STATE::DSTAR && !modem.m_dstarEnable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::DSTAR)
@@ -1019,7 +1029,7 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 #endif
 
 #if defined(MODE_DMR)
-  if (modemState == MMDVM_STATE::DMR && !m_dmrEnable)
+  if (modemState == MMDVM_STATE::DMR && !modem.m_dmrEnable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::DMR)
@@ -1027,7 +1037,7 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 #endif
 
 #if defined(MODE_YSF)
-  if (modemState == MMDVM_STATE::YSF && !m_ysfEnable)
+  if (modemState == MMDVM_STATE::YSF && !modem.m_ysfEnable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::YSF)
@@ -1035,7 +1045,7 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 #endif
 
 #if defined(MODE_P25)
-  if (modemState == MMDVM_STATE::P25 && !m_p25Enable)
+  if (modemState == MMDVM_STATE::P25 && !modem.m_p25Enable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::P25)
@@ -1043,7 +1053,7 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 #endif
 
 #if defined(MODE_NXDN)
-  if (modemState == MMDVM_STATE::NXDN && !m_nxdnEnable)
+  if (modemState == MMDVM_STATE::NXDN && !modem.m_nxdnEnable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::NXDN)
@@ -1051,7 +1061,7 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 #endif
 
 #if defined(MODE_POCSAG)
-  if (modemState == MMDVM_STATE::POCSAG && !m_pocsagEnable)
+  if (modemState == MMDVM_STATE::POCSAG && !modem.m_pocsagEnable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::POCSAG)
@@ -1059,7 +1069,7 @@ uint8_t CSerialPort::setMode(const uint8_t* data, uint16_t length)
 #endif
 
 #if defined(MODE_FM)
-  if (modemState == MMDVM_STATE::FM && !m_fmEnable)
+  if (modemState == MMDVM_STATE::FM && !modem.m_fmEnable)
     return 4U;
 #else
   if (modemState == MMDVM_STATE::FM)
@@ -1100,40 +1110,42 @@ void CSerialPort::setMode(MMDVM_STATE modemState)
       break;
   }
 
+  CModem& modem = m_io->getModem();
+
 #if defined(MODE_DSTAR)
   if (modemState != MMDVM_STATE::DSTAR)
-    m_io->getModem().dstarRX.reset();
+    modem.dstarRX.reset();
 #endif
 
 #if defined(MODE_DMR)
   if (modemState != MMDVM_STATE::DMR) {
-     m_io->getModem().dmrIdleRX.reset();
-     m_io->getModem().dmrDMORX.reset();
-     m_io->getModem().dmrRX.reset();
+     modem.dmrIdleRX.reset();
+     modem.dmrDMORX.reset();
+     modem.dmrRX.reset();
   }
 #endif
 
 #if defined(MODE_YSF)
   if (modemState != MMDVM_STATE::YSF)
-    m_io->getModem().ysfRX.reset();
+    modem.ysfRX.reset();
 #endif
 
 #if defined(MODE_P25)
   if (modemState != MMDVM_STATE::P25)
-    m_io->getModem().p25RX.reset();
+    modem.p25RX.reset();
 #endif
 
 #if defined(MODE_NXDN)
   if (modemState != MMDVM_STATE::NXDN)
-    m_io->getModem().nxdnRX.reset();
+    modem.nxdnRX.reset();
 #endif
 
 #if defined(MODE_FM)
   if (modemState != MMDVM_STATE::FM)
-    m_io->getModem().fm.reset();
+    modem.fm.reset();
 #endif
 
-  m_io->getModem().cwIdTX.reset();
+  modem.cwIdTX.reset();
 
   getIO().setMode(modemState);
 }
@@ -1202,9 +1214,11 @@ void CSerialPort::process()
 
 void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t length)
 {
-    assert(buffer != nullptr);
+  assert(buffer != nullptr);
 
-    uint8_t err = 2U;
+  uint8_t err = 2U;
+
+  CModem& modem = m_io->getModem();
 
   switch (type) {
     case MMDVM_GET_STATUS:
@@ -1290,8 +1304,8 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
     case MMDVM_SEND_CWID:
       err = 5U;
-      if (m_modemState == MMDVM_STATE::IDLE)
-        err = m_io->getModem().cwIdTX.write(buffer, length);
+      if (modem.m_modemState == MMDVM_STATE::IDLE)
+        err = modem.cwIdTX.write(buffer, length);
       if (err != 0U) {
         LogWarning("Invalid CW Id data, err=%u", err);
         sendNAK(type, err);
@@ -1300,12 +1314,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_DSTAR)
     case MMDVM_DSTAR_HEADER:
-      if (m_dstarEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DSTAR)
-          err = m_io->getModem().dstarTX.writeHeader(buffer, length);
+      if (modem.m_dstarEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::DSTAR)
+          err = modem.dstarTX.writeHeader(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::DSTAR);
       } else {
         LogWarning("Received invalid D-Star header, err=%u", err);
@@ -1314,12 +1328,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DSTAR_DATA:
-      if (m_dstarEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DSTAR)
-          err = m_io->getModem().dstarTX.writeData(buffer, length);
+      if (modem.m_dstarEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::DSTAR)
+          err = modem.dstarTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::DSTAR);
       } else {
         LogWarning("Received invalid D-Star data, err=%u", err);
@@ -1328,12 +1342,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DSTAR_EOT:
-      if (m_dstarEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DSTAR)
-          err = m_io->getModem().dstarTX.writeEOT();
+      if (modem.m_dstarEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::DSTAR)
+          err = modem.dstarTX.writeEOT();
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::DSTAR);
       } else {
         LogWarning("Received invalid D-Star EOT, err=%u", err);
@@ -1344,14 +1358,14 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_DMR)
     case MMDVM_DMR_DATA1:
-      if (m_dmrEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DMR) {
-          if (m_duplex)
-            err = m_io->getModem().dmrTX.writeData1(buffer, length);
+      if (modem.m_dmrEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::DMR) {
+          if (modem.m_duplex)
+            err = modem.dmrTX.writeData1(buffer, length);
         }
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::DMR);
       } else {
         LogWarning("Received invalid DMR data, err=%u", err);
@@ -1360,16 +1374,16 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DMR_DATA2:
-      if (m_dmrEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::DMR) {
-          if (m_duplex)
-            err = m_io->getModem().dmrTX.writeData2(buffer, length);
+      if (modem.m_dmrEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::DMR) {
+          if (modem.m_duplex)
+            err = modem.dmrTX.writeData2(buffer, length);
           else
-            err = m_io->getModem().dmrDMOTX.writeData(buffer, length);
+            err = modem.dmrDMOTX.writeData(buffer, length);
         }
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::DMR);
       } else {
         LogWarning("Received invalid DMR data, err=%u", err);
@@ -1378,16 +1392,16 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DMR_START:
-      if (m_dmrEnable) {
+      if (modem.m_dmrEnable) {
         err = 4U;
         if (length == 1U) {
-          if (buffer[0U] == 0x01U && m_modemState == MMDVM_STATE::DMR) {
-            if (!m_tx)
-              m_io->getModem().dmrTX.setStart(true);
+          if (buffer[0U] == 0x01U && modem.m_modemState == MMDVM_STATE::DMR) {
+            if (!modem.m_tx)
+              modem.dmrTX.setStart(true);
             err = 0U;
-          } else if (buffer[0U] == 0x00U && m_modemState == MMDVM_STATE::DMR) {
-            if (m_tx)
-              m_io->getModem().dmrTX.setStart(false);
+          } else if (buffer[0U] == 0x00U && modem.m_modemState == MMDVM_STATE::DMR) {
+            if (modem.m_tx)
+              modem.dmrTX.setStart(false);
             err = 0U;
           }
         }
@@ -1399,8 +1413,8 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DMR_SHORTLC:
-      if (m_dmrEnable)
-        err = m_io->getModem().dmrTX.writeShortLC(buffer, length);
+      if (modem.m_dmrEnable)
+        err = modem.dmrTX.writeShortLC(buffer, length);
       if (err != 0U) {
         LogWarning("Received invalid DMR Short LC, err=%u", err);
         sendNAK(type, err);
@@ -1408,8 +1422,8 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DMR_ALOHA:
-      if (m_dmrEnable)
-        err = m_io->getModem().dmrTX.writeAloha(buffer, length);
+      if (modem.m_dmrEnable)
+        err = modem.dmrTX.writeAloha(buffer, length);
       if (err != 0U) {
         LogWarning("Received invalid DMR ALOHA, err=%u", err);
         sendNAK(type, err);
@@ -1417,8 +1431,8 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_DMR_ABORT:
-      if (m_dmrEnable)
-        err = m_io->getModem().dmrTX.writeAbort(buffer, length);
+      if (modem.m_dmrEnable)
+        err = modem.dmrTX.writeAbort(buffer, length);
       if (err != 0U) {
         LogWarning("Received invalid DMR Abort, err=%u", err);
         sendNAK(type, err);
@@ -1428,12 +1442,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_YSF)
     case MMDVM_YSF_DATA:
-      if (m_ysfEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::YSF)
-          err = m_io->getModem().ysfTX.writeData(buffer, length);
+      if (modem.m_ysfEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::YSF)
+          err = modem.ysfTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::YSF);
       } else {
         LogWarning("Received invalid System Fusion data, err=%u", err);
@@ -1444,12 +1458,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_P25)
     case MMDVM_P25_HDR:
-      if (m_p25Enable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::P25)
-          err = m_io->getModem().p25TX.writeData(buffer, length);
+      if (modem.m_p25Enable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::P25)
+          err = modem.p25TX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::P25);
       } else {
         LogWarning("Received invalid P25 header, err=%u", err);
@@ -1458,12 +1472,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
       break;
 
     case MMDVM_P25_LDU:
-      if (m_p25Enable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::P25)
-          err = m_io->getModem().p25TX.writeData(buffer, length);
+      if (modem.m_p25Enable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::P25)
+          err = modem.p25TX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::P25);
       } else {
         LogWarning("Received invalid P25 LDU, err=%u", err);
@@ -1474,12 +1488,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_NXDN)
     case MMDVM_NXDN_DATA:
-      if (m_nxdnEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::NXDN)
-          err = m_io->getModem().nxdnTX.writeData(buffer, length);
+      if (modem.m_nxdnEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::NXDN)
+          err = modem.nxdnTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::NXDN);
       } else {
         LogWarning("Received invalid NXDN data, err=%u", err);
@@ -1490,12 +1504,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_POCSAG)
     case MMDVM_POCSAG_DATA:
-      if (m_pocsagEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::POCSAG)
-          err = m_io->getModem().pocsagTX.writeData(buffer, length);
+      if (modem.m_pocsagEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::POCSAG)
+          err = modem.pocsagTX.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::POCSAG);
       } else {
         LogWarning("Received invalid POCSAG data, err=%u", err);
@@ -1506,12 +1520,12 @@ void CSerialPort::processMessage(uint8_t type, const uint8_t* buffer, uint16_t l
 
 #if defined(MODE_FM)
     case MMDVM_FM_DATA:
-      if (m_fmEnable) {
-        if (m_modemState == MMDVM_STATE::IDLE || m_modemState == MMDVM_STATE::FM)
-          err = m_io->getModem().fm.writeData(buffer, length);
+      if (modem.m_fmEnable) {
+        if (modem.m_modemState == MMDVM_STATE::IDLE || modem.m_modemState == MMDVM_STATE::FM)
+          err = modem.fm.writeData(buffer, length);
       }
       if (err == 0U) {
-        if (m_modemState == MMDVM_STATE::IDLE)
+        if (modem.m_modemState == MMDVM_STATE::IDLE)
           setMode(MMDVM_STATE::FM);
       } else {
         LogWarning("Received invalid FM data, err=%u", err);
@@ -1541,10 +1555,12 @@ void CSerialPort::writeDStarHeader(const uint8_t* header, uint8_t length)
     assert(header != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::DSTAR && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_dstarEnable)
+  if (!modem.m_dstarEnable)
     return;
 
   uint8_t reply[50U];
@@ -1569,10 +1585,12 @@ void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::DSTAR && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_dstarEnable)
+  if (!modem.m_dstarEnable)
     return;
 
   uint8_t reply[20U];
@@ -1595,10 +1613,12 @@ void CSerialPort::writeDStarData(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeDStarLost()
 {
-  if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::DSTAR && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_dstarEnable)
+  if (!modem.m_dstarEnable)
     return;
 
   uint8_t reply[3U];
@@ -1615,10 +1635,12 @@ void CSerialPort::writeDStarLost()
 
 void CSerialPort::writeDStarEOT()
 {
-  if (m_modemState != MMDVM_STATE::DSTAR && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::DSTAR && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_dstarEnable)
+  if (!modem.m_dstarEnable)
     return;
 
   uint8_t reply[3U];
@@ -1640,10 +1662,12 @@ void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::DMR && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::DMR && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_dmrEnable)
+  if (!modem.m_dmrEnable)
     return;
 
   uint8_t reply[40U];
@@ -1666,10 +1690,12 @@ void CSerialPort::writeDMRData(bool slot, const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeDMRLost(bool slot)
 {
-  if (m_modemState != MMDVM_STATE::DMR && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::DMR && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_dmrEnable)
+  if (!modem.m_dmrEnable)
     return;
 
   uint8_t reply[3U];
@@ -1691,10 +1717,12 @@ void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::YSF && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::YSF && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_ysfEnable)
+  if (!modem.m_ysfEnable)
     return;
 
   uint8_t reply[130U];
@@ -1717,10 +1745,12 @@ void CSerialPort::writeYSFData(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeYSFLost()
 {
-  if (m_modemState != MMDVM_STATE::YSF && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::YSF && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_ysfEnable)
+  if (!modem.m_ysfEnable)
     return;
 
   uint8_t reply[3U];
@@ -1742,10 +1772,12 @@ void CSerialPort::writeP25Hdr(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::P25 && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::P25 && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_p25Enable)
+  if (!modem.m_p25Enable)
     return;
 
   uint8_t reply[120U];
@@ -1771,10 +1803,12 @@ void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::P25 && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::P25 && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_p25Enable)
+  if (!modem.m_p25Enable)
     return;
 
   uint8_t reply[250U];
@@ -1797,10 +1831,12 @@ void CSerialPort::writeP25Ldu(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeP25Lost()
 {
-  if (m_modemState != MMDVM_STATE::P25 && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::P25 && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_p25Enable)
+  if (!modem.m_p25Enable)
     return;
 
   uint8_t reply[3U];
@@ -1822,10 +1858,12 @@ void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::NXDN && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::NXDN && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_nxdnEnable)
+  if (!modem.m_nxdnEnable)
     return;
 
   uint8_t reply[130U];
@@ -1848,10 +1886,12 @@ void CSerialPort::writeNXDNData(const uint8_t* data, uint8_t length)
 
 void CSerialPort::writeNXDNLost()
 {
-  if (m_modemState != MMDVM_STATE::NXDN && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::NXDN && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_nxdnEnable)
+  if (!modem.m_nxdnEnable)
     return;
 
   uint8_t reply[3U];
@@ -1873,10 +1913,12 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
     assert(data != nullptr);
     assert(length > 0U);
 
-    if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
+    CModem& modem = m_io->getModem();
+
+    if (modem.m_modemState != MMDVM_STATE::FM && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_fmEnable)
+  if (!modem.m_fmEnable)
     return;
 
   uint8_t reply[512U];
@@ -1911,10 +1953,12 @@ void CSerialPort::writeFMData(const uint8_t* data, uint16_t length)
 
 void CSerialPort::writeFMStatus(uint8_t status)
 {
-  if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::FM && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_fmEnable)
+  if (!modem.m_fmEnable)
     return;
 
   uint8_t reply[10U];
@@ -1932,10 +1976,12 @@ void CSerialPort::writeFMStatus(uint8_t status)
 
 void CSerialPort::writeFMRSSI(uint16_t rssi)
 {
-  if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::FM && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_fmEnable)
+  if (!modem.m_fmEnable)
     return;
 
   uint8_t reply[10U];
@@ -1954,10 +2000,12 @@ void CSerialPort::writeFMRSSI(uint16_t rssi)
 
 void CSerialPort::writeFMEOT()
 {
-  if (m_modemState != MMDVM_STATE::FM && m_modemState != MMDVM_STATE::IDLE)
+  CModem& modem = m_io->getModem();
+
+  if (modem.m_modemState != MMDVM_STATE::FM && modem.m_modemState != MMDVM_STATE::IDLE)
     return;
 
-  if (!m_fmEnable)
+  if (!modem.m_fmEnable)
     return;
 
   uint8_t reply[10U];

@@ -22,6 +22,7 @@
 #if defined(MODE_YSF)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "YSFTX.h"
 
 #include "YSFDefines.h"
@@ -72,9 +73,11 @@ CYSFTX::~CYSFTX()
 
 void CYSFTX::process()
 {
+  CModem& modem = getIO().getModem();
+
   // If we have YSF data to transmit, do so.
   if (m_poLen == 0U && m_buffer.hasData()) {
-    if (!m_tx) {
+    if (!modem.m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = YSF_START_SYNC;
     } else {
@@ -95,7 +98,7 @@ void CYSFTX::process()
 
       // Reduce space and reset the hang timer.
       space -= 4U * YSF_RADIO_SYMBOL_LENGTH;
-      if (m_duplex)
+      if (modem.m_duplex)
         m_txCount = m_txHang;
 
       if (m_poPtr >= m_poLen) {

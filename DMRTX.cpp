@@ -24,6 +24,7 @@
 #if defined(MODE_DMR)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "DMRSlotType.h"
 
 // Generated using rcosdesign(0.2, 8, 5, 'sqrt') in MATLAB
@@ -175,7 +176,7 @@ uint8_t CDMRTX::writeData1(const uint8_t* data, uint16_t length)
   m_fifo0.addData(data + 1U, DMR_FRAME_LENGTH_BYTES);
 
   // Start the TX if it isn't already on
-  if (!m_tx)
+  if (!getIO().getModem().m_tx)
     m_state = DMRTXSTATE::SLOT1;
 
   return 0U;
@@ -198,7 +199,7 @@ uint8_t CDMRTX::writeData2(const uint8_t* data, uint16_t length)
   m_fifo1.addData(data + 1U, DMR_FRAME_LENGTH_BYTES);
 
   // Start the TX if it isn't already on
-  if (!m_tx)
+  if (!getIO().getModem().m_tx)
     m_state = DMRTXSTATE::SLOT1;
 
   return 0U;
@@ -259,7 +260,7 @@ void CDMRTX::setStart(bool start)
   if (!start) { // abort current transmission (timed beacons) to avoid tail getting appended to next slot
     m_poLen = 0;
     m_poPtr = 0;
-    m_tx    = false;
+    getIO().getModem().m_tx    = false;
   }
 
   m_frameCount     = 0U;

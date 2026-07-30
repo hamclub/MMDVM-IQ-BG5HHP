@@ -23,6 +23,7 @@
 #if defined(MODE_DMR)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "DMRSlotType.h"
 
 // Generated using rcosdesign(0.2, 8, 5, 'sqrt') in MATLAB
@@ -74,7 +75,7 @@ CDMRDMOTX::~CDMRDMOTX()
 void CDMRDMOTX::process()
 {
   if (m_poLen == 0U && m_fifo.hasData()) {
-    if (!m_tx) {
+    if (!getIO().getModem().m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[i] = DMR_SYNC;
 

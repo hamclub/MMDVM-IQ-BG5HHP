@@ -148,6 +148,8 @@ void CSDRSoapy::process()
   assert(m_rxStream != nullptr);
   assert(m_txStream != nullptr);
 
+  CModem& modem = getIO().getModem();
+
   if (!m_soapyInit) {
     m_device->activateStream(m_rxStream);
     m_device->activateStream(m_txStream);
@@ -206,8 +208,8 @@ void CSDRSoapy::process()
   }
 
   // Switch off the transmitter if needed
-  if (!m_txBuffer.hasData() && m_tx) {
-    m_tx = false;
+  if (!m_txBuffer.hasData() && modem.m_tx) {
+    modem.m_tx = false;
     LogMessage("TX OFF");
 
     if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
@@ -230,8 +232,10 @@ void CSDRSoapy::processIQBlock()
   assert(m_fdudc != nullptr);
   assert(m_delayedTXBuffer != nullptr);
 
+  CModem& modem = getIO().getModem();
+
   // Mute the receiver when transmitting in simplex mode
-  if (m_tx && !m_duplex) {
+  if (modem.m_tx && !modem.m_duplex) {
     for (auto& d : m_buffer)
       d = {0.0F, 0.0F};
   }
@@ -298,8 +302,10 @@ void CSDRSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
   if (!m_started)
     return;
 
-  if (!m_tx) {
-      m_tx = true;
+  CModem& modem = getIO().getModem();
+
+  if (!modem.m_tx) {
+      modem.m_tx = true;
       LogMessage("TX ON");
       if (m_soapyDeviceType.compare("plutosdr") == 0 || m_soapyDeviceType.compare("pluto") == 0 ||
           m_soapyDeviceType.compare("limesdr") == 0  || m_soapyDeviceType.compare("lime") == 0  ||
@@ -311,7 +317,7 @@ void CSDRSoapy::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
       }
   }
 
-  if (m_tx) {
+  if (modem.m_tx) {
     // Set the correct transmit frequency for the mode if needed, even in the middle of a transmission
     setTXFrequency(mode == MMDVM_STATE::POCSAG);
   }

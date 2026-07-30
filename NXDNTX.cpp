@@ -22,6 +22,7 @@
 #if defined(MODE_NXDN)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "NXDNTX.h"
 
 #include "NXDNDefines.h"
@@ -79,8 +80,10 @@ CNXDNTX::~CNXDNTX()
 
 void CNXDNTX::process()
 {
+  CModem& modem = getIO().getModem();
+
   if (m_poLen == 0U && m_buffer.hasData()) {
-    if (!m_tx) {
+    if (!modem.m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = NXDN_SYNC;
       m_poBuffer[m_poLen++] = NXDN_PREAMBLE[0U];
@@ -102,7 +105,7 @@ void CNXDNTX::process()
       writeByte(c);
 
       space -= 4U * NXDN_RADIO_SYMBOL_LENGTH;
-      if (m_duplex)
+      if (modem.m_duplex)
         m_txCount = m_txHang;
       
       if (m_poPtr >= m_poLen) {

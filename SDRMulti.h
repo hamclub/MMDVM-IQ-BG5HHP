@@ -28,7 +28,7 @@
 #include <vector>
 #include <string>
 
-class CSDRMulti : public ISDRDevice {
+class CSDRMulti : public ISDRDevice, public IOAware {
 public:
   CSDRMulti();
   virtual ~CSDRMulti();

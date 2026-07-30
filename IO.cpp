@@ -246,7 +246,9 @@ void CIO::process(bool networkData)
   uint8_t  control[RX_BLOCK_SIZE];
   uint16_t rssi[RX_BLOCK_SIZE];
 
-  while (m_sdrDevice->read(m_modemState, samples, rssi, control) == RX_BLOCK_SIZE) {
+  CModem& modem = getModem();
+
+  while (m_sdrDevice->read(modem.m_modemState, samples, rssi, control) == RX_BLOCK_SIZE) {
     for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
       q31_t res2 = samples[i] * LEVEL_50PC_INVERTED;
       samples[i] = q15_t(__SSAT((res2 >> 15), 16));
@@ -271,33 +273,33 @@ void CIO::process(bool networkData)
       dcSamples[i] = samples[i] - offset;
 #endif
 
-    if (m_modemState == MMDVM_STATE::IDLE) {
+    if (modem.checkState(MMDVM_STATE::IDLE)) {
 #if defined(MODE_DSTAR)
-        if (m_dstarEnable) {
+        if (modem.m_dstarEnable) {
             q15_t GMSKVals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
             ::arm_fir_fast_q15(&m_gaussianFilter, dcSamples, GMSKVals, RX_BLOCK_SIZE);
 #else
             ::arm_fir_fast_q15(&m_gaussianFilter, samples, GMSKVals, RX_BLOCK_SIZE);
 #endif
-            getModem().dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
+            modem.dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
 #if defined(MODE_P25)
-        if (m_p25Enable) {
+        if (modem.m_p25Enable) {
             q15_t P25Vals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
             ::arm_fir_fast_q15(&m_boxcar5Filter, dcSamples, P25Vals, RX_BLOCK_SIZE);
 #else
             ::arm_fir_fast_q15(&m_boxcar5Filter, samples, P25Vals, RX_BLOCK_SIZE);
 #endif
-            getModem().p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
+            modem.p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
 #if defined(MODE_NXDN)
-        if (m_nxdnEnable) {
+        if (modem.m_nxdnEnable) {
             q15_t NXDNVals[RX_BLOCK_SIZE];
 #if defined(USE_NXDN_BOXCAR)
 #if defined(USE_DCBLOCKER)
@@ -314,109 +316,109 @@ void CIO::process(bool networkData)
 #endif
             ::arm_fir_fast_q15(&m_nxdnISincFilter, NXDNValsTmp, NXDNVals, RX_BLOCK_SIZE);
 #endif
-            getModem().nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
+            modem.nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
 #if defined(MODE_DMR)
-        if (m_dmrEnable) {
+        if (modem.m_dmrEnable) {
             q15_t DMRVals[RX_BLOCK_SIZE];
             ::arm_fir_fast_q15(&m_rrc02Filter1, samples, DMRVals, RX_BLOCK_SIZE);
 
-            if (m_duplex)
-                getModem().dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
+            if (modem.m_duplex)
+                modem.dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
             else
-                getModem().dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
+                modem.dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
 #if defined(MODE_YSF)
-        if (m_ysfEnable) {
+        if (modem.m_ysfEnable) {
             q15_t YSFVals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
             ::arm_fir_fast_q15(&m_rrc02Filter2, dcSamples, YSFVals, RX_BLOCK_SIZE);
 #else
             ::arm_fir_fast_q15(&m_rrc02Filter2, samples, YSFVals, RX_BLOCK_SIZE);
 #endif
-            getModem().ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
+            modem.ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
         }
 #endif
 
 #if defined(MODE_FM)
-      if (m_fmEnable) {
+      if (modem.m_fmEnable) {
 #if defined(USE_DCBLOCKER)
-        getModem().fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
+        modem.fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-        getModem().fm.samples(samples, rssi, RX_BLOCK_SIZE);
+        modem.fm.samples(samples, rssi, RX_BLOCK_SIZE);
 #endif
       }
 #endif
     }
 
 #if defined(MODE_DSTAR)
-    else if (m_modemState == MMDVM_STATE::DSTAR) {
-      if (m_dstarEnable) {
+    else if (modem.checkState(MMDVM_STATE::DSTAR)) {
+      if (modem.m_dstarEnable) {
         q15_t GMSKVals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
         ::arm_fir_fast_q15(&m_gaussianFilter, dcSamples, GMSKVals, RX_BLOCK_SIZE);
 #else
         ::arm_fir_fast_q15(&m_gaussianFilter, samples, GMSKVals, RX_BLOCK_SIZE);
 #endif
-        getModem().dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
+        modem.dstarRX.samples(GMSKVals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
 
 #if defined(MODE_DMR)
-    else if (m_modemState == MMDVM_STATE::DMR) {
-      if (m_dmrEnable) {
+    else if (modem.checkState(MMDVM_STATE::DMR)) {
+      if (modem.m_dmrEnable) {
         q15_t DMRVals[RX_BLOCK_SIZE];
         ::arm_fir_fast_q15(&m_rrc02Filter1, samples, DMRVals, RX_BLOCK_SIZE);
 
-        if (m_duplex) {
+        if (modem.m_duplex) {
           // If the transmitter isn't on, use the DMR idle RX to detect the wakeup CSBKs
-          if (m_tx)
-            getModem().dmrRX.samples(DMRVals, rssi, control, RX_BLOCK_SIZE);
+          if (modem.m_tx)
+            modem.dmrRX.samples(DMRVals, rssi, control, RX_BLOCK_SIZE);
           else
-            getModem().dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
+            modem.dmrIdleRX.samples(DMRVals, RX_BLOCK_SIZE);
         } else {
-          getModem().dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
+          modem.dmrDMORX.samples(DMRVals, rssi, RX_BLOCK_SIZE);
         }
       }
     }
 #endif
 
 #if defined(MODE_YSF)
-    else if (m_modemState == MMDVM_STATE::YSF) {
-      if (m_ysfEnable) {
+    else if (modem.checkState(MMDVM_STATE::YSF)) {
+      if (modem.m_ysfEnable) {
         q15_t YSFVals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
         ::arm_fir_fast_q15(&m_rrc02Filter2, dcSamples, YSFVals, RX_BLOCK_SIZE);
 #else
         ::arm_fir_fast_q15(&m_rrc02Filter2, samples, YSFVals, RX_BLOCK_SIZE);
 #endif
-        getModem().ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
+        modem.ysfRX.samples(YSFVals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
 
 #if defined(MODE_P25)
-    else if (m_modemState == MMDVM_STATE::P25) {
-      if (m_p25Enable) {
+    else if (modem.checkState(MMDVM_STATE::P25)) {
+      if (modem.m_p25Enable) {
         q15_t P25Vals[RX_BLOCK_SIZE];
 #if defined(USE_DCBLOCKER)
         ::arm_fir_fast_q15(&m_boxcar5Filter, dcSamples, P25Vals, RX_BLOCK_SIZE);
 #else
         ::arm_fir_fast_q15(&m_boxcar5Filter, samples, P25Vals, RX_BLOCK_SIZE);
 #endif
-        getModem().p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
+        modem.p25RX.samples(P25Vals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
 
 #if defined(MODE_NXDN)
-    else if (m_modemState == MMDVM_STATE::NXDN) {
-      if (m_nxdnEnable) {
+    else if (modem.checkState(MMDVM_STATE::NXDN)) {
+      if (modem.m_nxdnEnable) {
         q15_t NXDNVals[RX_BLOCK_SIZE];
 #if defined(USE_NXDN_BOXCAR)
 #if defined(USE_DCBLOCKER)
@@ -433,17 +435,17 @@ void CIO::process(bool networkData)
 #endif
         ::arm_fir_fast_q15(&m_nxdnISincFilter, NXDNValsTmp, NXDNVals, RX_BLOCK_SIZE);
 #endif
-        getModem().nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
+        modem.nxdnRX.samples(NXDNVals, rssi, RX_BLOCK_SIZE);
       }
     }
 #endif
 
 #if defined(MODE_FM)
-    else if (m_modemState == MMDVM_STATE::FM) {
+    else if (modem.checkState(MMDVM_STATE::FM)) {
 #if defined(USE_DCBLOCKER)
-      getModem().fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
+      modem.fm.samples(dcSamples, rssi, RX_BLOCK_SIZE);
 #else
-      getModem().fm.samples(samples, rssi, RX_BLOCK_SIZE);
+      modem.fm.samples(samples, rssi, RX_BLOCK_SIZE);
 #endif
     }
 #endif
@@ -455,7 +457,7 @@ void CIO::createSDRDevice(CConf* conf) {
     CSDRMulti* multi = new CSDRMulti;
     multi->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
                       conf->getMultiModemAddress(), conf->getMultiModemPort());
-
+    multi->setIO(this);
     delete m_sdrDevice;
     m_sdrDevice = multi;
 
@@ -464,11 +466,13 @@ void CIO::createSDRDevice(CConf* conf) {
 
 #if defined(USE_SOAPY_MULTI)
   CSDRSoapyMulti* soapy = new CSDRSoapyMulti(conf);
+  soapy->setIO(this);
   delete m_sdrDevice;
   m_sdrDevice = soapy;
 
 #elif defined(USE_SOAPY)
   CSDRSoapy* soapy = new CSDRSoapy(conf);
+  soapy->setIO(this);
   delete m_sdrDevice;
   m_sdrDevice = soapy;
 
@@ -498,7 +502,7 @@ uint16_t CIO::getSpace() const
 
 void CIO::setMode(MMDVM_STATE state)
 {
-  m_modemState = state;
+  getModem().m_modemState = state;
 }
 
 uint8_t CIO::setParameters()

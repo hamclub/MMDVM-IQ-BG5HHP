@@ -21,6 +21,7 @@
 #if defined(MODE_POCSAG)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "POCSAGTX.h"
 
 const uint16_t POCSAG_FRAME_LENGTH_BYTES = 17U * sizeof(uint32_t);
@@ -63,7 +64,7 @@ void CPOCSAGTX::process()
     return;
 
   if (m_poLen == 0U) {
-    if (!m_tx) {
+    if (!getIO().getModem().m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = POCSAG_SYNC;
     } else {

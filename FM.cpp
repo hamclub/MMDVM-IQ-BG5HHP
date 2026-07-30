@@ -21,6 +21,7 @@
 #if defined(MODE_FM)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "FM.h"
 
 const uint16_t FM_TX_BLOCK_SIZE = 120U;
@@ -91,6 +92,8 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
   clock(length);
 
+  CModem& modem = getIO().getModem();
+
   uint8_t i = 0U;
   for (; i < length; i++) {
     bool cos = m_squelch.process(rssi[i]);
@@ -110,7 +113,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     switch (m_accessMode) {
       case 0U:
-        if (!inputExt && !cos && m_modemState != MMDVM_STATE::FM)
+        if (!inputExt && !cos && modem.m_modemState != MMDVM_STATE::FM)
           continue;
         else
           stateMachine(cos, inputExt);
@@ -123,10 +126,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           m_inputRFRB.addData(currentRFSample);
           m_inputRFRB.getData(currentRFSample);
 
-          if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
+          if (!inputExt && !ctcss && modem.m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
             continue;
-          } else if ((inputExt || ctcss) && m_modemState != MMDVM_STATE::FM) {
+          } else if ((inputExt || ctcss) && modem.m_modemState != MMDVM_STATE::FM) {
             // We had CTCSS or external input
             stateMachine(ctcss, inputExt);
             if (m_state == FM_STATE::LISTENING)
@@ -139,10 +142,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
       case 2U: {
           bool ctcss = m_ctcssRX.process(currentRFSample);
-          if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
+          if (!inputExt && !ctcss && modem.m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
             continue;
-          } else if ((inputExt || (ctcss && cos)) && m_modemState != MMDVM_STATE::FM) {
+          } else if ((inputExt || (ctcss && cos)) && modem.m_modemState != MMDVM_STATE::FM) {
             // We had CTCSS or external input
             stateMachine(ctcss && cos, inputExt);
             if (m_state == FM_STATE::LISTENING)
@@ -155,10 +158,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
       default: {
           bool ctcss = m_ctcssRX.process(currentRFSample);
-          if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
+          if (!inputExt && !ctcss && modem.m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
             continue;
-          } else if ((inputExt || (ctcss && cos)) && m_modemState != MMDVM_STATE::FM) {
+          } else if ((inputExt || (ctcss && cos)) && modem.m_modemState != MMDVM_STATE::FM) {
             // We had CTCSS or external input
             stateMachine(ctcss && cos, inputExt);
             if (m_state == FM_STATE::LISTENING)
@@ -170,7 +173,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
         break;
     }
 
-    if (m_modemState != MMDVM_STATE::FM)
+    if (modem.m_modemState != MMDVM_STATE::FM)
       continue;
 
     if (m_state == FM_STATE::LISTENING && !m_rfAck.isWanted() && !m_extAck.isWanted() && !m_callsign.isWanted() && !m_reverseTimer.isRunning())
@@ -184,7 +187,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     }
 
     // Only let RF audio through when relaying RF audio
-    if (m_duplex) {
+    if (modem.m_duplex) {
       if (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF || m_state == FM_STATE::RELAYING_EXT || m_state == FM_STATE::KERCHUNK_EXT) {
         currentSample = m_blanking.process(currentSample);
         if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF))
@@ -238,6 +241,8 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 {
   clock(length);
 
+  CModem& modem = getIO().getModem();
+
   uint8_t i = 0U;
   for (; i < length; i++) {
     bool cos = m_squelch.process(rssi[i]);
@@ -252,7 +257,7 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     switch (m_accessMode) {
       case 0U:
-        if (!inputExt && !cos && m_modemState != MMDVM_STATE::FM)
+        if (!inputExt && !cos && modem.m_modemState != MMDVM_STATE::FM)
           continue;
         else
           stateMachine(cos, inputExt);
@@ -265,10 +270,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           m_inputRFRB.addData(currentRFSample);
           m_inputRFRB.getData(currentRFSample);
 
-          if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
+          if (!inputExt && !ctcss && modem.m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
             continue;
-          } else if ((inputExt || ctcss) && m_modemState != MMDVM_STATE::FM) {
+          } else if ((inputExt || ctcss) && modem.m_modemState != MMDVM_STATE::FM) {
             // We had CTCSS or external input
             stateMachine(ctcss, inputExt);
             if (m_state == FM_STATE::LISTENING)
@@ -281,10 +286,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
       case 2U: {
           bool ctcss = m_ctcssRX.process(currentRFSample);
-          if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
+          if (!inputExt && !ctcss && modem.m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
             continue;
-          } else if ((inputExt || (ctcss && cos)) && m_modemState != MMDVM_STATE::FM) {
+          } else if ((inputExt || (ctcss && cos)) && modem.m_modemState != MMDVM_STATE::FM) {
             // We had CTCSS or external input
             stateMachine(ctcss && cos, inputExt);
             if (m_state == FM_STATE::LISTENING)
@@ -297,10 +302,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
       default: {
           bool ctcss = m_ctcssRX.process(currentRFSample);
-          if (!inputExt && !ctcss && m_modemState != MMDVM_STATE::FM) {
+          if (!inputExt && !ctcss && modem.m_modemState != MMDVM_STATE::FM) {
             // No CTCSS detected, just carry on
             continue;
-          } else if ((inputExt || (ctcss && cos)) && m_modemState != MMDVM_STATE::FM) {
+          } else if ((inputExt || (ctcss && cos)) && modem.m_modemState != MMDVM_STATE::FM) {
             // We had CTCSS or external input
             stateMachine(ctcss && cos, inputExt);
             if (m_state == FM_STATE::LISTENING)
@@ -312,7 +317,7 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
         break;
     }
 
-    if (m_modemState != MMDVM_STATE::FM)
+    if (modem.m_modemState != MMDVM_STATE::FM)
       continue;
 
     if (m_rfSignal && m_extEnabled) {
@@ -492,7 +497,7 @@ void CFM::stateMachine(bool validRFSignal, bool validExtSignal)
   if (m_linkMode) {
       linkStateMachine(validRFSignal, validExtSignal);
   } else {
-    if (m_duplex)
+    if (getIO().getModem().m_duplex)
       duplexStateMachine(validRFSignal, validExtSignal);
     else
       simplexStateMachine(validRFSignal, validExtSignal);

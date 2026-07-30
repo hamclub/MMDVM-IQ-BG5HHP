@@ -22,6 +22,7 @@
 #if defined(MODE_P25)
 
 #include "Globals.h"
+#include "Modem.h"
 #include "P25TX.h"
 
 #include "P25Defines.h"
@@ -77,8 +78,10 @@ CP25TX::~CP25TX()
 
 void CP25TX::process()
 {
+  CModem& modem = getIO().getModem();
+
   if (m_poLen == 0U && m_buffer.hasData()) {
-    if (!m_tx) {
+    if (!modem.m_tx) {
       for (uint16_t i = 0U; i < m_txDelay; i++)
         m_poBuffer[m_poLen++] = P25_START_SYNC;
     } else {
@@ -99,7 +102,7 @@ void CP25TX::process()
       writeByte(c);
 
       space -= 4U * P25_RADIO_SYMBOL_LENGTH;
-       if (m_duplex)
+       if (modem.m_duplex)
         m_txCount = m_txHang;
 
       if (m_poPtr >= m_poLen) {
