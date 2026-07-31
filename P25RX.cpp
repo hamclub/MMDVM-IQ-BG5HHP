@@ -184,7 +184,7 @@ void CP25RX::processHdr(q15_t sample)
     if (nidStartPtr >= P25_LDU_FRAME_LENGTH_SAMPLES)
         nidStartPtr -= P25_LDU_FRAME_LENGTH_SAMPLES;
 
-    uint8_t nid[2U];
+    uint8_t nid[2U] = {0x0};
     samplesToBits(nidStartPtr, (2U * 4U), nid, 0U, m_centreVal, m_thresholdVal);
     // DEBUG3("P25RX: nid (b0 - b1)", nid[0U], nid[1U]);
 
