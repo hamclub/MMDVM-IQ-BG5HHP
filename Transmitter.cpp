@@ -16,6 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_SOAPY_MULTI)
+
 #include "Transmitter.h"
 #include "Thread.h"
 #include "Log.h"
@@ -417,3 +419,5 @@ void CTransmitter::modulate(unsigned int channel, float* in_samples, const unsig
 
     ::freqmod_modulate_block(m_FMmod[channel], in_samples, num_samples, out_samples);
 }
+
+#endif

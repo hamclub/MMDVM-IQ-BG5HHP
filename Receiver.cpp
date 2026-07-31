@@ -16,6 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_SOAPY_MULTI)
+
 #include "Receiver.h"
 #include "Thread.h"
 #include "Log.h"
@@ -326,3 +328,5 @@ void CReceiver::demodulate(unsigned int channel, std::complex<float>* in_samples
 
     ::freqdem_demodulate_block(m_FMdemod[channel], in_samples, num_samples, out_samples);
 }
+
+#endif

@@ -16,6 +16,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_SOAPY_MULTI)
+
 #include "SDRSoapyMulti.h"
 
 #include "Conf.h"
@@ -553,3 +555,5 @@ int CSDRSoapyMulti::getTXSamples(std::vector<uint8_t> &controlBuf, std::vector<f
 
     return ret;
 }
+
+#endif
