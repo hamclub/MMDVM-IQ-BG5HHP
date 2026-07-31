@@ -241,7 +241,7 @@ void CTransmitter::entry()
         setTx(channelIdle);
 
         // std::complex<float> output_samples[TX_SAMP_OUT_SIZE] = {0.0F, 0.0F};
-        ::memset(m_txOutSampleBuffer, 0, sizeof(m_txOutSampleBuffer));
+        // ::memset(m_txOutSampleBuffer, 0, sizeof(m_txOutSampleBuffer));
         std::complex<float> *output_samples = m_txOutSampleBuffer;
         processSamples(output_samples, channelIdle);
 
