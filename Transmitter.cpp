@@ -242,6 +242,7 @@ void CTransmitter::entry()
 
         // std::complex<float> output_samples[TX_SAMP_OUT_SIZE] = {0.0F, 0.0F};
         // ::memset(m_txOutSampleBuffer, 0, sizeof(m_txOutSampleBuffer));
+        std::fill_n(m_txOutSampleBuffer, sizeof(m_txOutSampleBuffer) / sizeof(m_txOutSampleBuffer[0]), 0);
         std::complex<float> *output_samples = m_txOutSampleBuffer;
         processSamples(output_samples, channelIdle);
 
@@ -292,7 +293,9 @@ void CTransmitter::processSamples(std::complex<float>* output_samples, bool* cha
     }
   
     // std::complex<float> channelized[TX_SAMP_OUT_SIZE] = {0.0F, 0.0F};
-    ::memset(m_channelizedSampleBuffer, 0, sizeof(m_channelizedSampleBuffer));
+    // ::memset(m_channelizedSampleBuffer, 0, sizeof(m_channelizedSampleBuffer));
+    std::fill_n(m_channelizedSampleBuffer, sizeof(m_channelizedSampleBuffer) / sizeof(m_channelizedSampleBuffer[0]), 0);
+    *m_channelizedSampleBuffer = {0.0F, 0.0F};
     std::complex<float> *channelized = m_channelizedSampleBuffer;
     std::complex<float> channels[MAX_PFB_CHANNELS] = {0.0F, 0.0F};
 
