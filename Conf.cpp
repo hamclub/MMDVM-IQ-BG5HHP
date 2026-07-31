@@ -58,6 +58,7 @@ m_txAntenna(),
 m_rxGain(0),
 m_txGain(0),
 m_activeChannels(1),
+m_disableMulti(false),
 m_modemTrace(false),
 m_modemVersion(1),
 m_networkHostAddress("127.0.0.1"),
@@ -182,6 +183,8 @@ bool CConf::read()
 				m_txGain = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ActiveChannels") == 0)
 				m_activeChannels = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "DisableMulti") == 0)
+				m_disableMulti = ::atoi(value) == 1;
 			else if (::strcmp(key, "Version") == 0)
 				m_modemVersion = ::atoi(value);
 		} else if (section == SECTION::MMDVM_HOST) {
@@ -311,6 +314,10 @@ unsigned int CConf::getTxGain() const
 
 unsigned int CConf::getActiveChannels() const {
 	return m_activeChannels;
+}
+
+bool CConf::getDisableMulti() const {
+	return m_disableMulti;
 }
 
 unsigned char CConf::getModemVersion() const

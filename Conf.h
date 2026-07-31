@@ -57,6 +57,7 @@ public:
 	unsigned int getRxGain() const;
 	unsigned int getTxGain() const;
 	unsigned int getActiveChannels() const;
+	bool         getDisableMulti() const;
 	bool         getModemTrace() const;
 
 	unsigned char getModemVersion() const;
@@ -102,6 +103,7 @@ private:
 	unsigned int m_rxGain;
 	unsigned int m_txGain;
 	unsigned int m_activeChannels;
+	bool         m_disableMulti;
 	bool         m_modemTrace;
     unsigned char m_modemVersion;
 

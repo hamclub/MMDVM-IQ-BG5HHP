@@ -232,7 +232,14 @@ int CMMDVMIQ::run()
         if (activeModems < 1)
             activeModems = 1;
 
-        sdrDevice = new CSDRSoapyMulti(&m_conf);
+        if (!m_conf.getDisableMulti())
+            sdrDevice = new CSDRSoapyMulti(&m_conf);
+        else {
+            // Force to run single channel mode
+            LogWarning("SDRSoapyMulti is disabled, force 1 channel mode");
+            activeModems = 1;
+            sdrDevice = new CSDRSoapy(&m_conf);     // fall back to the single threaded implementation
+        }
 
 #elif defined(USE_SOAPY)
         activeModems = 1;
