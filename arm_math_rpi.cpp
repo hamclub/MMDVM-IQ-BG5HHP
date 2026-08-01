@@ -698,9 +698,9 @@ q31_t arm_sin_q31(
   {
     index = 0;
   }
-  else if(index > 256)
+  else if(index > 255)
   {
-    index = 256;
+    index = 255;
   }
 
   /* Initialise table pointer */
