@@ -33,15 +33,15 @@ public:
 
     MMDVM_STATE m_modemState = MMDVM_STATE::IDLE;
 
-    bool m_dstarEnable  = true;
-    bool m_dmrEnable    = true;
-    bool m_ysfEnable    = true;
-    bool m_p25Enable    = true;
-    bool m_nxdnEnable   = true;
-    bool m_pocsagEnable = true;
-    bool m_fmEnable     = true;
+    bool m_dstarEnable  = false;
+    bool m_dmrEnable    = false;
+    bool m_ysfEnable    = false;
+    bool m_p25Enable    = false;
+    bool m_nxdnEnable   = false;
+    bool m_pocsagEnable = false;
+    bool m_fmEnable     = false;
 
-    bool m_duplex = true;
+    bool m_duplex = false;
 
     bool m_tx  = false;
     bool m_dcd = false;
