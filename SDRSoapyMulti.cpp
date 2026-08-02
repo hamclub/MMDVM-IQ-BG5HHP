@@ -473,7 +473,7 @@ void CSDRSoapyMulti::onRXSamples(const std::vector<uint8_t> &controlBuf, const s
     LOG_SAMPLE_INTERVAL("SDRSoapyMulti RX Samples", SAMPLES_PER_SLOT, channel);
 
     // trigger tx consuming buffered data
-    m_transmitter->notifyTXDataUpdate(channel);
+    // m_transmitter->notifyTXDataUpdate(channel);
 
     if (channel >= m_activeChannels)
         return;
