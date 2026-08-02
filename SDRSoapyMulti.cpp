@@ -244,7 +244,7 @@ void CSDRSoapyMulti::process(unsigned int ch) {
     if (m_txTimeout[ch]->hasExpired()) {
         if (modem.m_tx) {
             modem.m_tx = false;
-            LogMessage("SDRSoapyMulti TX off (timeout)");
+            LogMessage("SDRSoapyMulti TX OFF (timeout), ch %u", ch);
         }
 
         m_txTimeout[ch]->stop();
@@ -357,7 +357,7 @@ void CSDRSoapyMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t leng
 
     if (!modem.m_tx) {
         modem.m_tx = true;
-        LogMessage("SoapySDRMulti TX ON");
+        LogMessage("SoapySDRMulti TX ON, ch %u", ch);
 
         m_txTimeout[ch]->start();
     }
