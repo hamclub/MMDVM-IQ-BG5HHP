@@ -111,7 +111,17 @@ void CTransmitter::nextSlot(unsigned int channel)
 
 void CTransmitter::notifyTXDataUpdate(unsigned int channel) {
     // trigger fetch tx samples
-    m_network->getTXSamples(m_controlBuf[channel], m_sampleBuf[channel], m_symbolDeviation, channel);
+
+    std::vector<uint8_t> controlBuf(SAMPLES_PER_SLOT);
+    std::vector<float> sampleBuf(SAMPLES_PER_SLOT);
+    int nSamples = m_network->getTXSamples(controlBuf, sampleBuf, m_symbolDeviation, channel);
+
+    if (nSamples == SAMPLES_PER_SLOT) {
+        m_controlBuf[channel].insert(m_controlBuf[channel].end(), controlBuf.begin(), controlBuf.end());
+        m_sampleBuf[channel].insert(m_sampleBuf[channel].end(), sampleBuf.begin(), sampleBuf.end());
+    }
+
+    // m_network->getTXSamples(m_controlBuf[channel], m_sampleBuf[channel], m_symbolDeviation, channel);
 }
 
 bool CTransmitter::readNetwork()
@@ -119,9 +129,20 @@ bool CTransmitter::readNetwork()
     bool hasData = false;
     for (unsigned int j = 0U; j < m_activeChannels; j++) {
 #if 1
-        int ret = m_network->getTXSamples(m_controlBuf[j], m_sampleBuf[j], m_symbolDeviation, j);
-        if (ret > 0)
+        std::vector<uint8_t> controlBuf(SAMPLES_PER_SLOT);
+        std::vector<float> sampleBuf(SAMPLES_PER_SLOT);
+        int nSamples = m_network->getTXSamples(controlBuf, sampleBuf, m_symbolDeviation, j);
+
+        if (nSamples == SAMPLES_PER_SLOT) {
+            m_controlBuf[j].insert(m_controlBuf[j].end(), controlBuf.begin(), controlBuf.end());
+            m_sampleBuf[j].insert(m_sampleBuf[j].end(), sampleBuf.begin(), sampleBuf.end());
             hasData = true;
+        }
+
+        // int ret = m_network->getTXSamples(m_controlBuf[j], m_sampleBuf[j], m_symbolDeviation, j);
+        // if (ret > 0)
+        //    hasData = true;
+
 #else
         unsigned char reply_message[NETWORK_RX_PACKET_SIZE]; // 720 * 3 + 4
         int ret = m_network->read(reply_message, NETWORK_RX_PACKET_SIZE, j);
