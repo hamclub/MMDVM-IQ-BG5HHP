@@ -34,8 +34,13 @@ static const unsigned long SAMPLES_PER_SLOT = 720U;   // at 24k
 static const long long MMDVM_MARK_POSITION = 710LL;   // start of CACH
 
 static const unsigned int MAX_MMDVM_CHANNELS = 7U;
+#if 1
+static const unsigned int MAX_PFB_CHANNELS = 10U;  // max sample rate 250K
+static const unsigned int MAX_SAMPLE_RATE = 250000U;
+#else
 static const unsigned int MAX_PFB_CHANNELS = 40U;  // max sample rate 1M
 static const unsigned int MAX_SAMPLE_RATE = 1000000U;
+#endif
 static const unsigned int PFB_FILTER_DELAY = 48U;  // must reduce on RPi platforms if bursts are consistently late due to CPU load
 static const unsigned int RESAMPLER_FILTER_DELAY = 24U; // ntaps = 2 * delay + 1
 static const unsigned int RESAMPLER_INTERPOLATION = 25U;
