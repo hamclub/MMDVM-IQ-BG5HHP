@@ -512,7 +512,7 @@ int CSDRSoapyMulti::getTXSamples(std::vector<uint8_t> &controlBuf, std::vector<f
     if (channel >= m_activeChannels)
         return 0;
 
-    int ret = 0;
+    int nSamples = 0;
 
     // requires at least 720 samples to process
     if (m_txIQBuffer[channel]->dataSize() >= SAMPLES_PER_SLOT) {
@@ -531,29 +531,18 @@ int CSDRSoapyMulti::getTXSamples(std::vector<uint8_t> &controlBuf, std::vector<f
                 sampleBuf.push_back(samplef);
             }
 
-            ret =  SAMPLES_PER_SLOT;
+            nSamples =  SAMPLES_PER_SLOT;
         }
 
         m_txMutex.unlock();
 
-        if (ret > 0) {
-            LogDebug("SDRSoapyMulti TX samples %u, left %u, ch %u", ret, m_txIQBuffer[channel]->dataSize(), channel);
+        if (nSamples > 0) {
+            LogDebug("SDRSoapyMulti TX samples %u, left %u, ch %u", nSamples, m_txIQBuffer[channel]->dataSize(), channel);
         }
 
-    }  else {
-        // // filling empty frames
-        // TXSample txSample = {0, 0};
-        // for (unsigned int i = 0; i < SAMPLES_PER_SLOT; i++) {
-        //     uint8_t control = txSample.m_control;
-        //     int16_t sample  = float(txSample.m_sample) * symbolDeviation / 32767.0f;
-        //     controlBuf.push_back(control);
-        //     sampleBuf.push_back(sample);
-        // }
-
-        // LogDebug("SDRSoapyMulti filling %u samples, buffered %u, ch[%u]", SAMPLES_PER_SLOT, m_txIQBuffer[ch]->dataSize(), ch);
     }
 
-    return ret;
+    return nSamples;
 }
 
 #endif
