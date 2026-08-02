@@ -49,8 +49,6 @@ const q15_t LEVEL_40PC_INVERTED = -102 * 128;
 const q15_t LEVEL_30PC_INVERTED = -77  * 128;
 const q15_t LEVEL_100PC         =  255 * 128;
 
-const unsigned int SAMPLES_TO_NETWORK = 720U;
-const unsigned int MULTIMODEM_PACKET_SIZE = SAMPLES_TO_NETWORK * 3U + 8U;
 
 CSDRSoapy::CSDRSoapy(CConf* conf) :
 m_trace(false),

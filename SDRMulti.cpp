@@ -45,14 +45,7 @@ m_myAddress("127.0.0.1"),
 m_myPort(48100),
 m_modemAddress("127.0.0.1"),
 m_modemPort(48200),
-m_txTimeout(1000, 0, 250),
-m_power(0.0F),
-m_txFreq(0U),
-m_rxFreq(0U),
-m_pocsagFreq(0U),
-m_rxGain(50.0F),
-m_txGain(30.0F),
-m_pocsag(false)
+m_txTimeout(1000, 0, 250)
 {
   this->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
                         conf->getMultiModemAddress(), conf->getMultiModemPort());
@@ -199,7 +192,7 @@ int CSDRMulti::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* c
   if (this->readRXSamples(rxSamples) == RX_BLOCK_SIZE) {
     for (unsigned int i = 0; i < RX_BLOCK_SIZE; i++) {
       samples[i] = rxSamples[i].m_sample;
-      rssi[i] = rxSamples->m_rssi;
+      rssi[i] = rxSamples[i].m_rssi;
       control[i] = rxSamples[i].m_control;
     }
 
@@ -224,9 +217,6 @@ void CSDRMulti::write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, c
 
       m_txTimeout.start();
   }
-
-  // TODO - Set the correct transmit frequency for the mode if needed, even in the middle of a transmission
-  // setTXFrequency(mode == MMDVM_STATE::POCSAG);
 
   q15_t txLevel;
   switch (mode) {
@@ -257,13 +247,6 @@ uint16_t CSDRMulti::getTXSpace(unsigned int ch) const
   return m_txNetworkBuffer.freeSpace();
 }
 
-void CSDRMulti::setTXFrequency(bool pocsag)
-{
-  // TODO - support setup tx freqnency in MMDVM-Multi
-  (void)m_pocsag;
-  (void)m_pocsagFreq;
-}
-
 uint8_t CSDRMulti::setParameters()
 {
   return 0U;
@@ -278,27 +261,17 @@ void CSDRMulti::setIO(CIO* io, unsigned int ch) {
 
 void CSDRMulti::setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
 {
-  // TODO - support setup device info in MMDVM-Multi
-  m_rxGain = float(rxGain);
-  m_txGain = float(txGain);
+  (void)type;
+  (void)uri;
+  (void)rxGain;
+  (void)txGain;
 }
 
 uint8_t CSDRMulti::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)
 {
-  // TODO - support setup frequency in MMDVM-Multi
-  if ((txFreq < MIN_RF_FREQUENCY) || (txFreq > MAX_RF_FREQUENCY))
-    return 4U;
-
-  if ((rxFreq < MIN_RF_FREQUENCY) || (rxFreq > MAX_RF_FREQUENCY))
-    return 4U;
-
-  if ((pocsagFreq < MIN_RF_FREQUENCY) || (pocsagFreq > MAX_RF_FREQUENCY))
-    return 4U;
-
-  m_power      = float(power) / 255.0F;
-  m_txFreq     = txFreq;
-  m_rxFreq     = rxFreq;
-  m_pocsagFreq = pocsagFreq;
-
+  (void)power;
+  (void)txFreq;
+  (void)rxFreq;
+  (void)pocsagFreq;
   return 0U;
 }
