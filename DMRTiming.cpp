@@ -18,17 +18,6 @@
 
 #include "DMRTiming.h"
 
-DMRTimeSlot::DMRTimeSlot(uint8_t slot_no, long long slot_time, uint16_t slot_sample_counter) :
-slotNo(slot_no),
-slotTime(slot_time),
-slotSampleCounter(slot_sample_counter)
-{
-}
-
-DMRTimeSlot::~DMRTimeSlot()
-{
-}
-
 CDMRTiming::CDMRTiming(unsigned int rf_delay, int sample_delay) :
 m_timingMutex(),
 m_sampleDelay(0LL),
@@ -55,9 +44,6 @@ m_timeSlots()
 CDMRTiming::~CDMRTiming()
 {
     for (unsigned int k = 0U; k < MAX_MMDVM_CHANNELS; k++) {
-        for (unsigned int i = 0U; i < m_timeSlots[k].size(); i++)
-            delete m_timeSlots[k].at(i);
-
         m_timeSlots[k].clear();
     }
 }
@@ -108,19 +94,18 @@ uint8_t CDMRTiming::checkTime(unsigned int cn, bool time_base_received)
         return 0;
 
     long long sample_time = m_timeBase[cn] + m_sampleCounter[cn] * TIME_PER_SAMPLE - TOTAL_FILTER_DELAY - m_sampleDelay;
-    DMRTimeSlot* s = m_timeSlots[cn].at(0);
+    DMRTimeSlot& s = m_timeSlots[cn].at(0);
 
-    if (sample_time >= s->slotTime && s->slotSampleCounter == 0U) {
-        s->slotSampleCounter++;
-        return s->slotNo;
-    } else if (sample_time >= s->slotTime) {
-        if (s->slotSampleCounter >= (SAMPLES_PER_SLOT - 1U)) {
-            delete m_timeSlots[cn][0];
+    if (sample_time >= s.slotTime && s.slotSampleCounter == 0U) {
+        s.slotSampleCounter++;
+        return s.slotNo;
+    } else if (sample_time >= s.slotTime) {
+        if (s.slotSampleCounter >= (SAMPLES_PER_SLOT - 1U)) {
             m_timeSlots[cn].erase(m_timeSlots[cn].begin());
             return 0U;
         }
 
-        s->slotSampleCounter++;
+        s.slotSampleCounter++;
     }
 
     return 0U;
@@ -146,7 +131,10 @@ long long CDMRTiming::allocateSlot(uint8_t slot_no, int64_t& next_slot_timing_co
     }
 
     long long nsec = m_lastSlot[cn] + m_RFDelay;
-    DMRTimeSlot* s = new DMRTimeSlot(slot_no, nsec, 0U);
+    DMRTimeSlot s;
+    s.slotNo = slot_no;
+    s.slotTime = nsec;
+    s.slotSampleCounter = 0;
     m_timeSlots[cn].push_back(s);
 
     return nsec;

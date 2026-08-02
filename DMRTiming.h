@@ -26,14 +26,10 @@
 #include <vector>
 #include <cassert>
 
-class DMRTimeSlot {
-public:
-    DMRTimeSlot(uint8_t slot_no, long long slot_time, uint16_t slot_sample_counter); 
-    ~DMRTimeSlot();
-
-    uint8_t   slotNo;
-    long long slotTime;
-    uint16_t  slotSampleCounter;
+struct DMRTimeSlot {
+    uint8_t   slotNo    = 0;
+    long long slotTime  = 0;
+    uint16_t  slotSampleCounter = 0;
 };
 
 class CDMRTiming
@@ -59,7 +55,7 @@ private:
     long long m_sampleCounter[MAX_MMDVM_CHANNELS];
     long long m_lastSlot[MAX_MMDVM_CHANNELS];
     long long m_timeBase[MAX_MMDVM_CHANNELS];
-    std::vector<DMRTimeSlot*> m_timeSlots[MAX_MMDVM_CHANNELS];
+    std::vector<DMRTimeSlot> m_timeSlots[MAX_MMDVM_CHANNELS];
 
     long long getTimeDelta(unsigned int cn = 0U);
 };
