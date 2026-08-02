@@ -41,7 +41,11 @@ static const unsigned int MAX_SAMPLE_RATE = 250000U;
 static const unsigned int MAX_PFB_CHANNELS = 40U;  // max sample rate 1M
 static const unsigned int MAX_SAMPLE_RATE = 1000000U;
 #endif
+#if 1
+static const unsigned int PFB_FILTER_DELAY = 12;   // BG5HHP - reduce cpu load under RPi2
+#else
 static const unsigned int PFB_FILTER_DELAY = 48U;  // must reduce on RPi platforms if bursts are consistently late due to CPU load
+#endif
 static const unsigned int RESAMPLER_FILTER_DELAY = 24U; // ntaps = 2 * delay + 1
 static const unsigned int RESAMPLER_INTERPOLATION = 25U;
 static const unsigned int RESAMPLER_DECIMATION    = 24U;
