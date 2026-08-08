@@ -27,7 +27,6 @@ ifeq ($(USE_SOAPY_MULTI), 1)
 	LIBS+= -lSoapySDR -lliquid
 endif
 
-
 ifeq ($(DEBUG), 1)
 	CFLAGS+= -DDEBUG -g
 	CXXFLAGS+= -DDEBUG -g
@@ -35,6 +34,12 @@ ifeq ($(DEBUG), 1)
 else
 	CFLAGS+= -DNDEBUG -O3
 	CXXFLAGS+= -DNDEBUG -O3
+endif
+
+ifeq ($(SANITIZE), 1)
+	CFLAGS+= -fsanitize=address
+	CXXFLAGS+= -fsanitize=address
+	LDFLAGS+= -fsanitize=address
 endif
 
 ifeq ($(shell uname -s),Darwin)
