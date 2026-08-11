@@ -106,6 +106,7 @@ private:
   bool                 m_pocsag;
 
   void processIQBlock();
+  bool writeTXBlock(const std::vector<std::complex<float>>& samples, int flags = 0, long long timeNs = 0LL);
   void setTXFrequency(bool pocsag);
 };
 
