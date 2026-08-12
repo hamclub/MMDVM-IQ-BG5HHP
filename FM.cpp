@@ -1251,7 +1251,7 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
     // situation (see relayingExtStateDuplex()/relayingExtWaitStateDuplex()).
     if (!m_extGapTimer.isRunning()) {
       m_extGapTimer.start();
-      LogDebug("FM: ext tx buffer under-run ...");
+      LogDebug("FM: ext tx buffer empty...");
     } else if (m_extGapTimer.hasExpired()) {
       if (!m_rfSignal) {
         LogMessage("FM: state to LISTENING");
