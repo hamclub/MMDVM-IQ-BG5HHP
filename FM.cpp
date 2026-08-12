@@ -29,7 +29,7 @@ const uint16_t FM_SERIAL_BLOCK_SIZE = 80U;//this is the number of sample pairs t
                                           //three times this value shall never exceed 252
 const uint16_t FM_SERIAL_BLOCK_SIZE_BYTES = FM_SERIAL_BLOCK_SIZE * 3U;
 
-const uint16_t FM_LINK_EXT_GAP_MS = 60U;// How long a link-mode external-audio underrun is tolerated before it is
+const uint16_t FM_LINK_EXT_GAP_MS = 150U;// How long a link-mode external-audio underrun is tolerated before it is
 
 CFM::CFM() :
 m_callsign(),
@@ -466,6 +466,7 @@ uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFreque
   // LogMessage("FM RX Level %d", rxLevel);
   LogMessage("FM RF AudioBoost %d", m_rfAudioBoost);
   LogMessage("FM RX SQL %u/%u", squelchHighThreshold, squelchLowThreshold);
+  LogMessage("FM RX CTCSS SQL %u/%u", ctcssHighThreshold, ctcssLowThreshold);
   LogMessage("FM Link Mode %s", m_linkMode ? "On" : "Off");
   LogMessage("FM Access Mode %d", m_accessMode);
   LogMessage("FM BLK Param %d/%d", maxDev, timeoutLevel);
@@ -1250,6 +1251,7 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
     // situation (see relayingExtStateDuplex()/relayingExtWaitStateDuplex()).
     if (!m_extGapTimer.isRunning()) {
       m_extGapTimer.start();
+      LogDebug("FM: ext tx buffer under-run ...");
     } else if (m_extGapTimer.hasExpired()) {
       if (!m_rfSignal) {
         LogMessage("FM: state to LISTENING");
