@@ -17,6 +17,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if defined(USE_SOAPY_MULTI)
+
 #include "SoapyDevice.h"
 #include "Log.h"
 
@@ -207,3 +209,5 @@ void CSoapyDevice::setTx(bool tx)
 
     // poke GPIO/relay code here
 }
+
+#endif
