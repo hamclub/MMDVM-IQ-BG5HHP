@@ -85,17 +85,6 @@ void CSDRMulti::stop()
   LogMessage("SDRMulti stopped");
 }
 
-int CSDRMulti::readRXSamples(RXSample* rxSamples) {
-  if (m_rxNetworkBuffer.dataSize() >= RX_BLOCK_SIZE) {
-    for (uint16_t i = 0U; i < RX_BLOCK_SIZE; i++) {
-      m_rxNetworkBuffer.getData(*(rxSamples + i));
-    }
-    return RX_BLOCK_SIZE;
-  }
-
-  return 0;
-}
-
 void CSDRMulti::process(unsigned int ch)
 {
   (void) ch;
@@ -187,13 +176,13 @@ void CSDRMulti::process(unsigned int ch)
 int CSDRMulti::read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch) {
   (void) ch;
 
-  RXSample rxSamples[2];
-
-  if (this->readRXSamples(rxSamples) == RX_BLOCK_SIZE) {
+  if (m_rxNetworkBuffer.dataSize() >= RX_BLOCK_SIZE) {
     for (unsigned int i = 0; i < RX_BLOCK_SIZE; i++) {
-      samples[i] = rxSamples[i].m_sample;
-      rssi[i] = rxSamples[i].m_rssi;
-      control[i] = rxSamples[i].m_control;
+      RXSample rxSample;
+      m_rxNetworkBuffer.getData(rxSample);
+      samples[i] = rxSample.m_sample;
+      rssi[i] = rxSample.m_rssi;
+      control[i] = rxSample.m_control;
     }
 
     return RX_BLOCK_SIZE;
@@ -257,14 +246,6 @@ void CSDRMulti::setIO(CIO* io, unsigned int ch) {
     return;
 
   m_io = io;
-}
-
-void CSDRMulti::setDeviceInfo(const std::string& type, const std::string& uri, unsigned int rxGain, unsigned int txGain)
-{
-  (void)type;
-  (void)uri;
-  (void)rxGain;
-  (void)txGain;
 }
 
 uint8_t CSDRMulti::setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq)

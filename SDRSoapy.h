@@ -52,7 +52,7 @@ public:
   int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch = 0);
 
   uint16_t getTXSpace(unsigned int ch) const;
-  
+
   uint8_t setFrequency(uint8_t power, uint32_t txFreq, uint32_t rxFreq, uint32_t pocsagFreq);
   uint8_t setParameters();
 

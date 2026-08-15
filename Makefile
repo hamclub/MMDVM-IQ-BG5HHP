@@ -1,8 +1,9 @@
-#
-
-USE_MQTT ?= 0
+# By default, SoapySDR support is enabled.
+# `USE_SOAPY=0 make` to disable SoapySDR interface but still with access to MMDVM-Multi.
 USE_SOAPY ?= 1
 USE_SOAPY_MULTI ?= 1
+
+USE_MQTT ?= 0
 DEBUG ?= 0
 
 CC       ?= cc
