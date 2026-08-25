@@ -1,5 +1,6 @@
 /*
  *   Copyright (C) 2020,2021,2026 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2026 by Steve Miller KC1AWV
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -56,6 +57,12 @@ m_needReverse(false),
 m_filterStage1(  724,   1448,   724, 32768, -37895, 21352),//3rd order Cheby Filter 300 to 2700Hz, 0.2dB passband ripple, sampling rate 24kHz
 m_filterStage2(32768,      0,-32768, 32768, -50339, 19052),
 m_filterStage3(32768, -65536, 32768, 32768, -64075, 31460),
+m_dsFilterStage1(m_filterStage1),//same coefficients, separate state
+m_dsFilterStage2(m_filterStage2),
+m_dsFilterStage3(m_filterStage3),
+m_usFilterStage1(m_filterStage1),//same coefficients, separate state
+m_usFilterStage2(m_filterStage2),
+m_usFilterStage3(m_filterStage3),
 m_blanking(),
 m_accessMode(1U),
 m_linkMode(false),
@@ -65,8 +72,8 @@ m_downSampler(400U),// 100 ms of audio
 m_extEnabled(false),
 m_txLevel(128 * 128),
 m_rxLevel(1),
-m_inputRFRB(2401U, "FM Input Buffer"),   // 100ms of audio + 1 sample
-m_outputRFRB(4800U, "FM Output Buffer"),  // 200ms of audio
+m_inputRFRB(2402U, "FM Input Buffer"),   // 100ms of audio + 1 sample
+m_outputRFRB(2400U, "FM Output Buffer"),  // 100ms of audio
 m_inputExtRB(),
 m_rfSignal(false),
 m_extSignal(false),
@@ -112,6 +119,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     q15_t currentExtSample = 0;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
+    currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
     inputExt = inputExt && m_extEnabled;
 
     switch (m_accessMode) {
@@ -193,8 +201,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     if (modem.m_duplex) {
       if (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF || m_state == FM_STATE::RELAYING_EXT || m_state == FM_STATE::KERCHUNK_EXT) {
         currentSample = m_blanking.process(currentSample);
-        if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF))
-          m_downSampler.addSample(currentSample);
+        if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
+          q15_t dsSample = m_dsFilterStage3.filter(m_dsFilterStage2.filter(m_dsFilterStage1.filter(currentSample)));
+          m_downSampler.addSample(dsSample);
+        }
 
         currentSample *= currentBoost;
       } else {
@@ -204,9 +214,11 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
         if (m_state == FM_STATE::RELAYING_EXT || m_state == FM_STATE::KERCHUNK_EXT) {
           currentSample *= currentBoost;
         } else {
-          if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF))
-            m_downSampler.addSample(currentSample);
-          continue; 
+          if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
+            q15_t dsSample = m_dsFilterStage3.filter(m_dsFilterStage2.filter(m_dsFilterStage1.filter(currentSample)));
+            m_downSampler.addSample(dsSample);
+          }
+          continue;
         }
     }
 
@@ -258,7 +270,8 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     // with the ext-gap debounce below, m_extSignal can now stay true for a
     // few samples past that point
     q15_t currentExtSample = 0;
-    bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
+    bool inputExt    = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
+    currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
     inputExt = inputExt && m_extEnabled;
 
     switch (m_accessMode) {
@@ -328,7 +341,8 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     if (m_rfSignal && m_extEnabled) {
       q15_t currentSample = m_blanking.process(currentRFSample);
-      m_downSampler.addSample(currentSample);
+      q15_t dsSample      = m_dsFilterStage3.filter(m_dsFilterStage2.filter(m_dsFilterStage1.filter(currentSample)));
+      m_downSampler.addSample(dsSample);
     }
 
     if (!m_extSignal)
@@ -445,7 +459,7 @@ uint8_t CFM::setAck(const char* rfAck, uint8_t speed, uint16_t frequency, uint8_
   return m_rfAck.setParams(rfAck, speed, frequency, level, level);
 }
 
-uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssFrequencyTX, uint16_t ctcssHighThreshold, uint16_t ctcssLowThreshold, uint8_t ctcssLevel, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, uint16_t squelchHighThreshold, uint16_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
+uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFrequency, uint8_t ctcssFrequencyTX, uint8_t ctcssHighThreshold, uint8_t ctcssLowThreshold, uint8_t ctcssLevelTX, uint8_t kerchunkTime, uint8_t hangTime, uint8_t accessMode, bool linkMode, bool cosInvert, uint8_t squelchHighThreshold, uint8_t squelchLowThreshold, uint8_t rfAudioBoost, uint8_t maxDev, uint8_t rxLevel)
 {
   m_accessMode   = accessMode;
   m_linkMode     = linkMode;
@@ -471,14 +485,14 @@ uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFreque
   LogMessage("FM Access Mode %d", m_accessMode);
   LogMessage("FM BLK Param %d/%d", maxDev, timeoutLevel);
 
-  m_squelch.setParams(squelchHighThreshold, squelchLowThreshold);
+  m_squelch.setParams(squelchHighThreshold, squelchLowThreshold, cosInvert);
 
   uint8_t ret = m_ctcssRX.setParams(ctcssFrequency, ctcssHighThreshold, ctcssLowThreshold);
   if (ret != 0U)
     return ret;
 
   if (ctcssFrequencyTX > 0)
-    ret = m_ctcssTX.setParams(ctcssFrequencyTX, ctcssLevel);
+    ret = m_ctcssTX.setParams(ctcssFrequencyTX, ctcssLevelTX);
 
   return ret;
 }
@@ -766,8 +780,10 @@ void CFM::relayingRFStateDuplex(bool validSignal)
 
     m_ackDelayTimer.start();
 
-    if (m_extEnabled)
+    if (m_extEnabled) {
+      m_downSampler.reset();
       getSerial().writeFMEOT();
+    }
   }
 
   if (m_callsignTimer.isRunning() && m_callsignTimer.hasExpired()) {

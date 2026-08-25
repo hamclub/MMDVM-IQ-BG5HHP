@@ -1,5 +1,6 @@
 /*
  *   Copyright (C) 2020,2026 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2026 by Steve Miller KC1AWV
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -28,8 +29,8 @@ public:
 	CFMSquelch();
 	~CFMSquelch();
 
-	void setParams(uint16_t highThreshold, uint16_t lowThreshold);
-  
+	void setParams(uint16_t highThreshold, uint16_t lowThreshold, bool invert);
+
 	bool process(uint16_t rssi);
 
 	void reset();
@@ -39,6 +40,8 @@ private:
 	uint16_t m_lowThreshold;
 	uint16_t  m_count;
 	bool     m_state;
+	bool	 m_invert;
+	bool     m_configured;
 };
 
 #endif

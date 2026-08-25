@@ -45,8 +45,8 @@ public:
 
   virtual void stop() = 0;
 
-  virtual void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control, unsigned int ch)  = 0;
-  virtual int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch)  = 0;
+  virtual void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = nullptr, unsigned int ch = 0)  = 0;
+  virtual int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control = nullptr, unsigned int ch = 0)  = 0;
 
   virtual void setIO(CIO* io, unsigned int ch) = 0;
 

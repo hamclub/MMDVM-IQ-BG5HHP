@@ -978,7 +978,7 @@ uint8_t CSerialPort::setFMParams3(const uint8_t* data, uint16_t length)
     ctcssFrequencyTX = data[14U];
 
   // rxLevel = 255;
-  return m_io->getModem().fm.setMisc(timeout, timeoutLevel, ctcssFrequency, ctcssFrequencyTX, ctcssHighThreshold, ctcssLowThreshold, ctcssLevel, kerchunkTime, hangTime, accessMode, linkMode, squelchHighThreshold, squelchLowThreshold, rfAudioBoost, maxDev, rxLevel);
+  return m_io->getModem().fm.setMisc(timeout, timeoutLevel, ctcssFrequency, ctcssFrequencyTX, ctcssHighThreshold, ctcssLowThreshold, ctcssLevel, kerchunkTime, hangTime, accessMode, linkMode, cosInvert, squelchHighThreshold, squelchLowThreshold, rfAudioBoost, maxDev, rxLevel);
 }
 
 uint8_t CSerialPort::setFMParams4(const uint8_t* data, uint16_t length)

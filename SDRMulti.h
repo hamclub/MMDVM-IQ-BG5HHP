@@ -43,7 +43,7 @@ public:
 
   void setAddress(std::string myAddress, unsigned short myPort, std::string modemAddress, unsigned short modemPort);
 
-  void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = NULL, unsigned int ch = 0);
+  void write(MMDVM_STATE mode, const q15_t* samples, uint16_t length, const uint8_t* control = nullptr, unsigned int ch = 0);
   int read(MMDVM_STATE mode, q15_t* samples, uint16_t* rssi, uint8_t* control, unsigned int ch = 0);
 
   uint16_t getTXSpace(unsigned int ch) const;
