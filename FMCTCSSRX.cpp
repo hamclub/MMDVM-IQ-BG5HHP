@@ -24,6 +24,8 @@
 #include "Globals.h"
 #include "FMCTCSSRX.h"
 
+#include <cmath>
+
 const struct RX_CTCSS_TABLE {
   uint8_t frequency;
   q63_t   coeffDivTwo;
