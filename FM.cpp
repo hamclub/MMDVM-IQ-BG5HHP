@@ -119,8 +119,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     q15_t currentExtSample = 0;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
-    currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
     inputExt = inputExt && m_extEnabled;
+
+    if (inputExt)
+      currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
 
     switch (m_accessMode) {
       case 0U:
@@ -271,8 +273,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     // few samples past that point
     q15_t currentExtSample = 0;
     bool inputExt    = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
-    currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
     inputExt = inputExt && m_extEnabled;
+
+    if (inputExt)
+      currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
 
     switch (m_accessMode) {
       case 0U:
