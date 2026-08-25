@@ -84,7 +84,7 @@ public:
 		// calculate the output
 		q31_t out_upscaled = c_b0 * in + c_b1 * m_x1 + c_b2 * m_x2 - c_a1 * m_y1 - c_a2 * m_y2;
 
-		q15_t out = __SSAT(out_upscaled >> 15, 15);
+		q15_t out = __SSAT((out_upscaled + (1 << 14)) >> 15, 16);
 
 		// update the delay lines
 		m_x2 = m_x1;
