@@ -246,8 +246,8 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     if (!m_callsign.isRunning() && !m_rfAck.isRunning() && !m_extAck.isRunning())
       currentSample += m_timeoutTone.getAudio();
 
-    // Decrease the CTCSS(16bit) level / 4
-    currentSample += (m_ctcssTX.getAudio(m_reverseTimer.isRunning()) >> 2);
+    // Apply the CTCSS(16bit) level, 20% by default
+    currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
     q31_t res1 = currentSample * m_txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
@@ -363,8 +363,8 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     // Increase the audio(12bit) level x 2
     currentSample = currentSample * 2;
 
-    // Decrease the CTCSS(16bit) level / 4
-    currentSample += (m_ctcssTX.getAudio(m_reverseTimer.isRunning()) >> 2);
+    // Apply the CTCSS(16bit) level, 20% by default
+    currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
     q31_t res1 = currentSample * m_txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
