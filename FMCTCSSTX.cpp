@@ -23,6 +23,8 @@
 #include "Globals.h"
 #include "FMCTCSSTX.h"
 
+#include <cmath>
+
 const struct TX_CTCSS_TABLE {
   uint8_t  frequency;
   uint16_t length;
