@@ -247,7 +247,7 @@ int CMMDVMIQ::run()
 
 #elif defined(USE_SOAPY)
         activeModems = 1;
-        sdrDevice = new CSDRSoapy(&m_conf);
+        sdrDevice = new CSDRSoapy(&conf);
 
 #else
         ::LogFatal("The SoapySDR interface isn't supported in this build");
