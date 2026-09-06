@@ -288,7 +288,7 @@ int CMMDVMIQ::run()
         modems[i]->process();
       }
 
-      if (driver == "Multi")
+    //   if (driver == "Multi")
         CThread::sleep(1U);
     }
 
