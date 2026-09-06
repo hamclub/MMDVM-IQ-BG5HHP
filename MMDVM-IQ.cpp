@@ -29,6 +29,7 @@
 #include "Globals.h"
 #include "Version.h"
 #include "Thread.h"
+#include "Conf.h"
 #include "Log.h"
 #include "GitVersion.h"
 
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
 }
 
 CMMDVMIQ::CMMDVMIQ(const std::string& filename) :
-m_conf(filename)
+m_filename(filename)
 {
 }
 
@@ -134,22 +135,23 @@ CMMDVMIQ::~CMMDVMIQ()
 
 int CMMDVMIQ::run()
 {
-    bool ret = m_conf.read();
+    CConf conf(m_filename);
+
+    bool ret = conf.read();
     if (!ret) {
         ::fprintf(stderr, "MMDVM-IQ: cannot read the .ini file\n");
         return 1;
     }
 
 #if !defined(_WIN32) && !defined(_WIN64)
-    bool m_daemon = m_conf.getDaemon();
+    bool m_daemon = conf.getDaemon();
     if (m_daemon) {
         // Create new process
         pid_t pid = ::fork();
         if (pid == -1) {
             ::fprintf(stderr, "Couldn't fork() , exiting\n");
             return -1;
-        }
-        else if (pid != 0) {
+        } else if (pid != 0) {
             exit(EXIT_SUCCESS);
         }
 
@@ -196,10 +198,10 @@ int CMMDVMIQ::run()
     }
 #endif
 #if defined(USE_MQTT) && USE_MQTT == 1
-    ::LogInitialise(m_conf.getLogDisplayLevel(), m_conf.getLogMQTTLevel());
+    ::LogInitialise(conf.getLogDisplayLevel(), conf.getLogMQTTLevel());
 
     std::vector<std::pair<std::string, void (*)(const unsigned char*, unsigned int)>> subscriptions;
-    m_mqtt = new CMQTTConnection(m_conf.getMQTTHost(), m_conf.getMQTTPort(), m_conf.getMQTTName(), m_conf.getMQTTAuthEnabled(), m_conf.getMQTTUsername(), m_conf.getMQTTPassword(), subscriptions, m_conf.getMQTTKeepalive());
+    m_mqtt = new CMQTTConnection(conf.getMQTTHost(), conf.getMQTTPort(), conf.getMQTTName(), conf.getMQTTAuthEnabled(), conf.getMQTTUsername(), conf.getMQTTPassword(), subscriptions, conf.getMQTTKeepalive());
     ret = m_mqtt->open();
     if (!ret) {
         ::fprintf(stderr, "MMDVM-IQ: unable to start the MQTT Publisher\n");
@@ -208,10 +210,10 @@ int CMMDVMIQ::run()
     }
 #else
     bool logUTC = false;
-    ::LogInitialiseFile(m_conf.getDaemon(), m_conf.getLogFilePath().c_str(), m_conf.getLogFileRoot().c_str(), m_conf.getLogFileLevel(), m_conf.getLogDisplayLevel(), logUTC);
+    ::LogInitialiseFile(conf.getDaemon(), conf.getLogFilePath().c_str(), conf.getLogFileRoot().c_str(), conf.getLogFileLevel(), conf.getLogDisplayLevel(), logUTC);
 #endif
 
-    uint8_t ver = m_conf.getModemVersion();
+    uint8_t ver = conf.getModemVersion();
     LogMessage("Modem version: %u", ver);
 
     // Create the SDR device singleton
@@ -219,26 +221,28 @@ int CMMDVMIQ::run()
 
     ISDRDevice *sdrDevice = nullptr;
 
-    if (m_conf.getMultiModem()) {
+    std::string driver = conf.getModemDriver();
+
+    if (driver == "Multi") {
         LogDebug("MultiModem network mode enabled");
         activeModems = 1;
-        sdrDevice = new CSDRMulti(&m_conf);
+        sdrDevice = new CSDRMulti(&conf);
     } else {
 #if defined(USE_SOAPY_MULTI)
-        activeModems = m_conf.getActiveChannels();
+        activeModems = conf.getActiveChannels();
         if (activeModems > MAX_MMDVM_MODEMS)
             activeModems = MAX_MMDVM_MODEMS;
 
         if (activeModems < 1)
             activeModems = 1;
 
-        if (!m_conf.getDisableMulti())
-            sdrDevice = new CSDRSoapyMulti(&m_conf);
+        if (!conf.getDisableMulti())
+            sdrDevice = new CSDRSoapyMulti(&conf);
         else {
             // Force to run single channel mode
             LogWarning("SDRSoapyMulti is disabled, force 1 channel mode");
             activeModems = 1;
-            sdrDevice = new CSDRSoapy(&m_conf);     // fall back to the single threaded implementation
+            sdrDevice = new CSDRSoapy(&conf);     // fall back to the single threaded implementation
         }
 
 #elif defined(USE_SOAPY)
@@ -266,7 +270,7 @@ int CMMDVMIQ::run()
         io->setSDRDevice(sdrDevice);
 
         // start io(serial,sdr)
-        ret = io->start(&m_conf);
+        ret = io->start(&conf);
         if (!ret) {
             LogError("Unable to open the modem");
             return 1;
@@ -284,7 +288,8 @@ int CMMDVMIQ::run()
         modems[i]->process();
       }
 
-      CThread::sleep(1U);
+      if (driver == "Multi")
+        CThread::sleep(1U);
     }
 
     LogInfo("MMDVM-IQ is stopping");
