@@ -231,14 +231,14 @@ bool CIO::start(CConf* conf)
 
   // start serial
   assert(m_serial);
-  std::string localAddress = conf->getNetworkLocalAddress();
-  unsigned short localPort = conf->getNetworkLocalPort() + ch;
-  std::string hostAddress  = conf->getNetworkHostAddress();
-  unsigned short hostPort  = conf->getNetworkHostPort() + ch;
+  std::string localAddress = conf->getLocalAddress();
+  unsigned short localPort = conf->getLocalPort() + ch;
+  std::string hostAddress  = conf->getHostAddress();
+  unsigned short hostPort  = conf->getHostPort() + ch;
 
   m_serial->setVersion(conf->getModemVersion());
 
-  m_started = m_serial->start(localAddress, localPort, hostAddress, hostPort, conf->getNetworkTrace());
+  m_started = m_serial->start(localAddress, localPort, hostAddress, hostPort, conf->getTrace());
   if (!m_started)
     LogError("Unable to open the host network connection for modem[%u]", ch);
 

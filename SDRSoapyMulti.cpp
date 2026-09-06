@@ -51,8 +51,8 @@ m_txMutex()
     assert(conf);
 
     // Determin device sample rate
-    std::string modemType = conf->getModemType();
-    std::string modemURI  = conf->getModemURI();
+    std::string modemType = conf->getSoapyType();
+    std::string modemURI  = conf->getSoapyURI();
     // LogDebug("SDRSoapyMulti Device: %s, %s", modemType.c_str(), modemURI.c_str());
 
     if (modemType.compare("sx") == 0 || modemType.compare("mucell") == 0) {
@@ -144,17 +144,17 @@ bool CSDRSoapyMulti::startSDRInt() {
     }
 
     // SDR Device
-    float rx_gain = float(m_conf->getRxGain());
-    float tx_gain = float(m_conf->getTxGain());;
+    float rx_gain = float(m_conf->getSoapyRXGain());
+    float tx_gain = float(m_conf->getSoapyTXGain());;
     float rx_freq = (float)m_rxFreq - DEFAULT_BASEBAND_SHIFT;
     float tx_freq = (float)m_txFreq - DEFAULT_BASEBAND_SHIFT;
     // float pocsag_freq = (float)m_pocsagFreq - DEFAULT_BASEBAND_SHIFT;
 
     // TODO - determin fro config
-    std::string rx_antenna = m_conf->getRxAntenna();    // "LNAH";
-    std::string tx_antenna = m_conf->getTxAntenna();    // "BAND1";
-    std::string deviceType = m_conf->getModemType();    // "limesdr"
-    std::string modemURI   = m_conf->getModemURI();
+    std::string rx_antenna = m_conf->getSoapyRXAntenna();    // "LNAH";
+    std::string tx_antenna = m_conf->getSoapyTXAntenna();    // "BAND1";
+    std::string deviceType = m_conf->getSoapyType();    // "limesdr"
+    std::string modemURI   = m_conf->getSoapyURI();
 
     bool needs_timestamp = true;
     if (deviceType.compare("plutosdr") == 0 || deviceType.compare("pluto") == 0)

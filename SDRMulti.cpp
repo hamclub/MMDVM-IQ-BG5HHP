@@ -47,7 +47,7 @@ m_modemAddress("127.0.0.1"),
 m_modemPort(48200),
 m_txTimeout(1000, 0, 250)
 {
-  this->setAddress(conf->getMultiModemLocalAddress(), conf->getMultiModemLocalPort(), 
+  this->setAddress(conf->getMultiLocalAddress(), conf->getMultiLocalPort(), 
                         conf->getMultiModemAddress(), conf->getMultiModemPort());
 }
 

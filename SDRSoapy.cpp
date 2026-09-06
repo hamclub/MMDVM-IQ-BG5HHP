@@ -80,11 +80,11 @@ m_rxStream(nullptr),
 m_txStream(nullptr),
 m_pocsag(false)
 {
-  m_soapyDeviceType = conf->getModemType();
-  m_soapyDeviceURI  = conf->getModemURI();
+  m_soapyDeviceType = conf->getSoapyType();
+  m_soapyDeviceURI  = conf->getSoapyURI();
 
-  m_rxGain = float(conf->getRxGain());
-  m_txGain = float(conf->getTxGain());
+  m_rxGain = float(conf->getSoapyRXGain());
+  m_txGain = float(conf->getSoapyTXGain());
 }
 
 CSDRSoapy::~CSDRSoapy()
