@@ -26,6 +26,7 @@
 
 #include "IO.h"
 
+#include "BiquadCascadeFilter.h"
 #include "FMBlanking.h"
 #include "FMCTCSSRX.h"
 #include "FMCTCSSTX.h"
@@ -97,15 +98,11 @@ private:
   CFMTimer             m_reverseTimer;
   CFMTimer             m_extGapTimer;   // debounce for link-mode ext-audio underrun, see linkStateMachine()
   bool                 m_needReverse;
-  CFMDirectFormI       m_filterStage1;
-  CFMDirectFormI       m_filterStage2;
-  CFMDirectFormI       m_filterStage3;
-  // CFMDirectFormI       m_dsFilterStage1; // anti-alias filter for the downsampler, own state
-  // CFMDirectFormI       m_dsFilterStage2;
-  // CFMDirectFormI       m_dsFilterStage3;
-  // CFMDirectFormI       m_usFilterStage1; // reconstruction filter for the upsampler, own state
-  // CFMDirectFormI       m_usFilterStage2;
-  // CFMDirectFormI       m_usFilterStage3;
+  // CFMDirectFormI       m_filterStage1;
+  // CFMDirectFormI       m_filterStage2;
+  // CFMDirectFormI       m_filterStage3;
+  CBiquadCascadeFilter *m_rxBPF;
+  CBiquadCascadeFilter *m_txBPF;
   CFMBlanking          m_blanking;
   uint8_t              m_accessMode;
   bool                 m_linkMode;

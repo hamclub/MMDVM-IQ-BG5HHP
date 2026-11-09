@@ -54,15 +54,11 @@ m_hangTimer(),
 m_reverseTimer(),
 m_extGapTimer(),
 m_needReverse(false),
-m_filterStage1(  724,   1448,   724, 32768, -37895, 21352),//3rd order Cheby Filter 300 to 2700Hz, 0.2dB passband ripple, sampling rate 24kHz
-m_filterStage2(32768,      0,-32768, 32768, -50339, 19052),
-m_filterStage3(32768, -65536, 32768, 32768, -64075, 31460),
-// m_dsFilterStage1(m_filterStage1),//same coefficients, separate state
-// m_dsFilterStage2(m_filterStage2),
-// m_dsFilterStage3(m_filterStage3),
-// m_usFilterStage1(m_filterStage1),//same coefficients, separate state
-// m_usFilterStage2(m_filterStage2),
-// m_usFilterStage3(m_filterStage3),
+// m_filterStage1(  724,   1448,   724, 32768, -37895, 21352),//3rd order Cheby Filter 300 to 2700Hz, 0.2dB passband ripple, sampling rate 24kHz
+// m_filterStage2(32768,      0,-32768, 32768, -50339, 19052),
+// m_filterStage3(32768, -65536, 32768, 32768, -64075, 31460),
+m_rxBPF(nullptr),
+m_txBPF(nullptr),
 m_blanking(),
 m_accessMode(1U),
 m_linkMode(false),
@@ -83,11 +79,59 @@ m_rssiCount(0U)
   m_reverseTimer.setTimeout(0U, 150U);
   m_extGapTimer.setTimeout(0U, FM_LINK_EXT_GAP_MS);
 
+#if 0
+  const float fm_bandpass_cheby_coeffs_24k[] = {
+    0.0698815715f,   0.1397631426f,   0.0698815715f,   1.1564636230f,  -0.6516113281f, // Stage 0
+    0.3258519123f,   0.0000000000f,  -0.3258519123f,   1.5362243652f,  -0.5814208984f, // Stage 1
+    0.9702992488f,  -1.9405984976f,   0.9702992488f,   1.9554138184f,  -0.9600830078f, // Stage 2
+  };
+  m_rxBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k, 3, 5);
+  m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k, 3, 5, 2.0F);
+#else
+  // const float fm_tx_bandpass_cheby_coeffs_24k[] {
+  //   0.0698820309f,   0.1397640617f,   0.0698820309f,   1.1564526104f,  -0.6516157751f, // Stage 0
+  //   0.3258642347f,   0.0000000000f,  -0.3258642347f,   1.5362245446f,  -0.5814143643f, // Stage 1
+  //   0.9700881795f,  -1.9401763590f,   0.9700881795f,   1.9554038617f,  -0.9600690929f, // Stage 2
+  // };
+  // const float fm_bandpass_cheby_coeffs_24k_3[] = {
+  //   0.0151382882f,   0.0302765764f,   0.0151382882f,   1.5356789454f,  -0.5962320981f, // Stage 0
+  //   1.3676376303f,   0.0000000000f,  -1.3676376303f,   1.1794858590f,  -0.6697751801f, // Stage 1
+  //   0.9566574301f,  -1.9133148602f,   0.9566574301f,   1.9408895813f,  -0.9493406142f, // Stage 2
+  // };
+  // m_txBPF = new CBiquadCascadeFilter((const float*)fm_bandpass_cheby_coeffs_24k_3, 3, 5, 2.0F);
+
+  // sb1=250Hz sb1=250, pb=[300,2700], sb2=3100,rb=0.2, atten=40
+  const float fm_bandpass_cheby_coeffs_24k_5[] = {
+    0.0422187885f,   0.0844375697f,   0.0422187885f,   1.4310610838f,  -0.6768228872f, // Stage 0
+    0.0170908061f,   0.0341816123f,   0.0170908061f,   1.6895492886f,  -0.7392493328f, // Stage 1
+    0.8605128578f,   0.0000000000f,  -0.8605128578f,   1.3805553365f,  -0.8612065105f, // Stage 2
+    0.9462138895f,  -1.8924277790f,   0.9462138895f,   1.9165327731f,  -0.9267440881f, // Stage 3
+    0.9794264818f,  -1.9588529636f,   0.9794264818f,   1.9778068368f,  -0.9834200354f, // Stage 4
+  };
+  m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_5, 5, 5, 2.0F);
+  m_rxBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_5, 5, 5);
+
+  // sb1=250Hz sb1=200, pb=[400,2700], sb2=3100,rb=0.2, atten=40
+  // const float fm_bandpass_cheby_coeffs_24k_7[] = {
+  //   0.0256293030f,   0.0512586060f,   0.0256293030f,   1.5872589600f,  -0.7706458812f, // Stage 0
+  //   0.0165058336f,   0.0330116672f,   0.0165058336f,   1.7480938944f,  -0.8170227528f, // Stage 1
+  //   0.0722968612f,   0.1445937224f,   0.0722968612f,   1.4764331043f,  -0.8218110744f, // Stage 2
+  //   0.0653746323f,   0.0000000000f,  -0.0653746323f,   1.8823917744f,  -0.9083382012f, // Stage 3
+  //   5.9353904996f, -11.8707809991f,   5.9353904996f,   1.4528148211f,  -0.9319767534f, // Stage 4
+  //   0.9519682252f,  -1.9039364503f,   0.9519682252f,   1.9470657895f,  -0.9610168297f, // Stage 5
+  //   0.9720728646f,  -1.9441457291f,   0.9720728646f,   1.9786322909f,  -0.9891095507f, // Stage 6
+  // };
+  // m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_7, 7, 5, 2.0F);
+
+#endif
+
   insertDelay(100U);
 }
 
 CFM::~CFM()
 {
+  delete m_rxBPF;
+  delete m_txBPF;
 }
 
 void CFM::samples(q15_t* samples, const uint16_t* rssi, uint8_t length)
@@ -206,7 +250,8 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
       if (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF || m_state == FM_STATE::RELAYING_EXT || m_state == FM_STATE::KERCHUNK_EXT) {
         currentSample = m_blanking.process(currentSample);
         if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
-          m_downSampler.addSample(currentSample);
+          q15_t rxSample = m_rxBPF ? m_rxBPF->process(currentSample) : currentSample;
+          m_downSampler.addSample(rxSample);
         }
 
         currentSample *= currentBoost;
@@ -218,7 +263,8 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           currentSample *= currentBoost;
         } else {
           if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
-            m_downSampler.addSample(currentSample);
+            q15_t rxSample = m_rxBPF ? m_rxBPF->process(currentSample) : currentSample;
+            m_downSampler.addSample(rxSample);
           }
           continue;
         }
@@ -237,9 +283,13 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
         currentSample += m_callsign.getLowAudio();
     }
 
-    currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
+    if (m_txBPF)
+      currentSample = m_txBPF->process(currentSample);
+    // else
+    //   currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
+
     // Increase the audio(12bit) level x 2
-    currentSample = currentSample * 2;
+    // currentSample = currentSample * 2;
 
     if (!m_callsign.isRunning() && !m_rfAck.isRunning() && !m_extAck.isRunning())
       currentSample += m_timeoutTone.getAudio();
@@ -346,24 +396,29 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
       continue;
 
     if (m_rfSignal && m_extEnabled) {
-      q15_t currentSample = m_blanking.process(currentRFSample);
-      m_downSampler.addSample(currentSample);
+      q15_t rxSample = m_blanking.process(currentRFSample);
+      if (m_rxBPF)
+        rxSample = m_rxBPF->process(rxSample);
+      m_downSampler.addSample(rxSample);
     }
 
     if (!m_extSignal)
       continue;
 
-    q15_t currentSample = currentExtSample * m_extAudioBoost;
+    // txSample is 12bit [-2048,2048)
+    q15_t txSample = currentExtSample * m_extAudioBoost;
 
-    currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
+    if (m_txBPF)
+      txSample = m_txBPF->process(txSample);
 
     // Increase the audio(12bit) level x 2
-    currentSample = currentSample * 2;
+    // txSample = txSample * 2;
 
     // Apply the CTCSS(16bit) level, 20% by default
-    currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
+    txSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
-    q31_t res1 = currentSample * m_txLevel;
+    // Convert to 12bit
+    q31_t res1 = txSample * m_txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
     m_outputRFRB.addData(res2);
@@ -432,9 +487,15 @@ void CFM::reset()
   m_downSampler.reset();
   m_squelch.reset();
 
-  m_filterStage1.reset();
-  m_filterStage2.reset();
-  m_filterStage3.reset();
+  // m_filterStage1.reset();
+  // m_filterStage2.reset();
+  // m_filterStage3.reset();
+
+  if (m_rxBPF)
+    m_rxBPF->reset();
+
+  if (m_txBPF)
+    m_txBPF->reset();
 
   m_needReverse = false;
   m_rfSignal    = false;
@@ -750,9 +811,8 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
     m_state = FM_STATE::LISTENING;
     getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
-    m_filterStage1.reset();
-    m_filterStage2.reset();
-    m_filterStage3.reset();
+    if (m_rxBPF)
+      m_rxBPF->reset();
 
     m_kerchunkTimer.stop();
     m_timeoutTimer.stop();
@@ -886,9 +946,8 @@ void CFM::relayingRFWaitStateSimplex(bool validSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
-      m_filterStage1.reset();
-      m_filterStage2.reset();
-      m_filterStage3.reset();
+      if (m_rxBPF)
+        m_rxBPF->reset();
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -914,6 +973,9 @@ void CFM::kerchunkExtStateDuplex(bool validSignal)
     LogMessage("FM: state to LISTENING");
     m_state = FM_STATE::LISTENING;
     getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
+
+    if (m_txBPF)
+      m_txBPF->reset();
 
     m_kerchunkTimer.stop();
     m_timeoutTimer.stop();
@@ -1020,6 +1082,9 @@ void CFM::relayingExtWaitStateSimplex(bool validSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
+      if (m_txBPF)
+        m_txBPF->reset();
+
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
       m_needReverse = true;
@@ -1058,9 +1123,11 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
 
       m_hangTimer.stop();
 
-      m_filterStage1.reset();
-      m_filterStage2.reset();
-      m_filterStage3.reset();
+      if (m_rxBPF)
+        m_rxBPF->reset();
+
+      if (m_txBPF)
+        m_txBPF->reset();
 
       if (m_callsignAtEnd)
         sendCallsign();
@@ -1150,9 +1217,8 @@ void CFM::timeoutRFWaitStateSimplex(bool validSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
-      m_filterStage1.reset();
-      m_filterStage2.reset();
-      m_filterStage3.reset();
+      if (m_rxBPF)
+        m_rxBPF->reset();
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -1231,6 +1297,9 @@ void CFM::timeoutExtWaitStateSimplex(bool validSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
+      if (m_txBPF)
+        m_txBPF->reset();
+
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
       m_needReverse = true;
@@ -1274,9 +1343,8 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
-      m_filterStage1.reset();
-      m_filterStage2.reset();
-      m_filterStage3.reset();
+      if (m_rxBPF)
+        m_rxBPF->reset();
     }
 
     m_rfSignal = false;
@@ -1303,6 +1371,8 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
         LogMessage("FM: state to LISTENING");
         m_state = FM_STATE::LISTENING;
         getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
+        if (m_txBPF)
+          m_txBPF->reset();
       }
 
       m_needReverse = true;
