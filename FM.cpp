@@ -57,12 +57,12 @@ m_needReverse(false),
 m_filterStage1(  724,   1448,   724, 32768, -37895, 21352),//3rd order Cheby Filter 300 to 2700Hz, 0.2dB passband ripple, sampling rate 24kHz
 m_filterStage2(32768,      0,-32768, 32768, -50339, 19052),
 m_filterStage3(32768, -65536, 32768, 32768, -64075, 31460),
-m_dsFilterStage1(m_filterStage1),//same coefficients, separate state
-m_dsFilterStage2(m_filterStage2),
-m_dsFilterStage3(m_filterStage3),
-m_usFilterStage1(m_filterStage1),//same coefficients, separate state
-m_usFilterStage2(m_filterStage2),
-m_usFilterStage3(m_filterStage3),
+// m_dsFilterStage1(m_filterStage1),//same coefficients, separate state
+// m_dsFilterStage2(m_filterStage2),
+// m_dsFilterStage3(m_filterStage3),
+// m_usFilterStage1(m_filterStage1),//same coefficients, separate state
+// m_usFilterStage2(m_filterStage2),
+// m_usFilterStage3(m_filterStage3),
 m_blanking(),
 m_accessMode(1U),
 m_linkMode(false),
@@ -121,10 +121,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
     inputExt = inputExt && m_extEnabled;
 
-#if 0
-    if (inputExt)
-      currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
-#endif
+// #if 0
+//     if (inputExt)
+//       currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
+// #endif
 
     switch (m_accessMode) {
       case 0U:
@@ -206,8 +206,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
       if (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF || m_state == FM_STATE::RELAYING_EXT || m_state == FM_STATE::KERCHUNK_EXT) {
         currentSample = m_blanking.process(currentSample);
         if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
-          q15_t dsSample = m_dsFilterStage3.filter(m_dsFilterStage2.filter(m_dsFilterStage1.filter(currentSample)));
-          m_downSampler.addSample(dsSample);
+          m_downSampler.addSample(currentSample);
         }
 
         currentSample *= currentBoost;
@@ -219,8 +218,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           currentSample *= currentBoost;
         } else {
           if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
-            q15_t dsSample = m_dsFilterStage3.filter(m_dsFilterStage2.filter(m_dsFilterStage1.filter(currentSample)));
-            m_downSampler.addSample(dsSample);
+            m_downSampler.addSample(currentSample);
           }
           continue;
         }
@@ -277,10 +275,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     bool inputExt    = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
     inputExt = inputExt && m_extEnabled;
 
-#if 0
-    if (inputExt)
-      currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
-#endif
+// #if 0
+//     if (inputExt)
+//       currentExtSample = m_usFilterStage3.filter(m_usFilterStage2.filter(m_usFilterStage1.filter(currentExtSample)));
+// #endif
 
     switch (m_accessMode) {
       case 0U:
@@ -349,8 +347,7 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     if (m_rfSignal && m_extEnabled) {
       q15_t currentSample = m_blanking.process(currentRFSample);
-      q15_t dsSample      = m_dsFilterStage3.filter(m_dsFilterStage2.filter(m_dsFilterStage1.filter(currentSample)));
-      m_downSampler.addSample(dsSample);
+      m_downSampler.addSample(currentSample);
     }
 
     if (!m_extSignal)
@@ -433,7 +430,12 @@ void CFM::reset()
   m_inputExtRB.reset();
 
   m_downSampler.reset();
-  
+  m_squelch.reset();
+
+  m_filterStage1.reset();
+  m_filterStage2.reset();
+  m_filterStage3.reset();
+
   m_needReverse = false;
   m_rfSignal    = false;
   m_extSignal   = false;
@@ -748,6 +750,10 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
     m_state = FM_STATE::LISTENING;
     getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
+    m_filterStage1.reset();
+    m_filterStage2.reset();
+    m_filterStage3.reset();
+
     m_kerchunkTimer.stop();
     m_timeoutTimer.stop();
     m_ackMinTimer.stop();
@@ -879,6 +885,10 @@ void CFM::relayingRFWaitStateSimplex(bool validSignal)
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
+
+      m_filterStage1.reset();
+      m_filterStage2.reset();
+      m_filterStage3.reset();
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -1048,6 +1058,10 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
 
       m_hangTimer.stop();
 
+      m_filterStage1.reset();
+      m_filterStage2.reset();
+      m_filterStage3.reset();
+
       if (m_callsignAtEnd)
         sendCallsign();
 
@@ -1135,6 +1149,10 @@ void CFM::timeoutRFWaitStateSimplex(bool validSignal)
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
+
+      m_filterStage1.reset();
+      m_filterStage2.reset();
+      m_filterStage3.reset();
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -1255,6 +1273,10 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
       LogMessage("FM: state to LISTENING");
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
+
+      m_filterStage1.reset();
+      m_filterStage2.reset();
+      m_filterStage3.reset();
     }
 
     m_rfSignal = false;
