@@ -66,7 +66,7 @@ m_rfAudioBoost(1U),
 m_extAudioBoost(1U),
 m_downSampler(400U),// 100 ms of audio
 m_extEnabled(false),
-m_txLevel(128 * 128),
+m_txLevel(192 * 128), // modem fm_txlevel = 0.75
 m_rxLevel(1),
 m_inputRFRB(2402U, "FM Input Buffer"),   // 100ms of audio + 1 sample
 m_outputRFRB(2400U, "FM Output Buffer"),  // 100ms of audio
@@ -312,6 +312,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     // Apply the CTCSS(16bit) level, 20% by default
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
+    // txLevel(0.75) by default
     q31_t res1 = currentSample * m_txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
@@ -506,11 +507,8 @@ void CFM::reset()
   // m_filterStage2.reset();
   // m_filterStage3.reset();
 
-  if (m_rxBPF)
-    m_rxBPF->reset();
-
-  if (m_txBPF)
-    m_txBPF->reset();
+  resetRXFilter();
+  resetTXFilter();
 
   m_needReverse = false;
   m_rfSignal    = false;
@@ -742,6 +740,8 @@ void CFM::listeningStateDuplex(bool validRFSignal, bool validExtSignal)
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
 
+      resetRXFilter();
+
       if (m_callsignAtStart)
         sendCallsign();
     }
@@ -815,6 +815,8 @@ void CFM::kerchunkRFStateDuplex(bool validSignal)
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
 
+      resetRXFilter();
+
       m_kerchunkTimer.stop();
       if (m_callsignAtStart && m_callsignAtLatch) {
         sendCallsign();
@@ -848,6 +850,8 @@ void CFM::relayingRFStateDuplex(bool validSignal)
 
       m_rssiAccum = 0U;
       m_rssiCount = 0U;
+
+      resetRXFilter();
     }
 
     if (m_timeoutTimer.isRunning() && m_timeoutTimer.hasExpired()) {
@@ -915,6 +919,8 @@ void CFM::relayingRFWaitStateDuplex(bool validSignal)
 
     m_rssiAccum = 0U;
     m_rssiCount = 0U;
+
+    resetRXFilter();
 
     m_ackDelayTimer.stop();
   } else {
@@ -1117,6 +1123,8 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
     m_rssiAccum = 0U;
     m_rssiCount = 0U;
 
+    resetRXFilter();
+
     LogMessage("FM stop ACK");
     m_rfAck.stop();
     m_extAck.stop();
@@ -1138,11 +1146,8 @@ void CFM::hangStateDuplex(bool validRFSignal, bool validExtSignal)
 
       m_hangTimer.stop();
 
-      if (m_rxBPF)
-        m_rxBPF->reset();
-
-      if (m_txBPF)
-        m_txBPF->reset();
+      resetRXFilter();
+      resetTXFilter();
 
       if (m_callsignAtEnd)
         sendCallsign();
@@ -1232,8 +1237,7 @@ void CFM::timeoutRFWaitStateSimplex(bool validSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
-      if (m_rxBPF)
-        m_rxBPF->reset();
+      resetRXFilter();
 
       m_ackDelayTimer.stop();
       m_timeoutTimer.stop();
@@ -1358,8 +1362,7 @@ void CFM::linkStateMachine(bool validRFSignal, bool validExtSignal)
       m_state = FM_STATE::LISTENING;
       getSerial().writeFMStatus(static_cast<uint8_t>(m_state));
 
-      if (m_rxBPF)
-        m_rxBPF->reset();
+      resetRXFilter();
     }
 
     m_rfSignal = false;
@@ -1448,6 +1451,16 @@ void CFM::insertSilence(uint16_t ms)
       const q15_t empty = 0;
       m_outputRFRB.addData(empty);
   }
+}
+
+void CFM::resetRXFilter() {
+  if (m_rxBPF)
+    m_rxBPF->reset();
+}
+
+void CFM::resetTXFilter() {
+  if (m_txBPF)
+    m_txBPF->reset();
 }
 
 #endif
