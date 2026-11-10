@@ -160,6 +160,9 @@ private:
   void insertDelay(uint16_t ms);
   void insertSilence(uint16_t ms);
 
+  float applyRXFilter(float input);
+  float applyTXFilter(float input);
+
   void resetRXFilter();
   void resetTXFilter();
 };

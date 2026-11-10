@@ -265,7 +265,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
       if (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF || m_state == FM_STATE::RELAYING_EXT || m_state == FM_STATE::KERCHUNK_EXT) {
         currentSample = m_blanking.process(currentSample);
         if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
-          q15_t rxSample = m_rxBPF ? m_rxBPF->process(currentSample) : currentSample;
+          q15_t rxSample = applyRXFilter(currentSample);
           m_downSampler.addSample(rxSample);
         }
 
@@ -278,7 +278,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
           currentSample *= currentBoost;
         } else {
           if (m_extEnabled && (m_state == FM_STATE::RELAYING_RF || m_state == FM_STATE::KERCHUNK_RF)) {
-            q15_t rxSample = m_rxBPF ? m_rxBPF->process(currentSample) : currentSample;
+            q15_t rxSample = applyRXFilter(currentSample);
             m_downSampler.addSample(rxSample);
           }
           continue;
@@ -298,8 +298,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
         currentSample += m_callsign.getLowAudio();
     }
 
-    if (m_txBPF)
-      currentSample = m_txBPF->process(currentSample);
+    currentSample = applyTXFilter(currentSample);
     // else
     //   currentSample = m_filterStage3.filter(m_filterStage2.filter(m_filterStage1.filter(currentSample)));
 
@@ -413,8 +412,7 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     if (m_rfSignal && m_extEnabled) {
       q15_t rxSample = m_blanking.process(currentRFSample);
-      if (m_rxBPF)
-        rxSample = m_rxBPF->process(rxSample);
+      rxSample = applyRXFilter(rxSample);
       m_downSampler.addSample(rxSample);
     }
 
@@ -423,9 +421,7 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     // txSample is 12bit [-2048,2048)
     q15_t txSample = currentExtSample * m_extAudioBoost;
-
-    if (m_txBPF)
-      txSample = m_txBPF->process(txSample);
+    txSample = applyTXFilter(txSample);
 
     // Increase the audio(12bit) level x 2
     // txSample = txSample * 2;
@@ -1451,6 +1447,14 @@ void CFM::insertSilence(uint16_t ms)
       const q15_t empty = 0;
       m_outputRFRB.addData(empty);
   }
+}
+
+float CFM::applyRXFilter(float input) {
+  return m_rxBPF ? m_rxBPF->process(input) : input;
+}
+
+float CFM::applyTXFilter(float input) {
+  return m_txBPF ? m_txBPF->process(input) : input;
 }
 
 void CFM::resetRXFilter() {
