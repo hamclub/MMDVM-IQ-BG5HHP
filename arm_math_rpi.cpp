@@ -45,6 +45,8 @@
 #if defined(ARM_MATH_RPI)
 
 #include <stdint.h>
+#include <string.h>
+
 #include "arm_math_rpi.h"
 
 #define __SIMD32_TYPE int32_t
@@ -449,6 +451,159 @@ void arm_fir_fast_q15(
 
 }
 
+/**    
+ * @details    
+ *    
+ * @param[in,out] *S           points to an instance of the Q15 Biquad cascade structure.    
+ * @param[in]     numStages    number of 2nd order stages in the filter.    
+ * @param[in]     *pCoeffs     points to the filter coefficients.    
+ * @param[in]     *pState      points to the state buffer.    
+ * @param[in]     postShift    Shift to be applied to the accumulator result. Varies according to the coefficients format    
+ * @return        none    
+ *    
+ * <b>Coefficient and State Ordering:</b>    
+ *    
+ * \par    
+ * The coefficients are stored in the array <code>pCoeffs</code> in the following order:    
+ * <pre>    
+ *     {b10, 0, b11, b12, a11, a12, b20, 0, b21, b22, a21, a22, ...}    
+ * </pre>    
+ * where <code>b1x</code> and <code>a1x</code> are the coefficients for the first stage,    
+ * <code>b2x</code> and <code>a2x</code> are the coefficients for the second stage,    
+ * and so on.  The <code>pCoeffs</code> array contains a total of <code>6*numStages</code> values.    
+ * The zero coefficient between <code>b1</code> and <code>b2</code> facilities  use of 16-bit SIMD instructions on the Cortex-M4.    
+ *    
+ * \par    
+ * The state variables are stored in the array <code>pState</code>.    
+ * Each Biquad stage has 4 state variables <code>x[n-1], x[n-2], y[n-1],</code> and <code>y[n-2]</code>.    
+ * The state variables are arranged in the <code>pState</code> array as:    
+ * <pre>    
+ *     {x[n-1], x[n-2], y[n-1], y[n-2]}    
+ * </pre>    
+ * The 4 state variables for stage 1 are first, then the 4 state variables for stage 2, and so on.    
+ * The state array has a total length of <code>4*numStages</code> values.    
+ * The state variables are updated after each block of data is processed; the coefficients are untouched.    
+ */
+
+void arm_biquad_cascade_df1_init_q15(
+  arm_biquad_casd_df1_inst_q15 * S,
+  uint8_t numStages,
+  q15_t * pCoeffs,
+  q15_t * pState,
+  int8_t postShift)
+{
+  /* Assign filter stages */
+  S->numStages = numStages;
+
+  /* Assign postShift to be applied to the output */
+  S->postShift = postShift;
+
+  /* Assign coefficient pointer */
+  S->pCoeffs = pCoeffs;
+
+  /* Clear state buffer and size is always 4 * numStages */
+  memset(pState, 0, (4u * (uint32_t) numStages) * sizeof(q15_t));
+
+  /* Assign state pointer */
+  S->pState = pState;
+}
+
+void arm_biquad_cascade_df1_q15(
+  const arm_biquad_casd_df1_inst_q15 * S,
+  q15_t * pSrc,
+  q15_t * pDst,
+  uint32_t blockSize)
+{
+  /* Run the below code for Cortex-M0 */
+
+  q15_t *pIn = pSrc;                             /*  Source pointer                               */
+  q15_t *pOut = pDst;                            /*  Destination pointer                          */
+  q15_t b0, b1, b2, a1, a2;                      /*  Filter coefficients           */
+  q15_t Xn1, Xn2, Yn1, Yn2;                      /*  Filter state variables        */
+  q15_t Xn;                                      /*  temporary input               */
+  q63_t acc;                                     /*  Accumulator                                  */
+  int32_t shift = (15 - (int32_t) S->postShift); /*  Post shift                                   */
+  q15_t *pState = S->pState;                     /*  State pointer                                */
+  q15_t *pCoeffs = S->pCoeffs;                   /*  Coefficient pointer                          */
+  uint32_t sample, stage = (uint32_t) S->numStages;     /*  Stage loop counter                           */
+
+  do
+  {
+    /* Reading the coefficients */
+    b0 = *pCoeffs++;
+    pCoeffs++;  // skip the 0 coefficient
+    b1 = *pCoeffs++;
+    b2 = *pCoeffs++;
+    a1 = *pCoeffs++;
+    a2 = *pCoeffs++;
+
+    /* Reading the state values */
+    Xn1 = pState[0];
+    Xn2 = pState[1];
+    Yn1 = pState[2];
+    Yn2 = pState[3];
+
+    /*      The variables acc holds the output value that is computed:         
+     *    acc =  b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1] + a2 * y[n-2]         
+     */
+
+    sample = blockSize;
+
+    while(sample > 0u)
+    {
+      /* Read the input */
+      Xn = *pIn++;
+
+      /* acc =  b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1] + a2 * y[n-2] */
+      /* acc =  b0 * x[n] */
+      acc = (q31_t) b0 *Xn;
+
+      /* acc +=  b1 * x[n-1] */
+      acc += (q31_t) b1 *Xn1;
+      /* acc +=  b[2] * x[n-2] */
+      acc += (q31_t) b2 *Xn2;
+      /* acc +=  a1 * y[n-1] */
+      acc += (q31_t) a1 *Yn1;
+      /* acc +=  a2 * y[n-2] */
+      acc += (q31_t) a2 *Yn2;
+
+      /* The result is converted to 1.31  */
+      acc = __SSAT((acc >> shift), 16);
+
+      /* Every time after the output is computed state should be updated. */
+      /* The states should be updated as:  */
+      /* Xn2 = Xn1    */
+      /* Xn1 = Xn     */
+      /* Yn2 = Yn1    */
+      /* Yn1 = acc    */
+      Xn2 = Xn1;
+      Xn1 = Xn;
+      Yn2 = Yn1;
+      Yn1 = (q15_t) acc;
+
+      /* Store the output in the destination buffer. */
+      *pOut++ = (q15_t) acc;
+
+      /* decrement the loop counter */
+      sample--;
+    }
+
+    /*  The first stage goes from the input buffer to the output buffer. */
+    /*  Subsequent stages occur in-place in the output buffer */
+    pIn = pDst;
+
+    /* Reset to destination pointer */
+    pOut = pDst;
+
+    /*  Store the updated state variables back into the pState array */
+    *pState++ = Xn1;
+    *pState++ = Xn2;
+    *pState++ = Yn1;
+    *pState++ = Yn2;
+
+  } while(--stage);
+}
+
 void arm_biquad_cascade_df1_q31(
   const arm_biquad_casd_df1_inst_q31 * S,
   q31_t * pSrc,
@@ -542,6 +697,108 @@ void arm_biquad_cascade_df1_q31(
 
   } while(--stage);
 
+}
+
+void arm_biquad_cascade_df1_init_f32(
+  arm_biquad_casd_df1_inst_f32 * S,
+  uint8_t numStages,
+  float32_t * pCoeffs,
+  float32_t * pState)
+{
+  /* Assign filter stages */
+  S->numStages = numStages;
+
+  /* Assign coefficient pointer */
+  S->pCoeffs = pCoeffs;
+
+  /* Clear state buffer and size is always 4 * numStages */
+  memset(pState, 0, (4u * (uint32_t) numStages) * sizeof(float32_t));
+
+  /* Assign state pointer */
+  S->pState = pState;
+}
+
+void arm_biquad_cascade_df1_f32(
+  const arm_biquad_casd_df1_inst_f32 * S,
+  float32_t * pSrc,
+  float32_t * pDst,
+  uint32_t blockSize)
+{
+  float32_t *pIn = pSrc;                         /*  source pointer            */
+  float32_t *pOut = pDst;                        /*  destination pointer       */
+  float32_t *pState = S->pState;                 /*  pState pointer            */
+  float32_t *pCoeffs = S->pCoeffs;               /*  coefficient pointer       */
+  float32_t acc;                                 /*  Simulates the accumulator */
+  float32_t b0, b1, b2, a1, a2;                  /*  Filter coefficients       */
+  float32_t Xn1, Xn2, Yn1, Yn2;                  /*  Filter pState variables   */
+  float32_t Xn;                                  /*  temporary input           */
+  uint32_t sample, stage = S->numStages;         /*  loop counters             */
+
+  /* Run the below code for Cortex-M0 */
+  do
+  {
+    /* Reading the coefficients */
+    b0 = *pCoeffs++;
+    b1 = *pCoeffs++;
+    b2 = *pCoeffs++;
+    a1 = *pCoeffs++;
+    a2 = *pCoeffs++;
+
+    /* Reading the pState values */
+    Xn1 = pState[0];
+    Xn2 = pState[1];
+    Yn1 = pState[2];
+    Yn2 = pState[3];
+
+    /*      The variables acc holds the output value that is computed:        
+     *    acc =  b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1]   + a2 * y[n-2]        
+     */
+
+    sample = blockSize;
+
+    while(sample > 0u)
+    {
+      /* Read the input */
+      Xn = *pIn++;
+
+      /* acc =  b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1] + a2 * y[n-2] */
+      acc = (b0 * Xn) + (b1 * Xn1) + (b2 * Xn2) + (a1 * Yn1) + (a2 * Yn2);
+
+      /* Store the result in the accumulator in the destination buffer. */
+      *pOut++ = acc;
+
+      /* Every time after the output is computed state should be updated. */
+      /* The states should be updated as:    */
+      /* Xn2 = Xn1    */
+      /* Xn1 = Xn     */
+      /* Yn2 = Yn1    */
+      /* Yn1 = acc   */
+      Xn2 = Xn1;
+      Xn1 = Xn;
+      Yn2 = Yn1;
+      Yn1 = acc;
+
+      /* decrement the loop counter */
+      sample--;
+    }
+
+    /*  Store the updated state variables back into the pState array */
+    *pState++ = Xn1;
+    *pState++ = Xn2;
+    *pState++ = Yn1;
+    *pState++ = Yn2;
+
+    /*  The first stage goes from the input buffer to the output buffer. */
+    /*  Subsequent numStages  occur in-place in the output buffer */
+    pIn = pDst;
+
+    /* Reset the output pointer */
+    pOut = pDst;
+
+    /* decrement the loop counter */
+    stage--;
+
+  } while(stage > 0u);
 }
 
 void arm_q15_to_q31(

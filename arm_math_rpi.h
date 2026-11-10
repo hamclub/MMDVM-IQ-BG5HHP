@@ -73,6 +73,16 @@ typedef struct
     q15_t *pState;                  /**< points to the state variable array. The array is of length blockSize+phaseLength-1. */
   } arm_fir_interpolate_instance_q15;
 
+/**
+   * @brief Instance structure for the Q15 Biquad cascade filter.
+   */
+  typedef struct
+  {
+    int8_t numStages;        /**< number of 2nd order stages in the filter.  Overall order is 2*numStages. */
+    q15_t *pState;           /**< Points to the array of state coefficients.  The array is of length 4*numStages. */
+    q15_t *pCoeffs;          /**< Points to the array of coefficients.  The array is of length 5*numStages. */
+    int8_t postShift;        /**< Additional shift, in bits, applied to each output sample. */
+  } arm_biquad_casd_df1_inst_q15;
 typedef struct
   {
     uint32_t numStages;      /**< number of 2nd order stages in the filter.  Overall order is 2*numStages. */
@@ -80,6 +90,16 @@ typedef struct
     q31_t *pCoeffs;          /**< Points to the array of coefficients.  The array is of length 5*numStages. */
     uint8_t postShift;       /**< Additional shift, in bits, applied to each output sample. */
   } arm_biquad_casd_df1_inst_q31;
+
+/**
+   * @brief Instance structure for the floating-point Biquad cascade filter.
+   */
+  typedef struct
+  {
+    uint32_t numStages;      /**< number of 2nd order stages in the filter.  Overall order is 2*numStages. */
+    float32_t *pState;       /**< Points to the array of state coefficients.  The array is of length 4*numStages. */
+    float32_t *pCoeffs;      /**< Points to the array of coefficients.  The array is of length 5*numStages. */
+  } arm_biquad_casd_df1_inst_f32;
 
 /**
    * @brief Processing function for the Q15 FIR interpolator.
@@ -108,6 +128,34 @@ typedef struct
   uint32_t blockSize);
 
 /**
+   * @brief  Initialization function for the Q15 Biquad cascade filter.
+   * @param[in,out] S          points to an instance of the Q15 Biquad cascade structure.
+   * @param[in]     numStages  number of 2nd order stages in the filter.
+   * @param[in]     pCoeffs    points to the filter coefficients.
+   * @param[in]     pState     points to the state buffer.
+   * @param[in]     postShift  Shift to be applied to the output. Varies according to the coefficients format
+   */
+  void arm_biquad_cascade_df1_init_q15(
+  arm_biquad_casd_df1_inst_q15 * S,
+  uint8_t numStages,
+  q15_t * pCoeffs,
+  q15_t * pState,
+  int8_t postShift);
+
+/**
+   * @brief Processing function for the Q15 Biquad cascade filter.
+   * @param[in]  S          points to an instance of the Q15 Biquad cascade structure.
+   * @param[in]  pSrc       points to the block of input data.
+   * @param[out] pDst       points to the block of output data.
+   * @param[in]  blockSize  number of samples to process.
+   */
+  void arm_biquad_cascade_df1_q15(
+  const arm_biquad_casd_df1_inst_q15 * S,
+  q15_t * pSrc,
+  q15_t * pDst,
+  uint32_t blockSize);
+
+/**
    * @brief Processing function for the Q31 Biquad cascade filter
    * @param[in]  S          points to an instance of the Q31 Biquad cascade structure.
    * @param[in]  pSrc       points to the block of input data.
@@ -120,6 +168,32 @@ typedef struct
   q31_t * pDst,
   uint32_t blockSize);
 
+  /**
+   * @brief  Initialization function for the floating-point Biquad cascade filter.
+   * @param[in,out] S          points to an instance of the floating-point Biquad cascade structure.
+   * @param[in]     numStages  number of 2nd order stages in the filter.
+   * @param[in]     pCoeffs    points to the filter coefficients.
+   * @param[in]     pState     points to the state buffer.
+   */
+  void arm_biquad_cascade_df1_init_f32(
+  arm_biquad_casd_df1_inst_f32 * S,
+  uint8_t numStages,
+  float32_t * pCoeffs,
+  float32_t * pState);
+
+  /**
+   * @brief Processing function for the floating-point Biquad cascade filter.
+   * @param[in]  S          points to an instance of the floating-point Biquad cascade structure.
+   * @param[in]  pSrc       points to the block of input data.
+   * @param[out] pDst       points to the block of output data.
+   * @param[in]  blockSize  number of samples to process.
+   */
+  void arm_biquad_cascade_df1_f32(
+  const arm_biquad_casd_df1_inst_f32 * S,
+  float32_t * pSrc,
+  float32_t * pDst,
+  uint32_t blockSize);
+  
 /**
    * @brief  Converts the elements of the Q15 vector to Q31 vector.
    * @param[in]  pSrc       is input pointer
