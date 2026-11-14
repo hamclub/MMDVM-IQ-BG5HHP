@@ -35,7 +35,6 @@ struct BiquadState {
 
 class CBiquadCascadeFilter {
 public:
-    CBiquadCascadeFilter(const BiquadCoeff* coeff, unsigned int stages, float gaindb = 0.f);
     CBiquadCascadeFilter(const float* coeffArray, unsigned int stages, unsigned int coeffWidth = 6, float gaindb = 0.f);
     float process(float sample);
     int16_t process(int16_t sample);

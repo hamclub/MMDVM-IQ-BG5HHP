@@ -23,26 +23,6 @@
 #include <cassert>
 #include <cmath>
 
-CBiquadCascadeFilter::CBiquadCascadeFilter(const BiquadCoeff* coeff, unsigned int stages, float gaindb) {
-    if (stages > BIQUAD_CASCADE_MAX_STAGES)
-        stages = BIQUAD_CASCADE_MAX_STAGES;
-
-    ::memset(m_coeffs, 0, sizeof(m_coeffs));
-    ::memset(m_states, 0, sizeof(m_states));
-    m_stages = stages;
-
-    for (unsigned int i = 0; i < stages; i++) {
-        m_coeffs[i] = coeff[i];
-    }
-
-    float gainx = ::powf(10.0F, gaindb / 20.f);
-    if (gainx > 0.f) {
-        m_coeffs[0].b0 *= gainx;
-        m_coeffs[0].b1 *= gainx;
-        m_coeffs[0].b2 *= gainx;
-    }
-}
-
 CBiquadCascadeFilter::CBiquadCascadeFilter(const float* coeffArray, unsigned int stages, unsigned int coeffWidth, float gaindb) {
     if (stages > BIQUAD_CASCADE_MAX_STAGES)
         stages = BIQUAD_CASCADE_MAX_STAGES;

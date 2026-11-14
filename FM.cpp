@@ -66,8 +66,8 @@ m_rfAudioBoost(1U),
 m_extAudioBoost(1U),
 m_downSampler(400U),// 100 ms of audio
 m_extEnabled(false),
-m_txLevel(192 * 128), // modem fm_txlevel = 0.75
-m_rxLevel(1),
+m_txLevel(128 * 128), // modem fm_txlevel = 0.5
+m_rxLevel(255 * 128), // modem fm_txlevel = 1.0
 m_inputRFRB(2402U, "FM Input Buffer"),   // 100ms of audio + 1 sample
 m_outputRFRB(2400U, "FM Output Buffer"),  // 100ms of audio
 m_inputExtRB(),
@@ -79,66 +79,45 @@ m_rssiCount(0U)
   m_reverseTimer.setTimeout(0U, 150U);
   m_extGapTimer.setTimeout(0U, FM_LINK_EXT_GAP_MS);
 
-#if 0
-  const float fm_bandpass_cheby_coeffs_24k[] = {
-    0.0698815715f,   0.1397631426f,   0.0698815715f,   1.1564636230f,  -0.6516113281f, // Stage 0
-    0.3258519123f,   0.0000000000f,  -0.3258519123f,   1.5362243652f,  -0.5814208984f, // Stage 1
-    0.9702992488f,  -1.9405984976f,   0.9702992488f,   1.9554138184f,  -0.9600830078f, // Stage 2
+  //
+  // Bandpass Filter
+  //
+  const float fm_bandpass_cheby_coeffs_24k_3[] = {
+    // MODE1 [300,2700]
+    // band_stop=[200,3100], band_pass=[300,2700], rb=0.2, atten=40, fs=24000, order=6
+    0.0698820f,  0.1397640f,  0.0698820f,  1.1564526f, -0.6516158f,
+    0.3258644f,  0.0000000f, -0.3258644f,  1.5362245f, -0.5814144f,
+    0.9700879f, -1.9401758f,  0.9700879f,  1.9554039f, -0.9600691f,
+
+    // MODE2 [400,2700]
+    // band_stop=[200,3100], band_pass=[400,2700], rb=0.2, atten=40, fs=24000, order=6
+    // 0.0151383f,  0.0302766f,  0.0151383f,  1.5356789f, -0.5962321f,
+    // 1.3676395f,  0.0000000f, -1.3676395f,  1.1794859f, -0.6697752f,
+    // 0.9566561f, -1.9133123f,  0.9566561f,  1.9408896f, -0.9493406f,
   };
-  m_rxBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k, 3, 5);
-  m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k, 3, 5, 2.0F);
-#else
-  // const float fm_tx_bandpass_cheby_coeffs_24k_3[] = {
-  //   0.0698815715f,   0.1397631426f,   0.0698815715f,   1.1564636230f,  -0.6516113281f, // Stage 0
-  //   0.3258519123f,   0.0000000000f,  -0.3258519123f,   1.5362243652f,  -0.5814208984f, // Stage 1
-  //   0.9702992488f,  -1.9405984976f,   0.9702992488f,   1.9554138184f,  -0.9600830078f, // Stage 2
-  // };
-  const float fm_tx_bandpass_cheby_coeffs_24k_3[] {
-    0.0698820309f,   0.1397640617f,   0.0698820309f,   1.1564526104f,  -0.6516157751f, // Stage 0
-    0.3258642347f,   0.0000000000f,  -0.3258642347f,   1.5362245446f,  -0.5814143643f, // Stage 1
-    0.9700881795f,  -1.9401763590f,   0.9700881795f,   1.9554038617f,  -0.9600690929f, // Stage 2
+  const float fm_bandpass_cheby_coeffs_24k_5[] = {
+    // MODE1 [300,2700]
+    // band_stop=[200,3100], band_pass=[300,2700], rb=0.2, atten=40, fs=24000, order=10
+    0.0422190f,  0.0844380f,  0.0422190f,  1.4310611f, -0.6768229f,
+    0.0170908f,  0.0341815f,  0.0170908f,  1.6895493f, -0.7392493f,
+    0.8605107f,  0.0000000f, -0.8605107f,  1.3805553f, -0.8612065f,
+    0.9462203f, -1.8924407f,  0.9462203f,  1.9165328f, -0.9267441f,
+    0.9794203f, -1.9588405f,  0.9794203f,  1.9778068f, -0.9834200f,
+
+    // MODE2 [300,2700]
+    // band_stop=[200,3100], band_pass=[400,2700], rb=0.2, atten=40, fs=24000, order=10
+    // 0.0403328f,  0.0806656f,  0.0403328f,  1.4441093f, -0.6998697f,
+    // 0.0213137f,  0.0426275f,  0.0213137f,  1.6830030f, -0.7493653f,
+    // 0.6135017f,  0.0000000f, -0.6135017f,  1.3899796f, -0.8699575f,
+    // 0.9259429f, -1.8518857f,  0.9259429f,  1.8960598f, -0.9135657f,
+    // 0.9677827f, -1.9355654f,  0.9677827f,  1.9692909f, -0.9793160f,
   };
-  // const float fm_tx_bandpass_cheby_coeffs_24k_3[] = {
-  //   0.0151382882f,   0.0302765764f,   0.0151382882f,   1.5356789454f,  -0.5962320981f, // Stage 0
-  //   1.3676376303f,   0.0000000000f,  -1.3676376303f,   1.1794858590f,  -0.6697751801f, // Stage 1
-  //   0.9566574301f,  -1.9133148602f,   0.9566574301f,   1.9408895813f,  -0.9493406142f, // Stage 2
-  // };
-  m_txBPF = new CBiquadCascadeFilter(fm_tx_bandpass_cheby_coeffs_24k_3, 3, 5, 2.0F);
 
-  // sb1=250, pb=[300,2700], sb2=3100,rb=0.2, atten=40
-  // const float fm_tx_bandpass_cheby_coeffs_24k_5[] = {
-  //   0.0422187885f,   0.0844375697f,   0.0422187885f,   1.4310610838f,  -0.6768228872f, // Stage 0
-  //   0.0170908061f,   0.0341816123f,   0.0170908061f,   1.6895492886f,  -0.7392493328f, // Stage 1
-  //   0.8605128578f,   0.0000000000f,  -0.8605128578f,   1.3805553365f,  -0.8612065105f, // Stage 2
-  //   0.9462138895f,  -1.8924277790f,   0.9462138895f,   1.9165327731f,  -0.9267440881f, // Stage 3
-  //   0.9794264818f,  -1.9588529636f,   0.9794264818f,   1.9778068368f,  -0.9834200354f, // Stage 4
-  // };
-  // m_txBPF = new CBiquadCascadeFilter(fm_tx_bandpass_cheby_coeffs_24k_5, 5, 5, 2.0F);
+  // m_rxBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_3, 3, 5);
+  m_rxBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_5, 5, 5);
 
-  // sb1=200, pb=[400,2700], sb2=3100,rb=0.2, atten=40
-  const float fm_rx_bandpass_cheby_coeffs_24k_5[] = 
-  {
-      0.0403327413f,   0.0806654741f,   0.0403327413f,   1.4441093237f,  -0.6998696936f, // Stage 0
-      0.0213137244f,   0.0426274488f,   0.0213137244f,   1.6830030297f,  -0.7493652989f, // Stage 1
-      0.6135009659f,   0.0000000000f,  -0.6135009659f,   1.3899795748f,  -0.8699575212f, // Stage 2
-      0.9259432857f,  -1.8518865715f,   0.9259432857f,   1.8960598223f,  -0.9135656785f, // Stage 3
-      0.9677854897f,  -1.9355709794f,   0.9677854897f,   1.9692909189f,  -0.9793159682f, // Stage 4
-  };
-  m_rxBPF = new CBiquadCascadeFilter(fm_rx_bandpass_cheby_coeffs_24k_5, 5, 5);
-
-  // sb1=200, pb=[400,2700], sb2=3100,rb=0.2, atten=40
-  // const float fm_bandpass_cheby_coeffs_24k_7[] = {
-  //   0.0256293030f,   0.0512586060f,   0.0256293030f,   1.5872589600f,  -0.7706458812f, // Stage 0
-  //   0.0165058336f,   0.0330116672f,   0.0165058336f,   1.7480938944f,  -0.8170227528f, // Stage 1
-  //   0.0722968612f,   0.1445937224f,   0.0722968612f,   1.4764331043f,  -0.8218110744f, // Stage 2
-  //   0.0653746323f,   0.0000000000f,  -0.0653746323f,   1.8823917744f,  -0.9083382012f, // Stage 3
-  //   5.9353904996f, -11.8707809991f,   5.9353904996f,   1.4528148211f,  -0.9319767534f, // Stage 4
-  //   0.9519682252f,  -1.9039364503f,   0.9519682252f,   1.9470657895f,  -0.9610168297f, // Stage 5
-  //   0.9720728646f,  -1.9441457291f,   0.9720728646f,   1.9786322909f,  -0.9891095507f, // Stage 6
-  // };
-  // m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_7, 7, 5, 2.0F);
-
-#endif
+  // m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_3, 3, 5, 9.0f /*compensate 3x upsampler dbfs loss*/);
+  m_txBPF = new CBiquadCascadeFilter(fm_bandpass_cheby_coeffs_24k_5, 5, 5, 9.0f /*compensate 3x upsampler loss*/);
 
   insertDelay(100U);
 }
@@ -174,7 +153,10 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     // ARMv7-M has hardware integer division 
     // q15_t currentRFSample = q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
-    q15_t currentRFSample = __SSAT(q31_t(samples[i]) << 2, 16);
+    // q15_t currentRFSample = __SSAT(q31_t(samples[i]) << 2, 16);
+    // Apply rxLevel(1.0 by default)
+    q31_t samp1 = q31_t(samples[i]) * m_rxLevel;
+    q15_t currentRFSample = q15_t(__SSAT((samp1 >> 15), 16));
 
     q15_t currentExtSample = 0;
     bool inputExt = m_inputExtRB.getSample(currentExtSample);//always consume the external input data so it does not overflow
@@ -311,7 +293,7 @@ void CFM::repeaterSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
     // Apply the CTCSS(16bit) level, 20% by default
     currentSample += m_ctcssTX.getAudio(m_reverseTimer.isRunning());
 
-    // txLevel(0.75) by default
+    // Apply txLevel(0.5 by default)
     q31_t res1 = currentSample * m_txLevel;
     q15_t res2 = q15_t(__SSAT((res1 >> 15), 16));
 
@@ -331,7 +313,10 @@ void CFM::linkSamples(q15_t* samples, const uint16_t* rssi, uint8_t length)
 
     // ARMv7-M has hardware integer division 
     // q15_t currentRFSample =  q15_t((q31_t(samples[i]) << 8) / m_rxLevel);
-    q15_t currentRFSample = __SSAT(q31_t(samples[i]) << 2, 16);
+    // q15_t currentRFSample = __SSAT(q31_t(samples[i]) << 2, 16);
+    // Apply rxLevel(1.0 by default)
+    q31_t samp1 = q31_t(samples[i]) * m_rxLevel;
+    q15_t currentRFSample = q15_t(__SSAT((samp1 >> 15), 16));
 
     // Zero-initialized: getSample() leaves this untouched on underrun, and
     // with the ext-gap debounce below, m_extSignal can now stay true for a
@@ -555,6 +540,7 @@ uint8_t CFM::setMisc(uint16_t timeout, uint8_t timeoutLevel, uint8_t ctcssFreque
   m_timeoutTone.setParams(timeoutLevel);
   m_blanking.setParams(maxDev, timeoutLevel);
 
+  // FIXME - support FM RXLevel Parameters
   // m_rxLevel = rxLevel; //q15_t(255)/q15_t(rxLevel >> 1);
 
   // LogMessage("FM RX Level %d", rxLevel);
@@ -584,6 +570,13 @@ uint8_t CFM::setExt(const char* ack, uint8_t audioBoost, uint8_t speed, uint16_t
   m_extAudioBoost = q15_t(audioBoost);
 
   return m_extAck.setParams(ack, speed, frequency, level, level);
+}
+
+uint8_t CFM::setRXLevel(uint8_t level)
+{
+  m_rxLevel = q15_t(level * 128);
+
+  return 0U;
 }
 
 uint8_t CFM::setTXLevel(uint8_t level)
