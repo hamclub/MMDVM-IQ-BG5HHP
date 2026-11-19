@@ -1422,12 +1422,12 @@ void CFM::insertSilence(uint16_t ms)
 }
 
 float CFM::applyRXFilter(float input) {
-  return m_rxFilter ? m_rxFilter->process(input) : input;
+  return m_rxFilter ? m_rxFilter->filter(input) : input;
 }
 
 float CFM::applyTXFilter(float input) {
   if (m_txFilter)
-    return m_txFilter->process(input);
+    return m_txFilter->filter(input);
   else
     return input * 3;
 }
