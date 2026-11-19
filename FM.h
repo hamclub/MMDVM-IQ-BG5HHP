@@ -99,11 +99,8 @@ private:
   CFMTimer             m_reverseTimer;
   CFMTimer             m_extGapTimer;   // debounce for link-mode ext-audio underrun, see linkStateMachine()
   bool                 m_needReverse;
-  // CFMDirectFormI       m_filterStage1;
-  // CFMDirectFormI       m_filterStage2;
-  // CFMDirectFormI       m_filterStage3;
-  CBiquadCascadeFilter *m_rxBPF;
-  CBiquadCascadeFilter *m_txBPF;
+  CBiquadCascadeFilter *m_rxFilter;
+  CBiquadCascadeFilter *m_txFilter;
   CFMBlanking          m_blanking;
   uint8_t              m_accessMode;
   bool                 m_linkMode;
