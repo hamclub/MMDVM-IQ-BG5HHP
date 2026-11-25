@@ -555,8 +555,12 @@ uint8_t CSDRSoapy::setParameters()
     cutoff = 0.5F;
 
     devArgs["driver"] = "sx";
-    // hacked sx1255 soapy driver parameter
-    devArgs["RF_PROFILE"] = "TETRA_CLEAN";
+
+    // URI="param1=1,param2=2"
+    if (!m_soapyDeviceURI.empty()) {
+      const SoapySDR::Kwargs uriArgs = SoapySDR::KwargsFromString(m_soapyDeviceURI);
+      devArgs.insert(uriArgs.begin(), uriArgs.end());
+    }
 
     m_timestamped = true;
 
